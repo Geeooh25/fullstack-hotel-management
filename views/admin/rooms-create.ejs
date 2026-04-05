@@ -1,0 +1,52 @@
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Add New Room</h5>
+    </div>
+    <div class="card-body">
+        <form action="/admin/rooms" method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Room Number *</label>
+                    <input type="text" name="room_number" class="form-control" required placeholder="e.g., 101, 201, Suite A">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Room Type *</label>
+                    <select name="room_type_id" class="form-select" required>
+                        <option value="">Select Room Type</option>
+                        <% roomTypes.forEach(type => { %>
+                            <option value="<%= type.id %>"><%= type.name %> - $<%= type.base_price %>/night</option>
+                        <% }) %>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Floor</label>
+                    <input type="number" name="floor" class="form-control" placeholder="e.g., 1, 2, 3">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="available">Available</option>
+                        <option value="occupied">Occupied</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="cleaning">Cleaning</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3" placeholder="Any special notes about this room..."></textarea>
+            </div>
+            
+            <hr>
+            
+            <div class="d-flex justify-content-between">
+                <a href="/admin/rooms" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Room</button>
+            </div>
+        </form>
+    </div>
+</div>

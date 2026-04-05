@@ -1,0 +1,103 @@
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Create Manual Booking</h5>
+    </div>
+    <div class="card-body">
+        <form action="/admin/bookings" method="POST">
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Room *</label>
+                    <select name="room_id" class="form-select" required>
+                        <option value="">Select Room</option>
+                        <% rooms.forEach(room => { %>
+                            <option value="<%= room.id %>">
+                                Room <%= room.room_number %> - <%= room.RoomType.name %> ($<%= room.RoomType.base_price %>/night)
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Check-in Date *</label>
+                    <input type="date" name="check_in" id="checkin" class="form-control" required>
+                </div>
+                <div class="col-md-3 mb-3">
+                    <label class="form-label">Check-out Date *</label>
+                    <input type="date" name="check_out" id="checkout" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Adults</label>
+                    <input type="number" name="adults" class="form-control" value="2" min="1">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Children</label>
+                    <input type="number" name="children" class="form-control" value="0" min="0">
+                </div>
+            </div>
+            
+            <hr class="my-4">
+            
+            <h5>Guest Information</h5>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">First Name *</label>
+                    <input type="text" name="first_name" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Last Name *</label>
+                    <input type="text" name="last_name" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Email *</label>
+                    <input type="email" name="email" class="form-control" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Phone *</label>
+                    <input type="tel" name="phone" class="form-control" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Address</label>
+                <input type="text" name="address" class="form-control">
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Special Requests</label>
+                <textarea name="special_requests" class="form-control" rows="3"></textarea>
+            </div>
+            
+            <hr>
+            
+            <div class="d-flex justify-content-between">
+                <a href="/admin/bookings" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Create Booking</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Date picker logic
+    const today = new Date().toISOString().split('T')[0];
+    const checkinInput = document.getElementById('checkin');
+    const checkoutInput = document.getElementById('checkout');
+    
+    checkinInput.min = today;
+    checkoutInput.min = today;
+    
+    checkinInput.addEventListener('change', function() {
+        if (this.value) {
+            checkoutInput.min = this.value;
+            if (checkoutInput.value && checkoutInput.value <= this.value) {
+                checkoutInput.value = '';
+            }
+        }
+    });
+</script>

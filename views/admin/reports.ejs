@@ -1,0 +1,220 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Generate Reports</h5>
+            </div>
+            <div class="card-body">
+                <form id="report-form" class="row g-3">
+                    <div class="col-md-3">
+                        <label class="form-label">Report Type</label>
+                        <select id="report-type" class="form-select">
+                            <option value="occupancy">Occupancy Report</option>
+                            <option value="revenue">Revenue Report</option>
+                            <option value="guest">Guest Statistics</option>
+                            <option value="room">Room Performance</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" id="start-date" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">End Date</label>
+                        <input type="date" id="end-date" class="form-control">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">Generate Report</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="report-results" class="row mt-4" style="display: none;">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0" id="report-title"></h5>
+            </div>
+            <div class="card-body">
+                <canvas id="report-chart" height="300"></canvas>
+                <div id="report-data" class="mt-4"></div>
+                <button onclick="exportReport()" class="btn btn-secondary mt-3">
+                    <i class="fas fa-download"></i> Export as CSV
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentReportData = null;
+    
+    document.getElementById('report-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const reportType = document.getElementById('report-type').value;
+        const startDate = document.getElementById('start-date').value;
+        const endDate = document.getElementById('end-date').value;
+        
+        if (!startDate || !endDate) {
+            alert('Please select both start and end dates');
+            return;
+        }
+        
+        const response = await fetch(`/api/admin/reports?type=${reportType}&start=${startDate}&end=${endDate}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            currentReportData = data;
+            displayReport(data);
+            document.getElementById('report-results').style.display = 'flex';
+        } else {
+            alert(data.error || 'Failed to generate report');
+        }
+    });
+    
+    function displayReport(data) {
+        const title = document.getElementById('report-title');
+        const chartCanvas = document.getElementById('report-chart');
+        const dataContainer = document.getElementById('report-data');
+        
+        let chartData = null;
+        let html = '';
+        
+        switch(data.reportType) {
+            case 'occupancy':
+                title.textContent = 'Occupancy Report';
+                chartData = {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Occupancy Rate (%)',
+                        data: data.values,
+                        backgroundColor: 'rgba(197, 160, 40, 0.5)',
+                        borderColor: '#c5a028',
+                        borderWidth: 1
+                    }]
+                };
+                html = `
+                    <table class="table">
+                        <thead>
+                            <tr><th>Date</th><th>Occupancy Rate</th><th>Booked Rooms</th><th>Total Rooms</th></tr>
+                        </thead>
+                        <tbody>
+                            ${data.details.map(d => `
+                                <tr>
+                                    <td>${d.date}</td>
+                                    <td>${d.occupancy}%</td>
+                                    <td>${d.booked}</td>
+                                    <td>${d.total}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
+                break;
+                
+            case 'revenue':
+                title.textContent = 'Revenue Report';
+                chartData = {
+                    labels: data.labels,
+                    datasets: [{
+                        label: 'Revenue ($)',
+                        data: data.values,
+                        backgroundColor: 'rgba(40, 167, 69, 0.5)',
+                        borderColor: '#28a745',
+                        borderWidth: 1
+                    }]
+                };
+                html = `
+                    <table class="table">
+                        <thead>
+                            <tr><th>Date</th><th>Revenue</th><th>Bookings</th><th>Average Booking Value</th></tr>
+                        </thead>
+                        <tbody>
+                            ${data.details.map(d => `
+                                <tr>
+                                    <td>${d.date}</td>
+                                    <td>$${d.revenue}</td>
+                                    <td>${d.bookings}</td>
+                                    <td>$${d.avgValue}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                        <tfoot>
+                            <tr class="fw-bold">
+                                <td>Total</td>
+                                <td>$${data.totalRevenue}</td>
+                                <td>${data.totalBookings}</td>
+                                <td>$${data.averageValue}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                `;
+                break;
+        }
+        
+        // Destroy existing chart if any
+        if (window.reportChart) {
+            window.reportChart.destroy();
+        }
+        
+        if (chartData) {
+            window.reportChart = new Chart(chartCanvas, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+        
+        dataContainer.innerHTML = html;
+    }
+    
+    function exportReport() {
+        if (!currentReportData) return;
+        
+        let csvContent = '';
+        
+        switch(currentReportData.reportType) {
+            case 'occupancy':
+                csvContent = 'Date,Occupancy Rate (%),Booked Rooms,Total Rooms\n';
+                currentReportData.details.forEach(d => {
+                    csvContent += `${d.date},${d.occupancy},${d.booked},${d.total}\n`;
+                });
+                break;
+            case 'revenue':
+                csvContent = 'Date,Revenue ($),Bookings,Average Booking Value ($)\n';
+                currentReportData.details.forEach(d => {
+                    csvContent += `${d.date},${d.revenue},${d.bookings},${d.avgValue}\n`;
+                });
+                csvContent += `\nTotal,${currentReportData.totalRevenue},${currentReportData.totalBookings},${currentReportData.averageValue}\n`;
+                break;
+        }
+        
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentReportData.reportType}_report_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+    }
+    
+    // Set default dates (last 30 days)
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    
+    document.getElementById('start-date').value = thirtyDaysAgo.toISOString().split('T')[0];
+    document.getElementById('end-date').value = today.toISOString().split('T')[0];
+</script>

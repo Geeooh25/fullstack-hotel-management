@@ -1,0 +1,704 @@
+/* ==================== FONTS ==================== */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* ==================== VARIABLES ==================== */
+:root {
+    --gold: #B8860B;
+    --gold-dark: #8B691B;
+    --gold-light: #F5E6D3;
+    --text-dark: #1A1A1A;
+    --text-light: #666666;
+    --white: #FFFFFF;
+    --cream: #FDF8F0;
+    --gray-bg: #FAFAFA;
+    --star-gold: #FFD700;
+    --shadow: 0 10px 30px rgba(0,0,0,0.05);
+    --shadow-hover: 0 20px 40px rgba(0,0,0,0.1);
+    --transition: all 0.3s ease;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    color: var(--text-dark);
+    background-color: var(--white);
+    line-height: 1.6;
+    overflow-x: hidden;
+}
+/* Page Hero (for all inner pages) */
+.page-hero {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+                url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600');
+    background-size: cover;
+    background-position: center;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: white;
+    margin-top: 76px;
+}
+
+.page-hero h1 {
+    font-size: 3.5rem;
+    margin-bottom: 1rem;
+    font-family: 'Playfair Display', serif;
+}
+
+.page-hero p {
+    font-size: 1.2rem;
+    opacity: 0.9;
+}
+
+@media (max-width: 768px) {
+    .page-hero {
+        height: 300px;
+        margin-top: 66px;
+    }
+    
+    .page-hero h1 {
+        font-size: 2rem;
+    }
+    
+    .page-hero p {
+        font-size: 1rem;
+    }
+}
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+}
+
+/* ==================== NAVBAR ==================== */
+.navbar {
+    background-color: transparent;
+    padding: 1.5rem 0;
+    transition: var(--transition);
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+}
+
+.navbar.scrolled {
+    background-color: rgba(0,0,0,0.9);
+    padding: 1rem 0;
+    position: fixed;
+    backdrop-filter: blur(10px);
+}
+
+.navbar-brand {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--gold) !important;
+    letter-spacing: 2px;
+}
+
+.nav-link {
+    color: var(--white) !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+    padding: 0.5rem 1.2rem !important;
+    transition: var(--transition);
+    letter-spacing: 0.5px;
+}
+
+.nav-link:hover,
+.nav-link.active {
+    color: var(--gold) !important;
+}
+
+.navbar-toggler {
+    border: 1px solid var(--gold);
+    background: transparent;
+    padding: 0.5rem;
+}
+
+.navbar-toggler-icon {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'%3e%3cpath stroke='%23B8860B' stroke-linecap='round' stroke-miterlimit='10' stroke-width='2' d='M4 7h22M4 15h22M4 23h22'/%3e%3c/svg%3e");
+}
+
+/* Mobile Menu */
+@media (max-width: 991.98px) {
+    .navbar-collapse {
+        background: rgba(0,0,0,0.95);
+        padding: 1.5rem;
+        border-radius: 12px;
+        margin-top: 1rem;
+        backdrop-filter: blur(10px);
+    }
+    
+    .nav-link {
+        text-align: center;
+        padding: 0.8rem !important;
+    }
+}
+
+/* ==================== HERO SECTION ==================== */
+.hero {
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)),
+                url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600');
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--white);
+    padding: 120px 0;
+}
+
+.hero-content {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero h1 {
+    font-size: 4.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    letter-spacing: 2px;
+}
+
+.hero p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+    font-weight: 300;
+}
+
+.hero-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    letter-spacing: 1px;
+}
+
+.hero-meta span {
+    color: var(--gold);
+}
+
+.hero-link {
+    color: var(--gold);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.hero-link:hover {
+    color: var(--gold-dark);
+}
+
+@media (max-width: 768px) {
+    .hero h1 {
+        font-size: 2.5rem;
+    }
+    
+    .hero p {
+        font-size: 1rem;
+    }
+    
+    .hero-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+}
+
+/* ==================== SECTION COMMON ==================== */
+.section-padding {
+    padding: 100px 0;
+}
+
+.section-title {
+    text-align: center;
+    margin-bottom: 4rem;
+}
+
+.section-title h2 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+}
+
+.section-title p {
+    color: var(--text-light);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .section-padding {
+        padding: 60px 0;
+    }
+    
+    .section-title h2 {
+        font-size: 2rem;
+    }
+}
+
+/* ==================== FEATURE GRID (2 Column Layout) ==================== */
+.feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+}
+
+.feature-left h3 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+}
+
+.feature-left p {
+    color: var(--text-light);
+    margin-bottom: 1.5rem;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+}
+
+.feature-list li {
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: var(--text-dark);
+}
+
+.feature-list li i {
+    color: var(--gold);
+    font-size: 1.2rem;
+}
+
+.feature-right h3 {
+    font-size: 1.5rem;
+    color: var(--gold);
+    margin-bottom: 1rem;
+    letter-spacing: 2px;
+}
+
+.feature-right h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    line-height: 1.3;
+}
+
+.btn-outline-gold {
+    background: transparent;
+    border: 2px solid var(--gold);
+    color: var(--gold);
+    padding: 12px 30px;
+    border-radius: 0;
+    font-weight: 600;
+    transition: var(--transition);
+    display: inline-block;
+}
+
+.btn-outline-gold:hover {
+    background: var(--gold);
+    color: var(--white);
+}
+
+.btn-gold {
+    background: var(--gold);
+    border: none;
+    color: var(--white);
+    padding: 12px 30px;
+    border-radius: 0;
+    font-weight: 600;
+    transition: var(--transition);
+    display: inline-block;
+}
+
+.btn-gold:hover {
+    background: var(--gold-dark);
+    color: var(--white);
+}
+
+@media (max-width: 768px) {
+    .feature-grid {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+    }
+    
+    .feature-right h2 {
+        font-size: 1.8rem;
+    }
+}
+
+/* ==================== REVIEW CARDS ==================== */
+.review-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    text-align: center;
+}
+
+.review-card {
+    padding: 2rem;
+    background: var(--white);
+    transition: var(--transition);
+}
+
+.review-card .letter {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--gold);
+    margin-bottom: 0.5rem;
+}
+
+.review-card .rating {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 0.5rem;
+}
+
+.review-card .stars {
+    color: var(--star-gold);
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+}
+
+.review-card .platform {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: var(--text-dark);
+}
+
+.review-card .review-count {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .review-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+}
+
+/* ==================== ROOMS SECTION ==================== */
+.rooms-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.rooms-header h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.rooms-header p {
+    color: var(--text-light);
+}
+
+.room-card {
+    background: var(--white);
+    margin-bottom: 2rem;
+}
+
+.room-card img {
+    width: 100%;
+    height: 300px;
+    object-fit: cover;
+}
+
+.room-card .room-content {
+    padding: 1.5rem;
+}
+
+.room-card .price {
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+.room-card .price span {
+    font-size: 0.9rem;
+    color: var(--text-light);
+    font-weight: normal;
+}
+
+.room-card h3 {
+    font-size: 1.5rem;
+    margin: 0.5rem 0;
+}
+
+.room-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin: 1rem 0;
+    padding: 0;
+    list-style: none;
+}
+
+.room-features li {
+    font-size: 0.8rem;
+    color: var(--text-light);
+}
+
+.room-features li i {
+    color: var(--gold);
+    margin-right: 0.25rem;
+}
+
+/* ==================== FACILITIES SECTION ==================== */
+.facilities-section {
+    background: var(--cream);
+}
+
+.facilities-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    text-align: center;
+}
+
+.facility-card {
+    padding: 2rem;
+    transition: var(--transition);
+}
+
+.facility-card i {
+    font-size: 2.5rem;
+    color: var(--gold);
+    margin-bottom: 1rem;
+}
+
+.facility-card h4 {
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+}
+
+.facility-card p {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+@media (max-width: 768px) {
+    .facilities-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+}
+
+/* ==================== VIDEO SECTION ==================== */
+.video-section {
+    background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
+                url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+    text-align: center;
+    color: var(--white);
+    padding: 120px 0;
+}
+
+.video-section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.video-section p {
+    font-size: 1.1rem;
+    margin-bottom: 2rem;
+    opacity: 0.9;
+}
+
+.play-btn {
+    width: 80px;
+    height: 80px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+    border: none;
+    color: var(--white);
+    font-size: 2rem;
+}
+
+.play-btn:hover {
+    transform: scale(1.1);
+    background: var(--gold-dark);
+}
+
+@media (max-width: 768px) {
+    .video-section {
+        padding: 80px 0;
+    }
+    
+    .video-section h2 {
+        font-size: 1.8rem;
+    }
+}
+
+/* ==================== FOOTER ==================== */
+.footer {
+    background: #0A0A0A;
+    color: var(--white);
+    padding: 4rem 0 2rem;
+}
+
+.footer h4 {
+    color: var(--gold);
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.footer h5 {
+    margin-bottom: 1.5rem;
+    font-size: 1.1rem;
+}
+
+.footer a {
+    color: var(--white);
+    transition: var(--transition);
+    text-decoration: none;
+}
+
+.footer a:hover {
+    color: var(--gold);
+}
+
+.footer .social-icons a {
+    display: inline-block;
+    margin-right: 1rem;
+    font-size: 1.2rem;
+}
+
+.footer hr {
+    border-color: rgba(255,255,255,0.1);
+    margin: 2rem 0;
+}
+
+/* ==================== BUTTONS ==================== */
+.btn-primary {
+    background: var(--gold);
+    border: none;
+    padding: 12px 30px;
+    border-radius: 0;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.btn-primary:hover {
+    background: var(--gold-dark);
+    transform: translateY(-2px);
+}
+
+/* ==================== TOAST ==================== */
+.toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    background: var(--white);
+    border-radius: 0;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1rem;
+    box-shadow: var(--shadow);
+    border-left: 4px solid;
+}
+
+.toast-success {
+    border-left-color: var(--gold);
+}
+
+/* ==================== LOADER ==================== */
+.loader {
+    width: 40px;
+    height: 40px;
+    border: 3px solid var(--gold-light);
+    border-top-color: var(--gold);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+
+/* ==================== NAVBAR RESPONSIVE FIXES ==================== */
+
+/* For screens between 992px and 1200px - reduce padding and font size */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .navbar-nav {
+        gap: 0;
+    }
+    .nav-link {
+        padding: 0.5rem 0.7rem !important;
+        font-size: 0.8rem;
+    }
+    .navbar-brand {
+        font-size: 1.3rem;
+    }
+}
+
+/* For screens between 768px and 991px - tablet view */
+@media (min-width: 768px) and (max-width: 991px) {
+    .navbar-nav {
+        gap: 0;
+    }
+    .nav-link {
+        padding: 0.5rem 0.5rem !important;
+        font-size: 0.7rem;
+    }
+    .navbar-brand {
+        font-size: 1.1rem;
+    }
+}
+
+/* Fix hamburger menu overflow on mobile */
+@media (max-width: 767px) {
+    .navbar-collapse {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: rgba(0,0,0,0.95);
+        padding: 1rem;
+        backdrop-filter: blur(10px);
+        max-height: 80vh;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+    
+    .navbar-nav {
+        max-height: 70vh;
+        overflow-y: auto;
+    }
+    
+    .nav-link {
+        text-align: left;
+        padding: 0.75rem 1rem !important;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .nav-link:last-child {
+        border-bottom: none;
+    }
+}

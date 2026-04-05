@@ -1,0 +1,121 @@
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Hotel Settings</h5>
+            </div>
+            <div class="card-body">
+                <form id="settings-form">
+                    <div class="mb-3">
+                        <label class="form-label">Hotel Name</label>
+                        <input type="text" id="hotel-name" class="form-control" value="<%= settings.hotel_name %>">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Hotel Phone</label>
+                        <input type="text" id="hotel-phone" class="form-control" value="<%= settings.hotel_phone %>">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Hotel Email</label>
+                        <input type="email" id="hotel-email" class="form-control" value="<%= settings.hotel_email %>">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Hotel Address</label>
+                        <textarea id="hotel-address" class="form-control" rows="3"><%= settings.hotel_address %></textarea>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Tax Rate (%)</label>
+                        <input type="number" id="tax-rate" class="form-control" step="0.1" value="<%= settings.tax_rate %>">
+                    </div>
+                    
+                    <hr>
+                    
+                    <h5 class="mt-4">Staff Management</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% users.forEach(user => { %>
+                                <tr>
+                                    <td><%= user.first_name %> <%= user.last_name %></td>
+                                    <td><%= user.email %></td>
+                                    <td><%= user.role %></td>
+                                    <td>
+                                        <span class="badge bg-<%= user.is_active ? 'success' : 'danger' %>">
+                                            <%= user.is_active ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="toggleUserStatus(<%= user.id %>, <%= user.is_active %>)" class="btn btn-sm btn-warning">
+                                            <%= user.is_active ? 'Deactivate' : 'Activate' %>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary mt-3">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('settings-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const settings = {
+            hotel_name: document.getElementById('hotel-name').value,
+            hotel_phone: document.getElementById('hotel-phone').value,
+            hotel_email: document.getElementById('hotel-email').value,
+            hotel_address: document.getElementById('hotel-address').value,
+            tax_rate: parseFloat(document.getElementById('tax-rate').value)
+        };
+        
+        const response = await fetch('/api/admin/settings', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(settings)
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            alert('Settings saved successfully!');
+        } else {
+            alert(data.error || 'Failed to save settings');
+        }
+    });
+    
+    function toggleUserStatus(userId, isActive) {
+        if (confirm(`Are you sure you want to ${isActive ? 'deactivate' : 'activate'} this user?`)) {
+            fetch(`/api/admin/users/${userId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ active: !isActive })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to update user status');
+                }
+            });
+        }
+    }
+</script>

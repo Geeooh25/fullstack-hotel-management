@@ -1,0 +1,105 @@
+<%
+function getStatusClass(status) {
+    const classes = {
+        pending: 'warning',
+        confirmed: 'success',
+        checked_in: 'info',
+        checked_out: 'secondary',
+        cancelled: 'danger'
+    };
+    return classes[status] || 'secondary';
+}
+%>
+
+<div class="card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Booking Management</h5>
+        <a href="/admin/bookings/create" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> New Manual Booking
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="bookingsTable">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Guest</th>
+                        <th>Room</th>
+                        <th>Check-in</th>
+                        <th>Check-out</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% bookings.forEach(booking => { %>
+                    <tr>
+                        <td><strong><%= booking.booking_reference %></strong></td>
+                        <td><%= booking.Guest.first_name %> <%= booking.Guest.last_name %></td>
+                        <td><%= booking.Room.room_number %></td>
+                        <td><%= booking.check_in %></td>
+                        <td><%= booking.check_out %></td>
+                        <td>$<%= booking.total_amount %></td>
+                        <td>
+                            <span class="badge bg-<%= getStatusClass(booking.status) %>">
+                                <%= booking.status %>
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/admin/bookings/<%= booking.id %>" class="btn btn-sm btn-info">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <% if (booking.status === 'confirmed') { %>
+                                <a href="/admin/bookings/<%= booking.id %>/checkin" class="btn btn-sm btn-success">
+                                    <i class="fas fa-sign-in-alt"></i>
+                                </a>
+                            <% } %>
+                            <% if (booking.status === 'checked_in') { %>
+                                <a href="/admin/bookings/<%= booking.id %>/checkout" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                </a>
+                            <% } %>
+                            <button onclick="cancelBooking(<%= booking.id %>)" class="btn btn-sm btn-danger">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('#bookingsTable').DataTable({
+            pageLength: 25,
+            order: [[3, 'desc']],
+            language: {
+                search: "Search bookings:",
+                lengthMenu: "Show _MENU_ bookings"
+            }
+        });
+    });
+    
+    function cancelBooking(bookingId) {
+        if (confirm('Are you sure you want to cancel this booking?')) {
+            fetch(`/api/admin/bookings/${bookingId}/cancel`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Cancelled by admin' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to cancel booking');
+                }
+            });
+        }
+    }
+</script>

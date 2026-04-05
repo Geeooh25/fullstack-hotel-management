@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile - GEEOOH HOTEL</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 80px auto;
+        }
+        .profile-card {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+        .avatar-circle {
+            width: 100px;
+            height: 100px;
+            background: var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1rem;
+        }
+        .avatar-circle i {
+            font-size: 3rem;
+            color: white;
+        }
+        .nav-tabs {
+            border-bottom: 2px solid #eee;
+            margin-bottom: 2rem;
+        }
+        .nav-tabs .nav-link {
+            border: none;
+            color: var(--text-light);
+            font-weight: 500;
+            padding: 12px 24px;
+        }
+        .nav-tabs .nav-link.active {
+            color: var(--gold);
+            background: none;
+            border-bottom: 2px solid var(--gold);
+        }
+        .form-control:focus {
+            border-color: var(--gold);
+            box-shadow: none;
+        }
+        /* Floating cart icon */
+        .floating-cart {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: var(--gold);
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 1000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            transition: var(--transition);
+        }
+        .floating-cart:hover {
+            transform: scale(1.1);
+            background: var(--gold-dark);
+        }
+        .floating-cart i {
+            font-size: 1.5rem;
+            color: white;
+        }
+        .floating-cart .cart-count {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: #dc3545;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 50%;
+            font-weight: bold;
+        }
+        @media (max-width: 768px) {
+            .floating-cart {
+                bottom: 20px;
+                right: 20px;
+                width: 50px;
+                height: 50px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="/">GEEOOH HOTEL</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/rooms.html">Rooms</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/amenities.html">Amenities</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/booking-lookup.html">My Booking</a></li>
+                    <li class="nav-item" id="authNav">
+                        <a class="nav-link" href="/login.html">Login</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Floating Cart Icon -->
+    <div class="floating-cart" id="floatingCart">
+        <i class="fas fa-shopping-cart"></i>
+        <span class="cart-count" id="cartCount">0</span>
+    </div>
+
+    <div class="container profile-container">
+        <div class="profile-card">
+            <div class="avatar-circle">
+                <i class="fas fa-user"></i>
+            </div>
+            <h3 class="text-center" id="userName">Loading...</h3>
+            <p class="text-center text-muted" id="userEmail"></p>
+            
+            <ul class="nav nav-tabs" id="profileTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab">Profile Info</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="password-tab" data-bs-toggle="tab" data-bs-target="#password" type="button" role="tab">Change Password</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="bookings-tab" data-bs-toggle="tab" data-bs-target="#bookings" type="button" role="tab">My Bookings</button>
+                </li>
+            </ul>
+            
+            <div class="tab-content">
+                <!-- Profile Info Tab -->
+                <div class="tab-pane fade show active" id="info" role="tabpanel">
+                    <form id="profileForm">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">First Name</label>
+                                <input type="text" id="firstName" class="form-control" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Last Name</label>
+                                <input type="text" id="lastName" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="email" class="form-control" disabled>
+                            <small class="text-muted">Email cannot be changed</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone (Optional)</label>
+                            <input type="tel" id="phone" class="form-control" placeholder="Your phone number">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Address (Optional)</label>
+                            <textarea id="address" class="form-control" rows="2" placeholder="Your address"></textarea>
+                        </div>
+                        <button type="submit" class="btn-gold">Update Profile</button>
+                        <span id="profileMsg" class="ms-3"></span>
+                    </form>
+                </div>
+                
+                <!-- Change Password Tab -->
+                <div class="tab-pane fade" id="password" role="tabpanel">
+                    <form id="passwordForm">
+                        <div class="mb-3">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" id="currentPassword" class="form-control" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Password</label>
+                            <input type="password" id="newPassword" class="form-control" required>
+                            <small class="text-muted">Minimum 6 characters</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm New Password</label>
+                            <input type="password" id="confirmPassword" class="form-control" required>
+                        </div>
+                        <button type="submit" class="btn-gold">Change Password</button>
+                        <span id="passwordMsg" class="ms-3"></span>
+                    </form>
+                </div>
+                
+                <!-- My Bookings Tab -->
+                <div class="tab-pane fade" id="bookings" role="tabpanel">
+                    <div id="bookingsList">
+                        <div class="text-center py-4">
+                            <div class="loader"></div>
+                            <p class="mt-2">Loading your bookings...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-5">
+        <div class="container">
+            <div class="text-center">
+                <small>&copy; 2025 Geeooh Hotel. All rights reserved.</small>
+            </div>
+        </div>
+    </footer>
+
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/main.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/cart.js"></script>
+    
+    <script>
+        let currentUser = null;
+        
+        // Load user profile
+        async function loadProfile() {
+            const user = await Auth.getCurrentUser();
+            if (!user) {
+                window.location.href = '/login.html';
+                return;
+            }
+            
+            currentUser = user;
+            
+            document.getElementById('userName').innerText = `${user.first_name} ${user.last_name}`;
+            document.getElementById('userEmail').innerText = user.email;
+            document.getElementById('firstName').value = user.first_name;
+            document.getElementById('lastName').value = user.last_name;
+            document.getElementById('email').value = user.email;
+            document.getElementById('phone').value = user.phone || '';
+            document.getElementById('address').value = user.address || '';
+            
+            loadMyBookings(user.email);
+        }
+        
+        // Update profile
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const data = {
+                first_name: document.getElementById('firstName').value,
+                last_name: document.getElementById('lastName').value,
+                phone: document.getElementById('phone').value,
+                address: document.getElementById('address').value
+            };
+            
+            const msgSpan = document.getElementById('profileMsg');
+            msgSpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            
+            try {
+                const token = Auth.getToken();
+                const response = await fetch('/api/auth/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : {}
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    msgSpan.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Profile updated!';
+                    setTimeout(() => msgSpan.innerHTML = '', 3000);
+                    document.getElementById('userName').innerText = `${result.user.first_name} ${result.user.last_name}`;
+                } else {
+                    msgSpan.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #dc3545;"></i> ${result.error}`;
+                }
+            } catch (error) {
+                msgSpan.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #dc3545;"></i> Error updating profile';
+            }
+        });
+        
+        // Change password
+        document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const currentPassword = document.getElementById('currentPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            const msgSpan = document.getElementById('passwordMsg');
+            
+            if (newPassword !== confirmPassword) {
+                msgSpan.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #dc3545;"></i> Passwords do not match';
+                return;
+            }
+            
+            if (newPassword.length < 6) {
+                msgSpan.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #dc3545;"></i> Password must be at least 6 characters';
+                return;
+            }
+            
+            msgSpan.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Changing password...';
+            
+            try {
+                const token = Auth.getToken();
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : {}
+                    },
+                    body: JSON.stringify({
+                        current_password: currentPassword,
+                        new_password: newPassword
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    msgSpan.innerHTML = '<i class="fas fa-check-circle" style="color: #28a745;"></i> Password changed!';
+                    document.getElementById('passwordForm').reset();
+                    setTimeout(() => msgSpan.innerHTML = '', 3000);
+                } else {
+                    msgSpan.innerHTML = `<i class="fas fa-exclamation-circle" style="color: #dc3545;"></i> ${result.error}`;
+                }
+            } catch (error) {
+                msgSpan.innerHTML = '<i class="fas fa-exclamation-circle" style="color: #dc3545;"></i> Error changing password';
+            }
+        });
+        
+        // Load my bookings
+        async function loadMyBookings(email) {
+            const container = document.getElementById('bookingsList');
+            
+            try {
+                const response = await fetch(`/api/bookings/lookup?email=${email}`);
+                const data = await response.json();
+                
+                if (data.success && data.bookings && data.bookings.length > 0) {
+                    container.innerHTML = data.bookings.map(booking => `
+                        <div class="booking-list-item" style="border: 1px solid #eee; border-radius: 8px; padding: 1rem; margin-bottom: 1rem;">
+                            <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                <div>
+                                    <strong class="booking-reference" style="color: var(--gold);">${booking.booking_reference}</strong>
+                                    <br>
+                                    <small><i class="fas fa-calendar-alt"></i> ${new Date(booking.check_in).toLocaleDateString()} - ${new Date(booking.check_out).toLocaleDateString()}</small>
+                                </div>
+                                <div class="mt-2 mt-sm-0">
+                                    <span class="badge bg-${booking.status === 'confirmed' ? 'success' : booking.status === 'pending' ? 'warning' : 'secondary'} me-2">${booking.status}</span>
+                                    <span class="badge bg-info">$${parseFloat(booking.total_amount || 0).toFixed(2)}</span>
+                                    <a href="/booking-lookup.html?ref=${booking.booking_reference}" class="btn-outline-gold ms-2" style="padding: 5px 15px; font-size: 0.8rem;">View</a>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-center text-muted">No bookings found.</p>';
+                }
+            } catch (error) {
+                console.error('Error loading bookings:', error);
+                container.innerHTML = '<p class="text-center text-danger">Error loading your bookings.</p>';
+            }
+        }
+        
+        // Update cart count
+        function updateCartCount() {
+            const cartCount = document.getElementById('cartCount');
+            if (cartCount && typeof hotelCart !== 'undefined') {
+                cartCount.innerText = hotelCart.getItemCount();
+            }
+        }
+        
+        // Floating cart click
+        document.getElementById('floatingCart').addEventListener('click', () => {
+            window.location.href = '/cart.html';
+        });
+        
+        function showToast(message, type) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<div class="d-flex justify-content-between align-items-center"><span>${message}</span><button class="btn btn-sm btn-link" onclick="this.parentElement.parentElement.remove()">&times;</button></div>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Initialize
+        loadProfile();
+        updateCartCount();
+        
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'hotelCart') updateCartCount();
+        });
+    </script>
+</body>
+</html>

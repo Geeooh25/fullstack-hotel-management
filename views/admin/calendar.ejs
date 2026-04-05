@@ -1,0 +1,40 @@
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Booking Calendar</h5>
+    </div>
+    <div class="card-body">
+        <div id="calendar"></div>
+    </div>
+</div>
+
+<!-- FullCalendar CSS and JS -->
+<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const calendarEl = document.getElementById('calendar');
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left: 'prev,next today',
+                center: 'title',
+                right: 'dayGridMonth,timeGridWeek,timeGridDay'
+            },
+            events: '/api/admin/calendar/events',
+            eventClick: function(info) {
+                window.location.href = `/admin/bookings/${info.event.id}`;
+            },
+            eventDidMount: function(info) {
+                // Add tooltip
+                info.el.setAttribute('title', info.event.title);
+            },
+            height: 'auto',
+            slotMinTime: '08:00:00',
+            slotMaxTime: '22:00:00',
+            allDaySlot: true,
+            nowIndicator: true
+        });
+        calendar.render();
+    });
+</script>

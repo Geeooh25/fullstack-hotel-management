@@ -1,0 +1,125 @@
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Check-out Guest</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Booking Reference:</strong> <%= booking.booking_reference %><br>
+                    <strong>Guest:</strong> <%= booking.Guest.first_name %> <%= booking.Guest.last_name %><br>
+                    <strong>Room:</strong> <%= booking.Room.room_number %> - <%= booking.Room.RoomType.name %><br>
+                    <strong>Dates:</strong> <%= booking.check_in %> to <%= booking.check_out %>
+                </div>
+                
+                <form action="/admin/bookings/<%= booking.id %>/checkout" method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Extra Charges</label>
+                            <input type="number" name="extra_charges" id="extra_charges" class="form-control" step="0.01" value="0">
+                            <small class="text-muted">Mini bar, room service, damages, etc.</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Discount</label>
+                            <input type="number" name="discount" id="discount" class="form-control" step="0.01" value="0">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Charge Description</label>
+                        <input type="text" name="charge_description" class="form-control" placeholder="e.g., Mini bar - $25, Room service - $45">
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Original Total:</strong> $<span id="original_total"><%= booking.total_amount %></span></p>
+                            <p><strong>Extra Charges:</strong> $<span id="extra_display">0</span></p>
+                            <p><strong>Discount:</strong> $<span id="discount_display">0</span></p>
+                            <hr>
+                            <h5>Final Total: $<span id="final_total"><%= booking.total_amount %></span></h5>
+                            <p><strong>Already Paid:</strong> $<%= booking.deposit_paid %></p>
+                            <h4>Due Now: $<span id="due_now"><%= booking.remaining_balance %></span></h4>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">Payment Method</label>
+                                <select name="payment_method" class="form-select" required>
+                                    <option value="cash">Cash</option>
+                                    <option value="card">Credit Card</option>
+                                    <option value="bank_transfer">Bank Transfer</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Payment Amount</label>
+                                <input type="number" name="payment_amount" id="payment_amount" class="form-control" step="0.01" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Check-out Notes</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Any notes about the check-out process..."></textarea>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="send_receipt" class="form-check-input" checked>
+                        <label class="form-check-label">Send receipt via email</label>
+                    </div>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="request_review" class="form-check-input">
+                        <label class="form-check-label">Request guest review</label>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/bookings/<%= booking.id %>" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-warning">Complete Check-out</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const originalTotal = <%= booking.total_amount %>;
+    const depositPaid = <%= booking.deposit_paid %>;
+    const remainingBalance = <%= booking.remaining_balance %>;
+    
+    const extraChargesInput = document.getElementById('extra_charges');
+    const discountInput = document.getElementById('discount');
+    const paymentAmountInput = document.getElementById('payment_amount');
+    
+    const extraDisplay = document.getElementById('extra_display');
+    const discountDisplay = document.getElementById('discount_display');
+    const finalTotalSpan = document.getElementById('final_total');
+    const dueNowSpan = document.getElementById('due_now');
+    
+    function updateTotals() {
+        let extra = parseFloat(extraChargesInput.value) || 0;
+        let discount = parseFloat(discountInput.value) || 0;
+        
+        extraDisplay.textContent = extra.toFixed(2);
+        discountDisplay.textContent = discount.toFixed(2);
+        
+        let finalTotal = originalTotal + extra - discount;
+        finalTotalSpan.textContent = finalTotal.toFixed(2);
+        
+        let dueNow = finalTotal - depositPaid;
+        dueNowSpan.textContent = dueNow.toFixed(2);
+        
+        // Set default payment amount
+        if (dueNow > 0) {
+            paymentAmountInput.value = dueNow.toFixed(2);
+        }
+    }
+    
+    extraChargesInput.addEventListener('input', updateTotals);
+    discountInput.addEventListener('input', updateTotals);
+    
+    updateTotals();
+</script>

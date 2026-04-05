@@ -1,0 +1,96 @@
+<%
+// Get status badge class helper
+function getRoomStatusClass(status) {
+    const classes = {
+        available: 'success',
+        occupied: 'warning',
+        maintenance: 'danger',
+        cleaning: 'info'
+    };
+    return classes[status] || 'secondary';
+}
+%>
+
+<div class="card">
+    <div class="card-header bg-white d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Room Management</h5>
+        <a href="/admin/rooms/create" class="btn btn-primary btn-sm">
+            <i class="fas fa-plus"></i> Add New Room
+        </a>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover" id="roomsTable">
+                <thead>
+                    <tr>
+                        <th>Room #</th>
+                        <th>Type</th>
+                        <th>Floor</th>
+                        <th>Capacity</th>
+                        <th>Base Price</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% rooms.forEach(room => { %>
+                    <tr>
+                        <td><strong><%= room.room_number %></strong></td>
+                        <td><%= room.RoomType ? room.RoomType.name : 'N/A' %></td>
+                        <td><%= room.floor || 'Ground' %></td>
+                        <td><%= room.RoomType ? room.RoomType.capacity : 2 %></td>
+                        <td>$<%= room.RoomType ? room.RoomType.base_price : 0 %></td>
+                        <td>
+                            <span class="badge bg-<%= getRoomStatusClass(room.status) %>">
+                                <%= room.status %>
+                            </span>
+                        </td>
+                        <td>
+                            <a href="/admin/rooms/<%= room.id %>/edit" class="btn btn-sm btn-warning">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <button onclick="deleteRoom(<%= room.id %>)" class="btn btn-sm btn-danger">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function() {
+        $('#roomsTable').DataTable({
+            pageLength: 25,
+            order: [[0, 'asc']],
+            language: {
+                search: "Search rooms:",
+                lengthMenu: "Show _MENU_ rooms",
+                info: "Showing _START_ to _END_ of _TOTAL_ rooms"
+            }
+        });
+    });
+    
+    function deleteRoom(roomId) {
+        if (confirm('Are you sure you want to delete this room? This action cannot be undone.')) {
+            fetch(`/api/admin/rooms/${roomId}`, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to delete room');
+                }
+            })
+            .catch(error => {
+                alert('Error deleting room');
+            });
+        }
+    }
+</script>

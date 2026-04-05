@@ -1,0 +1,56 @@
+<div class="card">
+    <div class="card-header bg-white">
+        <h5 class="mb-0">Edit Room <%= room.room_number %></h5>
+    </div>
+    <div class="card-body">
+        <form action="/admin/rooms/<%= room.id %>?_method=PUT" method="POST">
+            <input type="hidden" name="_method" value="PUT">
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Room Number *</label>
+                    <input type="text" name="room_number" class="form-control" value="<%= room.room_number %>" required>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Room Type *</label>
+                    <select name="room_type_id" class="form-select" required>
+                        <option value="">Select Room Type</option>
+                        <% roomTypes.forEach(type => { %>
+                            <option value="<%= type.id %>" <%= room.room_type_id == type.id ? 'selected' : '' %>>
+                                <%= type.name %> - $<%= type.base_price %>/night
+                            </option>
+                        <% }) %>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Floor</label>
+                    <input type="number" name="floor" class="form-control" value="<%= room.floor || '' %>">
+                </div>
+                <div class="col-md-6 mb-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="available" <%= room.status === 'available' ? 'selected' : '' %>>Available</option>
+                        <option value="occupied" <%= room.status === 'occupied' ? 'selected' : '' %>>Occupied</option>
+                        <option value="maintenance" <%= room.status === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
+                        <option value="cleaning" <%= room.status === 'cleaning' ? 'selected' : '' %>>Cleaning</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Notes</label>
+                <textarea name="notes" class="form-control" rows="3"><%= room.notes || '' %></textarea>
+            </div>
+            
+            <hr>
+            
+            <div class="d-flex justify-content-between">
+                <a href="/admin/rooms" class="btn btn-secondary">Cancel</a>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -1,0 +1,152 @@
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Booking Details</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Booking Reference:</strong> <%= booking.booking_reference %></p>
+                        <p><strong>Status:</strong> 
+                            <span class="badge bg-<%= getStatusClass(booking.status) %>"><%= booking.status.toUpperCase() %></span>
+                        </p>
+                        <p><strong>Source:</strong> <%= booking.source %></p>
+                        <p><strong>Created:</strong> <%= new Date(booking.created_at).toLocaleString() %></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Check-in:</strong> <%= booking.check_in %></p>
+                        <p><strong>Check-out:</strong> <%= booking.check_out %></p>
+                        <p><strong>Nights:</strong> <%= booking.total_nights %></p>
+                        <p><strong>Guests:</strong> <%= booking.adults %> adults, <%= booking.children %> children</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>Room Information</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Room Number:</strong> <%= booking.Room.room_number %></p>
+                        <p><strong>Room Type:</strong> <%= booking.Room.RoomType.name %></p>
+                        <p><strong>Floor:</strong> <%= booking.Room.floor || 'Ground' %></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Capacity:</strong> <%= booking.Room.RoomType.capacity %> guests</p>
+                        <p><strong>Base Price:</strong> $<%= booking.Room.RoomType.base_price %>/night</p>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <h6>Guest Information</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>Name:</strong> <%= booking.Guest.first_name %> <%= booking.Guest.last_name %></p>
+                        <p><strong>Email:</strong> <%= booking.Guest.email %></p>
+                        <p><strong>Phone:</strong> <%= booking.Guest.phone || 'N/A' %></p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Address:</strong> <%= booking.Guest.address || 'N/A' %></p>
+                        <p><strong>City:</strong> <%= booking.Guest.city || 'N/A' %></p>
+                        <p><strong>Country:</strong> <%= booking.Guest.country || 'N/A' %></p>
+                    </div>
+                </div>
+                
+                <% if (booking.special_requests) { %>
+                    <hr>
+                    <h6>Special Requests</h6>
+                    <p class="text-muted"><%= booking.special_requests %></p>
+                <% } %>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Payment Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <span>Subtotal:</span>
+                    <span>$<%= booking.subtotal %></span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Tax:</span>
+                    <span>$<%= booking.tax %></span>
+                </div>
+                <hr>
+                <div class="d-flex justify-content-between">
+                    <strong>Total:</strong>
+                    <strong>$<%= booking.total_amount %></strong>
+                </div>
+                <div class="d-flex justify-content-between mt-2">
+                    <span>Paid:</span>
+                    <span>$<%= booking.deposit_paid %></span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Remaining:</span>
+                    <span>$<%= booking.remaining_balance %></span>
+                </div>
+                <div class="mt-2">
+                    <span class="badge bg-info">Payment Status: <%= booking.payment_status %></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <% if (booking.status === 'confirmed') { %>
+                        <a href="/admin/bookings/<%= booking.id %>/checkin" class="btn btn-success">
+                            <i class="fas fa-sign-in-alt"></i> Check In
+                        </a>
+                    <% } %>
+                    <% if (booking.status === 'checked_in') { %>
+                        <a href="/admin/bookings/<%= booking.id %>/checkout" class="btn btn-warning">
+                            <i class="fas fa-sign-out-alt"></i> Check Out
+                        </a>
+                    <% } %>
+                    <% if (booking.status !== 'cancelled' && booking.status !== 'checked_out') { %>
+                        <button onclick="cancelBooking()" class="btn btn-danger">
+                            <i class="fas fa-times"></i> Cancel Booking
+                        </button>
+                    <% } %>
+                    <button onclick="window.print()" class="btn btn-secondary">
+                        <i class="fas fa-print"></i> Print Details
+                    </button>
+                    <a href="/admin/bookings" class="btn btn-outline-primary">
+                        <i class="fas fa-arrow-left"></i> Back to Bookings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function cancelBooking() {
+        if (confirm('Are you sure you want to cancel this booking? This action cannot be undone.')) {
+            fetch('/api/admin/bookings/<%= booking.id %>/cancel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Cancelled by admin' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to cancel booking');
+                }
+            })
+            .catch(error => {
+                alert('Error cancelling booking');
+            });
+        }
+    }
+</script>

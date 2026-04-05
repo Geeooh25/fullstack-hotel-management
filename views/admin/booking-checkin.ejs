@@ -1,0 +1,58 @@
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Check-in Guest</h5>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <strong>Booking Reference:</strong> <%= booking.booking_reference %><br>
+                    <strong>Guest:</strong> <%= booking.Guest.first_name %> <%= booking.Guest.last_name %><br>
+                    <strong>Room:</strong> <%= booking.Room.room_number %> - <%= booking.Room.RoomType.name %><br>
+                    <strong>Dates:</strong> <%= booking.check_in %> to <%= booking.check_out %>
+                </div>
+                
+                <form action="/admin/bookings/<%= booking.id %>/checkin" method="POST">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">ID Type *</label>
+                            <select name="id_type" class="form-select" required>
+                                <option value="">Select ID Type</option>
+                                <option value="passport">Passport</option>
+                                <option value="driver_license">Driver's License</option>
+                                <option value="national_id">National ID</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">ID Number *</label>
+                            <input type="text" name="id_number" class="form-control" required>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">ID Document (Optional)</label>
+                        <input type="file" name="id_document" class="form-control" accept="image/*,.pdf">
+                        <small class="text-muted">Upload scanned copy of ID for records</small>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Check-in Notes</label>
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Any notes about the check-in process..."></textarea>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="form-check mb-3">
+                        <input type="checkbox" name="send_welcome_email" class="form-check-input" checked>
+                        <label class="form-check-label">Send welcome email with room information</label>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <a href="/admin/bookings/<%= booking.id %>" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-success">Complete Check-in</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

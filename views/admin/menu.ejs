@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Menu - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 250px; background: #1a2a3a; color: white; padding: 1rem; }
+        .sidebar a { color: white; text-decoration: none; display: block; padding: 0.75rem; margin: 0.25rem 0; border-radius: 8px; }
+        .sidebar a:hover, .sidebar a.active { background: var(--gold, #B8860B); }
+        .main-content { margin-left: 250px; padding: 2rem; }
+        .btn-gold { background: var(--gold, #B8860B); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; }
+        .menu-card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h4 class="mb-4">GEEOOH Admin</h4>
+        <a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+        <a href="/admin/bookings"><i class="fas fa-calendar-check"></i> Bookings</a>
+        <a href="/admin/rooms"><i class="fas fa-bed"></i> Rooms</a>
+        <a href="/admin/amenities"><i class="fas fa-concierge-bell"></i> Amenities</a>
+        <a href="/admin/menu" class="active"><i class="fas fa-utensils"></i> Menu</a>
+        <a href="/admin/requests"><i class="fas fa-envelope"></i> Requests</a>
+        <a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    </div>
+    
+    <div class="main-content">
+        <h1 class="mb-4">Menu Management</h1>
+        
+        <div class="row">
+            <div class="col-md-4">
+                <div class="menu-card">
+                    <h4>Add Category</h4>
+                    <form id="categoryForm">
+                        <select id="categoryAmenityId" class="form-control mb-2" required>
+                            <option value="">Select Amenity</option>
+                            <% amenities.forEach(a => { %>
+                                <option value="<%= a.id %>"><%= a.name %></option>
+                            <% }); %>
+                        </select>
+                        <input type="text" id="categoryName" class="form-control mb-2" placeholder="Category Name" required>
+                        <input type="number" id="categoryOrder" class="form-control mb-2" placeholder="Display Order" value="0">
+                        <button type="submit" class="btn-gold w-100">Add Category</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="menu-card">
+                    <h4>Add Menu Item</h4>
+                    <form id="itemForm">
+                        <select id="itemCategoryId" class="form-control mb-2" required>
+                            <option value="">Select Category</option>
+                            <% categories.forEach(c => { %>
+                                <option value="<%= c.id %>"><%= c.name %> (<%= c.amenity.name %>)</option>
+                            <% }); %>
+                        </select>
+                        <input type="text" id="itemName" class="form-control mb-2" placeholder="Item Name" required>
+                        <textarea id="itemDescription" class="form-control mb-2" placeholder="Description"></textarea>
+                        <input type="number" id="itemPrice" class="form-control mb-2" placeholder="Price" step="0.01" required>
+                        <input type="number" id="itemDuration" class="form-control mb-2" placeholder="Duration (minutes) - for spa">
+                        <input type="number" id="itemOrder" class="form-control mb-2" placeholder="Display Order" value="0">
+                        <label class="checkbox-inline mb-2">
+                            <input type="checkbox" id="itemRequiresAppointment"> Requires Appointment
+                        </label>
+                        <button type="submit" class="btn-gold w-100">Add Item</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="menu-card">
+                    <h4>Categories & Items</h4>
+                    <% categories.forEach(category => { %>
+                        <div class="mb-3">
+                            <strong><%= category.name %></strong>
+                            <button class="btn btn-sm btn-danger float-end" onclick="deleteCategory(<%= category.id %>)"><i class="fas fa-trash"></i></button>
+                            <ul>
+                                <% category.items.forEach(item => { %>
+                                    <li>
+                                        <%= item.name %> - $<%= item.price %>
+                                        <button class="btn btn-sm btn-danger" onclick="deleteItem(<%= item.id %>)"><i class="fas fa-trash"></i></button>
+                                    </li>
+                                <% }); %>
+                            </ul>
+                        </div>
+                    <% }); %>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                amenity_id: parseInt(document.getElementById('categoryAmenityId').value),
+                name: document.getElementById('categoryName').value,
+                display_order: parseInt(document.getElementById('categoryOrder').value)
+            };
+            await fetch('/admin/menu/categories', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            location.reload();
+        });
+        
+        document.getElementById('itemForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const data = {
+                category_id: parseInt(document.getElementById('itemCategoryId').value),
+                name: document.getElementById('itemName').value,
+                description: document.getElementById('itemDescription').value,
+                price: parseFloat(document.getElementById('itemPrice').value),
+                duration_minutes: parseInt(document.getElementById('itemDuration').value) || null,
+                requires_appointment: document.getElementById('itemRequiresAppointment').checked,
+                display_order: parseInt(document.getElementById('itemOrder').value)
+            };
+            await fetch('/admin/menu/items', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            location.reload();
+        });
+        
+        async function deleteCategory(id) {
+            if (confirm('Are you sure?')) {
+                await fetch(`/admin/menu/categories/${id}`, { method: 'DELETE' });
+                location.reload();
+            }
+        }
+        
+        async function deleteItem(id) {
+            if (confirm('Are you sure?')) {
+                await fetch(`/admin/menu/items/${id}`, { method: 'DELETE' });
+                location.reload();
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Guest Information</h5>
+            </div>
+            <div class="card-body">
+                <h3><%= guest.first_name %> <%= guest.last_name %></h3>
+                <p class="text-muted">Joined: <%= new Date(guest.created_at).toLocaleDateString() %></p>
+                
+                <hr>
+                
+                <p><i class="fas fa-envelope"></i> <%= guest.email %></p>
+                <p><i class="fas fa-phone"></i> <%= guest.phone || 'N/A' %></p>
+                <p><i class="fas fa-map-marker-alt"></i> <%= guest.address || 'N/A' %></p>
+                <p><i class="fas fa-city"></i> <%= guest.city || 'N/A' %>, <%= guest.country || 'N/A' %></p>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <strong>Total Stays</strong><br>
+                        <span class="h4"><%= guest.total_stays %></span>
+                    </div>
+                    <div>
+                        <strong>Total Spent</strong><br>
+                        <span class="h4">$<%= guest.total_spent %></span>
+                    </div>
+                    <div>
+                        <strong>Status</strong><br>
+                        <span class="badge bg-<%= guest.is_blacklisted ? 'danger' : 'success' %>">
+                            <%= guest.is_blacklisted ? 'Blacklisted' : 'Active' %>
+                        </span>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-grid gap-2">
+                    <button onclick="toggleBlacklist()" class="btn btn-<%= guest.is_blacklisted ? 'success' : 'warning' %>">
+                        <i class="fas <%= guest.is_blacklisted ? 'fa-check' : 'fa-ban' %>"></i>
+                        <%= guest.is_blacklisted ? 'Remove from Blacklist' : 'Add to Blacklist' %>
+                    </button>
+                    <button onclick="showAddNoteModal()" class="btn btn-info">
+                        <i class="fas fa-plus"></i> Add Note
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Booking History</h5>
+            </div>
+            <div class="card-body">
+                <% if (bookings.length === 0) { %>
+                    <p class="text-muted text-center">No bookings yet</p>
+                <% } else { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Room</th>
+                                    <th>Check-in</th>
+                                    <th>Check-out</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% bookings.forEach(booking => { %>
+                                <tr>
+                                    <td><%= booking.booking_reference %></td>
+                                    <td><%= booking.Room.room_number %></td>
+                                    <td><%= booking.check_in %></td>
+                                    <td><%= booking.check_out %></td>
+                                    <td>$<%= booking.total_amount %></td>
+                                    <td>
+                                        <span class="badge bg-<%= 
+                                            booking.status === 'confirmed' ? 'success' : 
+                                            booking.status === 'checked_in' ? 'info' : 
+                                            booking.status === 'checked_out' ? 'secondary' : 
+                                            booking.status === 'cancelled' ? 'danger' : 'warning' 
+                                        %>">
+                                            <%= booking.status %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="/admin/bookings/<%= booking.id %>" class="btn btn-sm btn-info">View</a>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+        
+        <% if (guest.notes) { %>
+            <div class="card mt-3">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Notes</h5>
+                </div>
+                <div class="card-body">
+                    <pre class="text-muted" style="white-space: pre-wrap;"><%= guest.notes %></pre>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<!-- Add Note Modal -->
+<div class="modal fade" id="addNoteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Note</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <textarea id="noteText" class="form-control" rows="4" placeholder="Enter note about this guest..."></textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveNote()">Save Note</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleBlacklist() {
+        const isBlacklisted = <%= guest.is_blacklisted %>;
+        const action = isBlacklisted ? 'remove from' : 'add to';
+        
+        if (confirm(`Are you sure you want to ${action} blacklist?`)) {
+            fetch('/api/admin/guests/<%= guest.id %>/blacklist', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ blacklisted: !isBlacklisted })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.error || 'Failed to update status');
+                }
+            });
+        }
+    }
+    
+    function showAddNoteModal() {
+        const modal = new bootstrap.Modal(document.getElementById('addNoteModal'));
+        modal.show();
+    }
+    
+    function saveNote() {
+        const note = document.getElementById('noteText').value;
+        
+        if (!note.trim()) {
+            alert('Please enter a note');
+            return;
+        }
+        
+        fetch('/api/admin/guests/<%= guest.id %>/note', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ note: note })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Failed to add note');
+            }
+        });
+    }
+</script>
