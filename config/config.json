@@ -1,0 +1,16 @@
+{ 
+  "development": { 
+    "username": "postgres", 
+    "password": "Geeooh25", 
+    "database": "geeooh_hotel", 
+    "host": "127.0.0.1", 
+    "dialect": "postgres" 
+  }, 
+  "production": { 
+    "username": "postgres", 
+    "password": "postgres", 
+    "database": "geeooh_hotel", 
+    "host": "127.0.0.1", 
+    "dialect": "postgres" 
+  } 
+} 
