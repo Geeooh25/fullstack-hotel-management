@@ -1,6 +1,6 @@
 const { DataTypes } = require('sequelize');
 const { sequelize } = require('../config/database');
-const { v4: uuidv4 } = require('uuid');
+const crypto = require('crypto');
 
 const Booking = sequelize.define('Booking', {
     id: {
@@ -12,13 +12,13 @@ const Booking = sequelize.define('Booking', {
         type: DataTypes.STRING(20),
         allowNull: false,
         unique: true,
-        defaultValue: () => {
-            const date = new Date();
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const random = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
-            return `BKG-${year}${month}-${random}`;
-        }
+       defaultValue: () => {
+    const date = new Date();
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const random = crypto.randomUUID().slice(0, 4);
+    return `BKG-${year}${month}-${random}`;
+}
     },
     check_in: {
         type: DataTypes.DATEONLY,
