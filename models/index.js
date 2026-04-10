@@ -46,7 +46,7 @@ models.Room.hasMany(models.Booking, { foreignKey: 'room_id' });
 models.Booking.belongsTo(models.Room, { foreignKey: 'room_id' });
 
 // Guest to Booking
-models.Guest.hasMany(models.Booking, { foreignKey: 'guest_id' });
+models.Guest.hasMany(models.Booking, { foreignKey: 'guest_id', as: 'bookings' });
 models.Booking.belongsTo(models.Guest, { foreignKey: 'guest_id' });
 
 // Booking to Payment
