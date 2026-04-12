@@ -90,13 +90,20 @@ router.post('/', bookingLimiter, validateBooking, async (req, res, next) => {
         next(error);
     }
 });
-
 // POST /api/bookings/add-services-pending - RESTRICTED to confirmed/future bookings only
 router.post('/add-services-pending', async (req, res) => {
     try {
         const { booking_reference, guest_email, services } = req.body;
         
         console.log('📝 Saving pending services:', { booking_reference, guest_email, services });
+        
+        // Validate required fields
+        if (!booking_reference || !guest_email || !services || !services.length) {
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Missing required fields: booking_reference, guest_email, or services' 
+            });
+        }
         
         const booking = await Booking.findOne({
             where: { booking_reference },
@@ -115,14 +122,23 @@ router.post('/add-services-pending', async (req, res) => {
         today.setHours(0, 0, 0, 0);
         const checkInDate = new Date(booking.check_in);
         
+        // Check if booking is confirmed
         if (booking.status !== 'confirmed') {
-            return res.status(400).json({ success: false, error: 'Services can only be added to confirmed bookings' });
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Services can only be added to confirmed bookings. Please complete payment first.' 
+            });
         }
         
+        // Check if booking is not in the past
         if (checkInDate < today) {
-            return res.status(400).json({ success: false, error: 'Cannot add services to past or checked-out bookings' });
+            return res.status(400).json({ 
+                success: false, 
+                error: 'Cannot add services to past or checked-out bookings' 
+            });
         }
         
+        // Remove any existing pending services for this booking
         await BookingServiceModel.destroy({
             where: { booking_id: booking.id, status: 'pending' }
         });
@@ -130,6 +146,12 @@ router.post('/add-services-pending', async (req, res) => {
         let servicesTotal = 0;
         
         for (const service of services) {
+            // Validate each service
+            if (!service.menu_item_id || !service.quantity || !service.price) {
+                console.log('⚠️ Invalid service data:', service);
+                continue;
+            }
+            
             await BookingServiceModel.create({
                 booking_id: booking.id,
                 menu_item_id: service.menu_item_id,
@@ -153,7 +175,12 @@ router.post('/add-services-pending', async (req, res) => {
         console.log('✅ Pending services saved for booking:', booking.booking_reference);
         console.log('New booking total:', newTotal);
         
-        res.json({ success: true, message: 'Services saved, ready for payment', total: newTotal });
+        res.json({ 
+            success: true, 
+            message: 'Services saved, ready for payment', 
+            total: newTotal,
+            servicesTotal: servicesTotal
+        });
         
     } catch (error) {
         console.error('❌ Error saving pending services:', error);

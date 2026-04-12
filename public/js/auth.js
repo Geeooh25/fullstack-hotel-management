@@ -113,3 +113,4 @@ document.addEventListener('DOMContentLoaded', () => {
         Auth.updateNav();
     }
 });
+window.Auth = Auth;

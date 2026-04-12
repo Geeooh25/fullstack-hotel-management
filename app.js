@@ -7,7 +7,7 @@ const methodOverride = require('method-override');
 const cookieParser = require('cookie-parser');
 const flash = require('connect-flash');
 const expressLayouts = require('express-ejs-layouts');
-const passport = require('passport'); // ADD THIS
+const passport = require('passport'); 
 
 require('dotenv').config();
 
@@ -21,7 +21,7 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const { optionalAuthForGuests } = require('./middleware/auth'); // ADD THIS
 
 const app = express();
-
+app.set('trust proxy', 1);
 // ==================== MIDDLEWARE ====================
 
 // Security headers

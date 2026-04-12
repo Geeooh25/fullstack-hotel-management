@@ -40,7 +40,7 @@ const loginLimiter = rateLimit({
 // Contact form limiter
 const contactLimiter = rateLimit({
     windowMs: 60 * 60 * 1000, // 1 hour
-    max: 3, // Limit each IP to 3 contact form submissions per hour
+    max: 5, // Limit each IP to 5 contact form submissions per hour
     message: {
         success: false,
         error: 'Too many messages sent. Please try again later.'

@@ -51,12 +51,67 @@
             border-radius: 50%;
             font-weight: bold;
         }
+        
+        /* Video Section Styles */
+        .video-section {
+            background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            text-align: center;
+            padding: 100px 0;
+            color: white;
+        }
+        .video-section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-family: 'Playfair Display', serif;
+        }
+        .play-btn {
+            width: 80px;
+            height: 80px;
+            background: rgba(255,255,255,0.2);
+            border: 2px solid white;
+            border-radius: 50%;
+            color: white;
+            font-size: 2rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        .play-btn:hover {
+            background: var(--gold);
+            border-color: var(--gold);
+            transform: scale(1.1);
+        }
+        
+        /* Modal Styles */
+        .modal-content {
+            background: transparent;
+            border: none;
+        }
+        .modal-header {
+            border-bottom: none;
+            padding: 10px;
+        }
+        .btn-close-white {
+            filter: brightness(0) invert(1);
+        }
+        
         @media (max-width: 768px) {
             .floating-cart {
                 bottom: 20px;
                 right: 20px;
                 width: 50px;
                 height: 50px;
+            }
+            .video-section {
+                padding: 60px 0;
+            }
+            .play-btn {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
             }
         }
     </style>
@@ -208,23 +263,27 @@
             </button>
         </div>
     </div>
-
-    <!-- Video Modal -->
-    <div class="modal fade" id="videoModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Geeooh Luxury Hotel Tour</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="ratio ratio-16x9">
-                        <iframe id="youtubeVideo" src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0" title="Hotel Video" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                    </div>
+<!-- Video Modal -->
+<div class="modal fade" id="videoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content bg-dark">
+            <div class="modal-header border-0">
+                <h5 class="modal-title text-white">Geeooh Luxury Hotel Tour</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0">
+                <div class="ratio ratio-16x9">
+                   <video id="hotelVideo" controls style="width:100%; height:100%;">
+    <source src="https://pixabay.com/videos/download/video-135144_medium.mp4" type="video/mp4">
+    <source src="https://pixabay.com/videos/download/video-135167_medium.mp4" type="video/mp4">
+    
+    Your browser does not support the video tag.
+</video>
                 </div>
             </div>
         </div>
     </div>
+</div>
 
     <!-- Footer -->
     <footer class="footer">
@@ -255,7 +314,7 @@
                     <h5 class="mt-4">Newsletter</h5>
                     <div class="input-group">
                         <input type="email" id="newsletter-email" class="form-control" placeholder="Your email">
-                        <button class="btn-gold" onclick="subscribeNewsletter()">Subscribe</button>
+                        <button class="btn-gold" id="subscribeBtn">Subscribe</button>
                     </div>
                 </div>
             </div>
@@ -273,28 +332,23 @@
     <script src="/js/auth.js"></script>
     <script src="/js/cart.js"></script>
     <script src="/js/index.js"></script>
+    <script src="/js/newsletter.js"></script>
     
     <script>
-        function openVideoModal() {
-            const modal = new bootstrap.Modal(document.getElementById('videoModal'));
-            modal.show();
-            document.getElementById('youtubeVideo').src = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1";
-        }
+     function openVideoModal() {
+    const video = document.getElementById('hotelVideo');
+    video.play();
+    const modal = new bootstrap.Modal(document.getElementById('videoModal'));
+    modal.show();
+}
+
+document.getElementById('videoModal').addEventListener('hidden.bs.modal', function () {
+    const video = document.getElementById('hotelVideo');
+    video.pause();
+    video.currentTime = 0;
+});
         
-        document.getElementById('videoModal').addEventListener('hidden.bs.modal', function () {
-            document.getElementById('youtubeVideo').src = "https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=0";
-        });
-        
-        function subscribeNewsletter() {
-            const email = document.getElementById('newsletter-email').value;
-            if (!email) {
-                showToast('Please enter your email address', 'warning');
-                return;
-            }
-            showToast('Thank you for subscribing!', 'success');
-            document.getElementById('newsletter-email').value = '';
-        }
-        
+        // Scroll effect for navbar
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar');
             if (window.scrollY > 50) {
@@ -304,6 +358,7 @@
             }
         });
         
+        // Toast function
         function showToast(message, type) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
