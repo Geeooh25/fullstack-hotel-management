@@ -296,7 +296,7 @@ router.post('/forgot-password', async (req, res) => {
         
         // Generate reset token
         const resetToken = crypto.randomBytes(32).toString('hex');
-        const resetTokenExpires = new Date(Date.now() + 3600000); // 1 hour
+        const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000);// 1 hour
         
         user.reset_token = resetToken;
         user.reset_token_expires = resetTokenExpires;
@@ -323,36 +323,52 @@ router.post('/forgot-password', async (req, res) => {
 // POST /api/auth/reset-password - Reset password with token
 router.post('/reset-password', async (req, res) => {
     try {
-        const { token, new_password } = req.body;
+        const { token, password } = req.body;
+        console.log('Looking for user with token:', token);
+console.log('Current time:', new Date());
+        console.log('Received token:', token);
+        console.log('Received password length:', password ? password.length : 0);
         
-        if (!token || !new_password) {
+        if (!token || !password) {
+            console.log('Missing token or password');
             return res.status(400).json({ success: false, error: 'Token and new password are required' });
         }
         
-        if (new_password.length < 6) {
-            return res.status(400).json({ success: false, error: 'Password must be at least 6 characters' });
-        }
+        const { Op } = require('sequelize');
         
-        const user = await User.findOne({
-            where: {
+        // Find user by reset token
+        const user = await User.findOne({ 
+            where: { 
                 reset_token: token,
                 reset_token_expires: { [Op.gt]: new Date() }
-            }
+            } 
         });
         
         if (!user) {
+            console.log('No user found with token or token expired');
             return res.status(400).json({ success: false, error: 'Invalid or expired reset token' });
         }
         
-        user.password_hash = new_password;
-        user.reset_token = null;
-        user.reset_token_expires = null;
-        await user.save();
+        console.log('User found:', user.email);
         
-        res.json({ success: true, message: 'Password reset successfully. Please login.' });
+        // Hash new password
+        const bcrypt = require('bcrypt');
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Update user
+        await user.update({
+            password_hash: hashedPassword,
+            reset_token: null,
+            reset_token_expires: null
+        });
+        
+        console.log('Password reset successful for:', user.email);
+        
+        res.json({ success: true, message: 'Password reset successful' });
+        
     } catch (error) {
         console.error('Reset password error:', error);
-        res.status(500).json({ success: false, error: error.message });
+        res.status(500).json({ success: false, error: 'Server error. Please try again.' });
     }
 });
 
