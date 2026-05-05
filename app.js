@@ -22,12 +22,12 @@ const { apiLimiter } = require('./middleware/rateLimiter');
 const { optionalAuthForGuests } = require('./middleware/auth');
 
 const app = express();
-const server = http.createServer(app); // ADD THIS for Socket.io
+const server = http.createServer(app); //  Socket.io
 
 // Initialize Socket.io for real-time updates
-const { initSocket } = require('./socket');
-const io = initSocket(server);
-app.set('io', io);
+//const { initSocket } = require('./socket');
+//const io = initSocket(server);
+//app.set('io', io);
 
 app.set('trust proxy', 1);
 
