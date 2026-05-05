@@ -8,6 +8,11 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
     <style>
+        /* Override page-hero margin to work with absolute navbar */
+        .page-hero {
+            margin-top: 0 !important;
+        }
+        
         .contact-info-card {
             background: white;
             padding: 2rem;
@@ -123,7 +128,6 @@
             font-weight: bold;
         }
         
-        /* Toast styles */
         #toast-container {
             position: fixed;
             bottom: 20px;
@@ -186,6 +190,7 @@
 </head>
 <body>
 
+    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="/">GEEOOH HOTEL</a>
@@ -209,12 +214,14 @@
         </div>
     </nav>
 
+    <!-- Floating Cart Icon -->
     <div class="floating-cart" id="floatingCart">
         <i class="fas fa-shopping-cart"></i>
         <span class="cart-count" id="cartCount">0</span>
     </div>
 
-    <div class="page-hero" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600'); background-size: cover; background-position: center; min-height: 400px; display: flex; align-items: center; text-align: center; color: white; margin-top: 0; padding-top: 80px;">
+    <!-- Page Hero - Using the CSS class, not inline styles -->
+    <div class="page-hero">
         <div class="container">
             <h1>Contact Us</h1>
             <p>We're here to help. Reach out to us anytime</p>
@@ -348,28 +355,27 @@
     <script src="/js/cart.js"></script>
 
     <script>
-        // Toast function
+        // Scroll event for sticky navbar - Same as working about.html
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+        
         function showToast(message, type) {
             const container = document.getElementById('toast-container');
-            if (!container) {
-                console.error('No toast container');
-                return;
-            }
+            if (!container) return;
             
             const toast = document.createElement('div');
             toast.className = `custom-toast custom-toast-${type}`;
-            toast.innerHTML = `
-                <span>${message}</span>
-                <button class="toast-close-btn" onclick="this.parentElement.remove()">&times;</button>
-            `;
+            toast.innerHTML = `<span>${message}</span><button class="toast-close-btn" onclick="this.parentElement.remove()">&times;</button>`;
             container.appendChild(toast);
-            
-            setTimeout(() => {
-                if (toast && toast.remove) toast.remove();
-            }, 5000);
+            setTimeout(() => toast.remove(), 5000);
         }
 
-        // Contact form
         document.getElementById('contact-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -412,7 +418,6 @@
             }
         });
 
-        // Newsletter subscription
         document.getElementById('subscribeBtn').addEventListener('click', async function() {
             const emailInput = document.getElementById('newsletter-email');
             const email = emailInput.value;
@@ -455,7 +460,6 @@
             }
         });
 
-        // Floating cart
         document.getElementById('floatingCart').addEventListener('click', () => {
             window.location.href = '/cart.html';
         });
@@ -479,6 +483,23 @@
         window.addEventListener('storage', (e) => {
             if (e.key === 'hotelCart') updateCartCount();
         });
+        
+        function setActiveNavLink() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+            
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath) {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        }
+        
+        setActiveNavLink();
     </script>
-<script src="/js/newsletter.js"></script></body>
+    <script src="/js/newsletter.js"></script>
+</body>
 </html>
