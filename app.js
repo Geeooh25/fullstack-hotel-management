@@ -199,10 +199,11 @@ app.use('/admin', require('./routes/admin'));
 app.use('/admin/amenities', require('./routes/admin/amenities'));
 app.use('/admin/menu', require('./routes/admin/menu'));
 app.use('/admin/requests', require('./routes/admin/requests'));
-app.use('/admin/users', require('./routes/admin/users'));
-app.use('/admin/reports', require('./routes/admin/reports'));
-app.use('/admin/settings', require('./routes/admin/settings'));
-app.use('/admin/activity', require('./routes/admin/activity'));
+// Temporarily disabled - missing files for production
+// app.use('/admin/users', require('./routes/admin/users'));
+// app.use('/admin/reports', require('./routes/admin/reports'));
+// app.use('/admin/settings', require('./routes/admin/settings'));
+// app.use('/admin/activity', require('./routes/admin/activity'));
 
 // ==================== ADMIN EJS VIEWS (ADD THIS SECTION) ====================
 
