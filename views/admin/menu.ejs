@@ -1,93 +1,309 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Manage Menu - Admin</title>
+    <title>Menu Management - Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 250px; background: #1a2a3a; color: white; padding: 1rem; }
-        .sidebar a { color: white; text-decoration: none; display: block; padding: 0.75rem; margin: 0.25rem 0; border-radius: 8px; }
-        .sidebar a:hover, .sidebar a.active { background: var(--gold, #B8860B); }
-        .main-content { margin-left: 250px; padding: 2rem; }
-        .btn-gold { background: var(--gold, #B8860B); color: white; border: none; padding: 0.5rem 1rem; border-radius: 4px; }
-        .menu-card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            margin: 5px 0;
+            border-radius: 8px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+        .main-content {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .navbar-top {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .menu-item-card {
+            transition: transform 0.3s;
+        }
+        .menu-item-card:hover {
+            transform: translateY(-5px);
+        }
+        .price-tag {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #28a745;
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h4 class="mb-4">GEEOOH Admin</h4>
-        <a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <a href="/admin/bookings"><i class="fas fa-calendar-check"></i> Bookings</a>
-        <a href="/admin/rooms"><i class="fas fa-bed"></i> Rooms</a>
-        <a href="/admin/amenities"><i class="fas fa-concierge-bell"></i> Amenities</a>
-        <a href="/admin/menu" class="active"><i class="fas fa-utensils"></i> Menu</a>
-        <a href="/admin/requests"><i class="fas fa-envelope"></i> Requests</a>
-        <a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0 sidebar">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">Hotel Admin</h4>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/bookings">
+                                <i class="bi bi-calendar-check"></i> Bookings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/rooms">
+                                <i class="bi bi-door-open"></i> Rooms
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/amenities">
+                                <i class="bi bi-gem"></i> Amenities
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="bi bi-people"></i> Users
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/requests">
+                                <i class="bi bi-chat-dots"></i> Requests
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/menu">
+                                <i class="bi bi-menu-up"></i> Menu
+                            </a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <a class="nav-link" href="/admin/logout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-10 p-0 main-content">
+                <nav class="navbar-top p-3">
+                    <div class="container-fluid">
+                        <span class="navbar-text">
+                            Welcome, <%= session.admin.username %>
+                        </span>
+                    </div>
+                </nav>
+                
+                <div class="p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Menu Management</h2>
+                        <div>
+                            <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#categoryModal" onclick="resetCategoryForm()">
+                                <i class="bi bi-folder-plus"></i> Manage Categories
+                            </button>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#menuItemModal" onclick="resetMenuItemForm()">
+                                <i class="bi bi-plus-circle"></i> Add Menu Item
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <% if (error) { %>
+                        <div class="alert alert-warning"><%= error %></div>
+                    <% } %>
+                    
+                    <!-- Category Tabs -->
+                    <ul class="nav nav-tabs mb-4">
+                        <li class="nav-item">
+                            <a class="nav-link <%= currentCategory === 'all' ? 'active' : '' %>" href="?category=all">
+                                All Items
+                            </a>
+                        </li>
+                        <% categories.forEach(cat => { %>
+                            <li class="nav-item">
+                                <a class="nav-link <%= currentCategory === cat.name ? 'active' : '' %>" href="?category=<%= encodeURIComponent(cat.name) %>">
+                                    <%= cat.name %>
+                                </a>
+                            </li>
+                        <% }) %>
+                    </ul>
+                    
+                    <!-- Menu Items Grid -->
+                    <div class="row">
+                        <% menuItems.forEach(item => { %>
+                            <div class="col-md-4 mb-4">
+                                <div class="card menu-item-card h-100">
+                                    <div class="position-relative">
+                                        <% if (item.is_featured) { %>
+                                            <span class="position-absolute top-0 start-0 badge bg-warning m-2">Featured</span>
+                                        <% } %>
+                                        <div class="position-absolute top-0 end-0">
+                                            <span class="badge bg-<%= item.is_available ? 'success' : 'danger' %> m-2">
+                                                <%= item.is_available ? 'Available' : 'Unavailable' %>
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="card-title"><%= item.name %></h5>
+                                        <span class="badge bg-info mb-2"><%= item.category_name %></span>
+                                        <p class="card-text text-muted"><%= item.description || 'No description' %></p>
+                                        <p class="price-tag">$<%= item.price %></p>
+                                        <% if (item.dietary_info) { %>
+                                            <small class="text-muted"><i class="bi bi-info-circle"></i> <%= item.dietary_info %></small><br>
+                                        <% } %>
+                                        <% if (item.preparation_time) { %>
+                                            <small class="text-muted"><i class="bi bi-clock"></i> <%= item.preparation_time %> min</small>
+                                        <% } %>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <button class="btn btn-sm btn-warning edit-menu-item" data-id="<%= item.id %>">
+                                            <i class="bi bi-pencil"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-menu-item" data-id="<%= item.id %>">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-success toggle-availability" data-id="<%= item.id %>">
+                                            <i class="bi bi-<%= item.is_available ? 'x-circle' : 'check-circle' %>"></i>
+                                            <%= item.is_available ? 'Disable' : 'Enable' %>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                    
+                    <% if (menuItems.length === 0) { %>
+                        <div class="alert alert-info">No menu items found. Click "Add Menu Item" to get started.</div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <div class="main-content">
-        <h1 class="mb-4">Menu Management</h1>
-        
-        <div class="row">
-            <div class="col-md-4">
-                <div class="menu-card">
-                    <h4>Add Category</h4>
-                    <form id="categoryForm">
-                        <select id="categoryAmenityId" class="form-control mb-2" required>
-                            <option value="">Select Amenity</option>
-                            <% amenities.forEach(a => { %>
-                                <option value="<%= a.id %>"><%= a.name %></option>
-                            <% }); %>
-                        </select>
-                        <input type="text" id="categoryName" class="form-control mb-2" placeholder="Category Name" required>
-                        <input type="number" id="categoryOrder" class="form-control mb-2" placeholder="Display Order" value="0">
-                        <button type="submit" class="btn-gold w-100">Add Category</button>
-                    </form>
+    <!-- Menu Item Modal -->
+    <div class="modal fade" id="menuItemModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="menuItemModalTitle">Add Menu Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="menu-card">
-                    <h4>Add Menu Item</h4>
-                    <form id="itemForm">
-                        <select id="itemCategoryId" class="form-control mb-2" required>
-                            <option value="">Select Category</option>
-                            <% categories.forEach(c => { %>
-                                <option value="<%= c.id %>"><%= c.name %> (<%= c.amenity.name %>)</option>
-                            <% }); %>
-                        </select>
-                        <input type="text" id="itemName" class="form-control mb-2" placeholder="Item Name" required>
-                        <textarea id="itemDescription" class="form-control mb-2" placeholder="Description"></textarea>
-                        <input type="number" id="itemPrice" class="form-control mb-2" placeholder="Price" step="0.01" required>
-                        <input type="number" id="itemDuration" class="form-control mb-2" placeholder="Duration (minutes) - for spa">
-                        <input type="number" id="itemOrder" class="form-control mb-2" placeholder="Display Order" value="0">
-                        <label class="checkbox-inline mb-2">
-                            <input type="checkbox" id="itemRequiresAppointment"> Requires Appointment
-                        </label>
-                        <button type="submit" class="btn-gold w-100">Add Item</button>
-                    </form>
-                </div>
-            </div>
-            
-            <div class="col-md-4">
-                <div class="menu-card">
-                    <h4>Categories & Items</h4>
-                    <% categories.forEach(category => { %>
+                <div class="modal-body">
+                    <form id="menuItemForm">
+                        <input type="hidden" id="menuItemId">
                         <div class="mb-3">
-                            <strong><%= category.name %></strong>
-                            <button class="btn btn-sm btn-danger float-end" onclick="deleteCategory(<%= category.id %>)"><i class="fas fa-trash"></i></button>
-                            <ul>
-                                <% category.items.forEach(item => { %>
-                                    <li>
-                                        <%= item.name %> - $<%= item.price %>
-                                        <button class="btn btn-sm btn-danger" onclick="deleteItem(<%= item.id %>)"><i class="fas fa-trash"></i></button>
-                                    </li>
-                                <% }); %>
-                            </ul>
+                            <label class="form-label">Category *</label>
+                            <select class="form-select" id="category_id" required>
+                                <option value="">Select category...</option>
+                                <% categories.forEach(cat => { %>
+                                    <option value="<%= cat.id %>"><%= cat.name %></option>
+                                <% }) %>
+                            </select>
                         </div>
-                    <% }); %>
+                        <div class="mb-3">
+                            <label class="form-label">Name *</label>
+                            <input type="text" class="form-control" id="item_name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="item_description" rows="2"></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Price ($) *</label>
+                                <input type="number" class="form-control" id="item_price" step="0.01" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Preparation Time (minutes)</label>
+                                <input type="number" class="form-control" id="preparation_time" step="5">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Dietary Information</label>
+                            <input type="text" class="form-control" id="dietary_info" placeholder="e.g., Vegetarian, Gluten-free, Vegan">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Image URL</label>
+                            <input type="text" class="form-control" id="image_url" placeholder="https://example.com/image.jpg">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="is_available" checked>
+                                <label class="form-check-label">Available</label>
+                            </div>
+                            <div class="col-md-6 mb-3 form-check">
+                                <input type="checkbox" class="form-check-input" id="is_featured">
+                                <label class="form-check-label">Featured Item</label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Display Order</label>
+                            <input type="number" class="form-control" id="display_order" value="0">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="saveMenuItem">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Management Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Manage Categories</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Add New Category</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control" id="newCategoryName" placeholder="Category name">
+                            <input type="text" class="form-control" id="newCategoryIcon" placeholder="Icon (optional)">
+                            <button class="btn btn-primary" id="addCategory">Add</button>
+                        </div>
+                    </div>
+                    <hr>
+                    <h6>Existing Categories</h6>
+                    <div id="categoriesList">
+                        <% categories.forEach(cat => { %>
+                            <div class="mb-2 p-2 border rounded" data-category-id="<%= cat.id %>">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong><%= cat.name %></strong>
+                                        <% if (cat.icon) { %>
+                                            <span class="badge bg-secondary"><%= cat.icon %></span>
+                                        <% } %>
+                                    </div>
+                                    <div>
+                                        <button class="btn btn-sm btn-warning edit-category" data-id="<%= cat.id %>" data-name="<%= cat.name %>" data-icon="<%= cat.icon || '' %>" data-description="<%= cat.description || '' %>" data-order="<%= cat.display_order %>">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger delete-category" data-id="<%= cat.id %>">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <small class="text-muted"><%= cat.description || 'No description' %></small>
+                            </div>
+                        <% }) %>
+                    </div>
                 </div>
             </div>
         </div>
@@ -95,52 +311,178 @@
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('categoryForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        // Save menu item
+        document.getElementById('saveMenuItem').addEventListener('click', async () => {
+            const id = document.getElementById('menuItemId').value;
             const data = {
-                amenity_id: parseInt(document.getElementById('categoryAmenityId').value),
-                name: document.getElementById('categoryName').value,
-                display_order: parseInt(document.getElementById('categoryOrder').value)
+                category_id: document.getElementById('category_id').value,
+                name: document.getElementById('item_name').value,
+                description: document.getElementById('item_description').value,
+                price: document.getElementById('item_price').value,
+                preparation_time: document.getElementById('preparation_time').value,
+                dietary_info: document.getElementById('dietary_info').value,
+                image_url: document.getElementById('image_url').value,
+                is_available: document.getElementById('is_available').checked,
+                is_featured: document.getElementById('is_featured').checked,
+                display_order: document.getElementById('display_order').value
             };
-            await fetch('/admin/menu/categories', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            location.reload();
-        });
-        
-        document.getElementById('itemForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const data = {
-                category_id: parseInt(document.getElementById('itemCategoryId').value),
-                name: document.getElementById('itemName').value,
-                description: document.getElementById('itemDescription').value,
-                price: parseFloat(document.getElementById('itemPrice').value),
-                duration_minutes: parseInt(document.getElementById('itemDuration').value) || null,
-                requires_appointment: document.getElementById('itemRequiresAppointment').checked,
-                display_order: parseInt(document.getElementById('itemOrder').value)
-            };
-            await fetch('/admin/menu/items', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            });
-            location.reload();
-        });
-        
-        async function deleteCategory(id) {
-            if (confirm('Are you sure?')) {
-                await fetch(`/admin/menu/categories/${id}`, { method: 'DELETE' });
-                location.reload();
+            
+            if (!data.category_id || !data.name || !data.price) {
+                alert('Please fill in required fields');
+                return;
             }
+            
+            const url = id ? `/admin/menu/${id}` : '/admin/menu';
+            const method = id ? 'PUT' : 'POST';
+            
+            try {
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('Error saving menu item');
+            }
+        });
+        
+        // Edit menu item
+        document.querySelectorAll('.edit-menu-item').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                const card = btn.closest('.card');
+                const name = card.querySelector('.card-title').textContent;
+                const description = card.querySelector('.card-text.text-muted')?.textContent || '';
+                const price = card.querySelector('.price-tag').textContent.replace('$', '');
+                const categoryName = card.querySelector('.badge.bg-info').textContent;
+                const dietaryInfo = card.querySelector('.text-muted i.bi-info-circle')?.parentElement?.textContent.replace('ℹ️ ', '') || '';
+                const prepTime = card.querySelector('.text-muted i.bi-clock')?.parentElement?.textContent.replace('⏰ ', '').replace(' min', '') || '';
+                
+                // Find category ID from name
+                const categorySelect = document.getElementById('category_id');
+                for(let i = 0; i < categorySelect.options.length; i++) {
+                    if (categorySelect.options[i].text === categoryName) {
+                        categorySelect.value = categorySelect.options[i].value;
+                        break;
+                    }
+                }
+                
+                document.getElementById('menuItemModalTitle').textContent = 'Edit Menu Item';
+                document.getElementById('menuItemId').value = id;
+                document.getElementById('item_name').value = name;
+                document.getElementById('item_description').value = description !== 'No description' ? description : '';
+                document.getElementById('item_price').value = price;
+                document.getElementById('preparation_time').value = prepTime;
+                document.getElementById('dietary_info').value = dietaryInfo;
+                document.getElementById('is_available').checked = true;
+                document.getElementById('is_featured').checked = false;
+                
+                new bootstrap.Modal(document.getElementById('menuItemModal')).show();
+            });
+        });
+        
+        // Delete menu item
+        document.querySelectorAll('.delete-menu-item').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (confirm('Are you sure you want to delete this menu item?')) {
+                    const id = btn.dataset.id;
+                    try {
+                        const response = await fetch(`/admin/menu/${id}`, { method: 'DELETE' });
+                        const result = await response.json();
+                        if (result.success) {
+                            location.reload();
+                        } else {
+                            alert(result.error);
+                        }
+                    } catch (error) {
+                        alert('Error deleting menu item');
+                    }
+                }
+            });
+        });
+        
+        // Toggle availability
+        document.querySelectorAll('.toggle-availability').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.dataset.id;
+                try {
+                    const response = await fetch(`/admin/menu/${id}/toggle`, { method: 'PATCH' });
+                    const result = await response.json();
+                    if (result.success) {
+                        location.reload();
+                    } else {
+                        alert(result.error);
+                    }
+                } catch (error) {
+                    alert('Error toggling availability');
+                }
+            });
+        });
+        
+        // Category management
+        document.getElementById('addCategory').addEventListener('click', async () => {
+            const name = document.getElementById('newCategoryName').value;
+            const icon = document.getElementById('newCategoryIcon').value;
+            
+            if (!name) {
+                alert('Please enter a category name');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/admin/menu/categories', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, icon, description: '', display_order: 0 })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('Error adding category');
+            }
+        });
+        
+        document.querySelectorAll('.delete-category').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                if (confirm('Delete this category? All menu items must be moved or deleted first.')) {
+                    const id = btn.dataset.id;
+                    try {
+                        const response = await fetch(`/admin/menu/categories/${id}`, { method: 'DELETE' });
+                        const result = await response.json();
+                        if (result.success) {
+                            location.reload();
+                        } else {
+                            alert(result.error);
+                        }
+                    } catch (error) {
+                        alert('Error deleting category');
+                    }
+                }
+            });
+        });
+        
+        function resetMenuItemForm() {
+            document.getElementById('menuItemModalTitle').textContent = 'Add Menu Item';
+            document.getElementById('menuItemId').value = '';
+            document.getElementById('menuItemForm').reset();
+            document.getElementById('is_available').checked = true;
         }
         
-        async function deleteItem(id) {
-            if (confirm('Are you sure?')) {
-                await fetch(`/admin/menu/items/${id}`, { method: 'DELETE' });
-                location.reload();
-            }
+        function resetCategoryForm() {
+            document.getElementById('newCategoryName').value = '';
+            document.getElementById('newCategoryIcon').value = '';
         }
     </script>
 </body>

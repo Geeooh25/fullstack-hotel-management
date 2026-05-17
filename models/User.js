@@ -17,9 +17,9 @@ const User = sequelize.define('User', {
             notEmpty: true
         }
     },
-    password_hash: {
+    password: {
         type: DataTypes.STRING(255),
-        allowNull: true  // Changed to true for Google users (no password)
+        allowNull: true
     },
     google_id: {
         type: DataTypes.STRING(255),
@@ -44,11 +44,15 @@ const User = sequelize.define('User', {
     },
     role: {
         type: DataTypes.ENUM('admin', 'receptionist', 'housekeeping', 'guest'),
-        defaultValue: 'guest'  // Changed default to guest
+        defaultValue: 'guest'
     },
     is_active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true
+    },
+    status: {
+        type: DataTypes.STRING(20),
+        defaultValue: 'active'
     },
     last_login: {
         type: DataTypes.DATE,
@@ -64,15 +68,18 @@ const User = sequelize.define('User', {
     }
 }, {
     tableName: 'users',
+    timestamps: true,
+    createdAt: 'created_at',
+    updatedAt: 'updated_at',
     hooks: {
         beforeCreate: async (user) => {
-            if (user.password_hash) {
-                user.password_hash = await bcrypt.hash(user.password_hash, 10);
+            if (user.password) {
+                user.password = await bcrypt.hash(user.password, 10);
             }
         },
         beforeUpdate: async (user) => {
-            if (user.changed('password_hash') && user.password_hash) {
-                user.password_hash = await bcrypt.hash(user.password_hash, 10);
+            if (user.changed('password') && user.password) {
+                user.password = await bcrypt.hash(user.password, 10);
             }
         }
     }
@@ -80,48 +87,16 @@ const User = sequelize.define('User', {
 
 // Instance method to check password
 User.prototype.validatePassword = async function(password) {
-    if (!this.password_hash) return false;
-    return await bcrypt.compare(password, this.password_hash);
+    if (!this.password) return false;
+    return await bcrypt.compare(password, this.password);
 };
 
-// Instance method to get full name
 User.prototype.getFullName = function() {
     return `${this.first_name} ${this.last_name}`;
 };
 
-// Class method to find by email
 User.findByEmail = async function(email) {
     return await this.findOne({ where: { email } });
-};
-
-// Class method to find or create Google user
-User.findOrCreateGoogleUser = async function(profile) {
-    const user = await this.findOne({ where: { google_id: profile.id } });
-    if (user) return user;
-    
-    // Check if email exists (user might have signed up with email before)
-    const existingUser = await this.findOne({ where: { email: profile.emails[0].value } });
-    if (existingUser) {
-        existingUser.google_id = profile.id;
-        existingUser.avatar = profile.photos?.[0]?.value;
-        await existingUser.save();
-        return existingUser;
-    }
-    
-    // Create new user
-    const nameParts = profile.displayName.split(' ');
-    const firstName = nameParts[0] || '';
-    const lastName = nameParts.slice(1).join(' ') || '';
-    
-    return await this.create({
-        email: profile.emails[0].value,
-        google_id: profile.id,
-        first_name: firstName,
-        last_name: lastName,
-        avatar: profile.photos?.[0]?.value,
-        email_verified: true,
-        role: 'guest'
-    });
 };
 
 module.exports = User;

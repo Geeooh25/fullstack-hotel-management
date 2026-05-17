@@ -1,0 +1,35 @@
+# render.yaml 
+services:
+  - type: web
+    name: mansion-hotel
+    env: node
+    buildCommand: npm install
+    startCommand: node app.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB_DIALECT
+        value: sqlite
+      - key: DB_STORAGE
+        value: /data/database.sqlite
+      - key: PORT
+        value: 3000
+      - key: SESSION_SECRET
+        generateValue: true  # Render generates a random secret
+      - key: JWT_SECRET
+        generateValue: true
+      # Add all your other .env variables here
+      - key: STRIPE_SECRET_KEY
+        sync: false  # Mark as false to avoid syncing sensitive keys to Render's dashboard
+      - key: STRIPE_PUBLIC_KEY
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+    disk:
+      name: sqlite-data
+      mountPath: /data
+      sizeGB: 1

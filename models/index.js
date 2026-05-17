@@ -17,6 +17,11 @@ const CartItem = require('./cartItem');
 const BookingService = require('./bookingService');
 const RequestSubmission = require('./requestSubmission');
 
+// Stage 3 Models - FIXED IMPORTS
+const SystemSetting = require('./SystemSetting');
+const NotificationSetting = require('./NotificationSetting');
+const ActivityLog = require('./ActivityLog');
+
 const models = {
     User,
     RoomType,
@@ -32,7 +37,10 @@ const models = {
     MenuItem,
     CartItem,
     BookingService,
-    RequestSubmission
+    RequestSubmission,
+    SystemSetting,
+    NotificationSetting,
+    ActivityLog
 };
 
 // ==================== ASSOCIATIONS ====================
@@ -69,7 +77,7 @@ models.MenuItem.belongsTo(models.MenuCategory, { foreignKey: 'category_id', as: 
 models.Booking.hasMany(models.BookingService, { foreignKey: 'booking_id', as: 'services' });
 models.BookingService.belongsTo(models.Booking, { foreignKey: 'booking_id' });
 
-// ===== CRITICAL FIX: MenuItem to BookingService =====
+// MenuItem to BookingService
 models.BookingService.belongsTo(models.MenuItem, { foreignKey: 'menu_item_id', as: 'menu_item' });
 models.MenuItem.hasMany(models.BookingService, { foreignKey: 'menu_item_id', as: 'booking_services' });
 
@@ -80,5 +88,17 @@ models.CartItem.belongsTo(models.MenuItem, { foreignKey: 'menu_item_id', as: 'me
 // Amenity to RequestSubmission
 models.Amenity.hasMany(models.RequestSubmission, { foreignKey: 'amenity_id', as: 'requests' });
 models.RequestSubmission.belongsTo(models.Amenity, { foreignKey: 'amenity_id', as: 'amenity' });
+
+// User to RequestSubmission
+models.User.hasMany(models.RequestSubmission, { foreignKey: 'user_id', as: 'requests' });
+models.RequestSubmission.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+
+// Booking to RequestSubmission
+models.Booking.hasMany(models.RequestSubmission, { foreignKey: 'booking_id', as: 'requests' });
+models.RequestSubmission.belongsTo(models.Booking, { foreignKey: 'booking_id', as: 'booking' });
+
+// ActivityLog associations
+models.ActivityLog.belongsTo(models.User, { foreignKey: 'admin_id', as: 'admin' });
+models.User.hasMany(models.ActivityLog, { foreignKey: 'admin_id', as: 'activity_logs' });
 
 module.exports = models;

@@ -1,105 +1,51 @@
-<%
-function getStatusClass(status) {
-    const classes = {
-        pending: 'warning',
-        confirmed: 'success',
-        checked_in: 'info',
-        checked_out: 'secondary',
-        cancelled: 'danger'
-    };
-    return classes[status] || 'secondary';
-}
-%>
-
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Booking Management</h5>
-        <a href="/admin/bookings/create" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> New Manual Booking
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover" id="bookingsTable">
-                <thead>
-                    <tr>
-                        <th>Reference</th>
-                        <th>Guest</th>
-                        <th>Room</th>
-                        <th>Check-in</th>
-                        <th>Check-out</th>
-                        <th>Total</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% bookings.forEach(booking => { %>
-                    <tr>
-                        <td><strong><%= booking.booking_reference %></strong></td>
-                        <td><%= booking.Guest.first_name %> <%= booking.Guest.last_name %></td>
-                        <td><%= booking.Room.room_number %></td>
-                        <td><%= booking.check_in %></td>
-                        <td><%= booking.check_out %></td>
-                        <td>$<%= booking.total_amount %></td>
-                        <td>
-                            <span class="badge bg-<%= getStatusClass(booking.status) %>">
-                                <%= booking.status %>
-                            </span>
-                        </td>
-                        <td>
-                            <a href="/admin/bookings/<%= booking.id %>" class="btn btn-sm btn-info">
-                                <i class="fas fa-eye"></i>
-                            </a>
-                            <% if (booking.status === 'confirmed') { %>
-                                <a href="/admin/bookings/<%= booking.id %>/checkin" class="btn btn-sm btn-success">
-                                    <i class="fas fa-sign-in-alt"></i>
-                                </a>
-                            <% } %>
-                            <% if (booking.status === 'checked_in') { %>
-                                <a href="/admin/bookings/<%= booking.id %>/checkout" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-sign-out-alt"></i>
-                                </a>
-                            <% } %>
-                            <button onclick="cancelBooking(<%= booking.id %>)" class="btn btn-sm btn-danger">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <% }) %>
-                </tbody>
-            </table>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Bookings - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 bg-dark vh-100 p-3">
+                <h4 class="text-white">Admin Panel</h4>
+                <hr class="bg-light">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a href="/admin/dashboard" class="nav-link text-white">Dashboard</a></li>
+                    <li class="nav-item"><a href="/admin/bookings" class="nav-link text-white">Bookings</a></li>
+                    <li class="nav-item"><a href="/admin/rooms" class="nav-link text-white">Rooms</a></li>
+                    <li class="nav-item"><a href="/admin/amenities" class="nav-link text-white">Amenities</a></li>
+                    <li class="nav-item"><a href="/admin/users" class="nav-link text-white">Users</a></li>
+                    <li class="nav-item"><a href="/admin/requests" class="nav-link text-white">Requests</a></li>
+                    <li class="nav-item"><a href="/admin/menu" class="nav-link text-white">Menu</a></li>
+                    <li class="nav-item"><a href="/admin/reports" class="nav-link text-white">Reports</a></li>
+                    <li class="nav-item"><a href="/admin/settings" class="nav-link text-white">Settings</a></li>
+                    <li class="nav-item"><a href="/admin/activity" class="nav-link text-white">Activity Log</a></li>
+                    <li class="nav-item mt-4"><a href="/admin/logout" class="nav-link text-white">Logout</a></li>
+                </ul>
+            </div>
+            <div class="col-md-10 p-4">
+                <h2>Bookings Management</h2>
+                <div class="alert alert-info">Bookings module is ready.</div>
+                <table class="table">
+                    <thead>
+                        <tr><th>ID</th><th>Guest</th><th>Room</th><th>Check In</th><th>Check Out</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        <% bookings.forEach(booking => { %>
+                        <tr>
+                            <td>#<%= booking.id %></td>
+                            <td><%= booking.guest ? booking.guest.first_name + ' ' + booking.guest.last_name : 'N/A' %></td>
+                            <td>Room <%= booking.Room ? booking.Room.room_number : 'N/A' %></td>
+                            <td><%= new Date(booking.check_in_date).toLocaleDateString() %></td>
+                            <td><%= new Date(booking.check_out_date).toLocaleDateString() %></td>
+                            <td><span class="badge bg-secondary"><%= booking.status %></span></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-
-<script>
-    $(document).ready(function() {
-        $('#bookingsTable').DataTable({
-            pageLength: 25,
-            order: [[3, 'desc']],
-            language: {
-                search: "Search bookings:",
-                lengthMenu: "Show _MENU_ bookings"
-            }
-        });
-    });
-    
-    function cancelBooking(bookingId) {
-        if (confirm('Are you sure you want to cancel this booking?')) {
-            fetch(`/api/admin/bookings/${bookingId}/cancel`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: 'Cancelled by admin' })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert(data.error || 'Failed to cancel booking');
-                }
-            });
-        }
-    }
-</script>
+</body>
+</html>

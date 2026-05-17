@@ -14,7 +14,11 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
         rejectUnauthorized: false
       }
     },
-    logging: false
+    logging: false,
+    define: {
+      timestamps: true,
+      underscored: true
+    }
   });
   console.log('✅ PostgreSQL database configured');
 } else {
@@ -22,7 +26,11 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.includes('postgres')) {
   sequelize = new Sequelize({
     dialect: 'sqlite',
     storage: './database.sqlite',
-    logging: false
+    logging: false,
+    define: {
+      timestamps: true,
+      underscored: true
+    }
   });
   console.log('✅ SQLite database configured');
 }

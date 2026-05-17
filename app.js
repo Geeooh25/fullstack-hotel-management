@@ -558,6 +558,10 @@ const startServer = async () => {
         process.exit(1);
     }
 };
+const { backup } = require('./utils/backup');
+
+// Run initial backup
+backup();
 
 startServer();
 

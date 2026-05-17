@@ -1,96 +1,49 @@
-<%
-// Get status badge class helper
-function getRoomStatusClass(status) {
-    const classes = {
-        available: 'success',
-        occupied: 'warning',
-        maintenance: 'danger',
-        cleaning: 'info'
-    };
-    return classes[status] || 'secondary';
-}
-%>
-
-<div class="card">
-    <div class="card-header bg-white d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Room Management</h5>
-        <a href="/admin/rooms/create" class="btn btn-primary btn-sm">
-            <i class="fas fa-plus"></i> Add New Room
-        </a>
-    </div>
-    <div class="card-body">
-        <div class="table-responsive">
-            <table class="table table-hover" id="roomsTable">
-                <thead>
-                    <tr>
-                        <th>Room #</th>
-                        <th>Type</th>
-                        <th>Floor</th>
-                        <th>Capacity</th>
-                        <th>Base Price</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <% rooms.forEach(room => { %>
-                    <tr>
-                        <td><strong><%= room.room_number %></strong></td>
-                        <td><%= room.RoomType ? room.RoomType.name : 'N/A' %></td>
-                        <td><%= room.floor || 'Ground' %></td>
-                        <td><%= room.RoomType ? room.RoomType.capacity : 2 %></td>
-                        <td>$<%= room.RoomType ? room.RoomType.base_price : 0 %></td>
-                        <td>
-                            <span class="badge bg-<%= getRoomStatusClass(room.status) %>">
-                                <%= room.status %>
-                            </span>
-                        </td>
-                        <td>
-                            <a href="/admin/rooms/<%= room.id %>/edit" class="btn btn-sm btn-warning">
-                                <i class="fas fa-edit"></i>
-                            </a>
-                            <button onclick="deleteRoom(<%= room.id %>)" class="btn btn-sm btn-danger">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </td>
-                    </tr>
-                    <% }) %>
-                </tbody>
-            </table>
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rooms - Admin Panel</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 bg-dark vh-100 p-3">
+                <h4 class="text-white">Admin Panel</h4>
+                <hr class="bg-light">
+                <ul class="nav flex-column">
+                    <li class="nav-item"><a href="/admin/dashboard" class="nav-link text-white">Dashboard</a></li>
+                    <li class="nav-item"><a href="/admin/bookings" class="nav-link text-white">Bookings</a></li>
+                    <li class="nav-item"><a href="/admin/rooms" class="nav-link text-white">Rooms</a></li>
+                    <li class="nav-item"><a href="/admin/amenities" class="nav-link text-white">Amenities</a></li>
+                    <li class="nav-item"><a href="/admin/users" class="nav-link text-white">Users</a></li>
+                    <li class="nav-item"><a href="/admin/requests" class="nav-link text-white">Requests</a></li>
+                    <li class="nav-item"><a href="/admin/menu" class="nav-link text-white">Menu</a></li>
+                    <li class="nav-item"><a href="/admin/reports" class="nav-link text-white">Reports</a></li>
+                    <li class="nav-item"><a href="/admin/settings" class="nav-link text-white">Settings</a></li>
+                    <li class="nav-item"><a href="/admin/activity" class="nav-link text-white">Activity Log</a></li>
+                    <li class="nav-item mt-4"><a href="/admin/logout" class="nav-link text-white">Logout</a></li>
+                </ul>
+            </div>
+            <div class="col-md-10 p-4">
+                <h2>Rooms Management</h2>
+                <div class="alert alert-info">Rooms module is ready.</div>
+                <table class="table">
+                    <thead>
+                        <tr><th>Room #</th><th>Type</th><th>Floor</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        <% rooms.forEach(room => { %>
+                        <tr>
+                            <td><%= room.room_number %></td>
+                            <td><%= room.RoomType ? room.RoomType.name : 'N/A' %></td>
+                            <td><%= room.floor || 'N/A' %></td>
+                            <td><span class="badge bg-<%= room.status === 'available' ? 'success' : 'warning' %>"><%= room.status %></span></td>
+                        </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-</div>
-
-<script>
-    $(document).ready(function() {
-        $('#roomsTable').DataTable({
-            pageLength: 25,
-            order: [[0, 'asc']],
-            language: {
-                search: "Search rooms:",
-                lengthMenu: "Show _MENU_ rooms",
-                info: "Showing _START_ to _END_ of _TOTAL_ rooms"
-            }
-        });
-    });
-    
-    function deleteRoom(roomId) {
-        if (confirm('Are you sure you want to delete this room? This action cannot be undone.')) {
-            fetch(`/api/admin/rooms/${roomId}`, {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    location.reload();
-                } else {
-                    alert(data.error || 'Failed to delete room');
-                }
-            })
-            .catch(error => {
-                alert('Error deleting room');
-            });
-        }
-    }
-</script>
+</body>
+</html>

@@ -1,86 +1,345 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Service Requests - Admin</title>
+    <title>Request Management - Admin Panel</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .sidebar { position: fixed; top: 0; left: 0; height: 100vh; width: 250px; background: #1a2a3a; color: white; padding: 1rem; }
-        .sidebar a { color: white; text-decoration: none; display: block; padding: 0.75rem; margin: 0.25rem 0; border-radius: 8px; }
-        .sidebar a:hover, .sidebar a.active { background: var(--gold, #B8860B); }
-        .main-content { margin-left: 250px; padding: 2rem; }
-        .request-card { border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
-        .status-pending { background: #ffc107; color: #000; padding: 0.25rem 0.5rem; border-radius: 4px; }
-        .status-contacted { background: #17a2b8; color: white; }
-        .status-completed { background: #28a745; color: white; }
-        .status-cancelled { background: #dc3545; color: white; }
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            margin: 5px 0;
+            border-radius: 8px;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+        .sidebar .nav-link i {
+            margin-right: 10px;
+        }
+        .main-content {
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        .navbar-top {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .request-card {
+            transition: transform 0.3s;
+            cursor: pointer;
+        }
+        .request-card:hover {
+            transform: translateY(-3px);
+        }
     </style>
 </head>
 <body>
-    <div class="sidebar">
-        <h4 class="mb-4">GEEOOH Admin</h4>
-        <a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
-        <a href="/admin/bookings"><i class="fas fa-calendar-check"></i> Bookings</a>
-        <a href="/admin/rooms"><i class="fas fa-bed"></i> Rooms</a>
-        <a href="/admin/amenities"><i class="fas fa-concierge-bell"></i> Amenities</a>
-        <a href="/admin/menu"><i class="fas fa-utensils"></i> Menu</a>
-        <a href="/admin/requests" class="active"><i class="fas fa-envelope"></i> Requests</a>
-        <a href="/admin/logout"><i class="fas fa-sign-out-alt"></i> Logout</a>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-2 p-0 sidebar">
+                <div class="p-3">
+                    <h4 class="text-white mb-4">Hotel Admin</h4>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/dashboard">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/bookings">
+                                <i class="bi bi-calendar-check"></i> Bookings
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/rooms">
+                                <i class="bi bi-door-open"></i> Rooms
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/amenities">
+                                <i class="bi bi-gem"></i> Amenities
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/users">
+                                <i class="bi bi-people"></i> Users
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link active" href="/admin/requests">
+                                <i class="bi bi-chat-dots"></i> Requests
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/admin/menu">
+                                <i class="bi bi-menu-up"></i> Menu
+                            </a>
+                        </li>
+                        <li class="nav-item mt-4">
+                            <a class="nav-link" href="/admin/logout">
+                                <i class="bi bi-box-arrow-right"></i> Logout
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-10 p-0 main-content">
+                <nav class="navbar-top p-3">
+                    <div class="container-fluid">
+                        <span class="navbar-text">
+                            Welcome, <%= session.admin.username %>
+                        </span>
+                    </div>
+                </nav>
+                
+                <div class="p-4">
+                    <h2 class="mb-4">Request Management</h2>
+                    
+                    <% if (error) { %>
+                        <div class="alert alert-warning"><%= error %></div>
+                    <% } %>
+                    
+                    <!-- Filters -->
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="form-label">Request Type</label>
+                                    <select class="form-select" id="typeFilter" onchange="applyFilters()">
+                                        <option value="all" <%= currentType === 'all' ? 'selected' : '' %>>All Types</option>
+                                        <% requestTypes.forEach(type => { %>
+                                            <option value="<%= type %>" <%= currentType === type ? 'selected' : '' %>><%= type %></option>
+                                        <% }) %>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label">Status</label>
+                                    <select class="form-select" id="statusFilter" onchange="applyFilters()">
+                                        <option value="all" <%= currentStatus === 'all' ? 'selected' : '' %>>All Status</option>
+                                        <option value="pending" <%= currentStatus === 'pending' ? 'selected' : '' %>>Pending</option>
+                                        <option value="processing" <%= currentStatus === 'processing' ? 'selected' : '' %>>Processing</option>
+                                        <option value="completed" <%= currentStatus === 'completed' ? 'selected' : '' %>>Completed</option>
+                                        <option value="cancelled" <%= currentStatus === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Requests Grid -->
+                    <div class="row">
+                        <% requests.forEach(request => { %>
+                            <div class="col-md-6 mb-4">
+                                <div class="card request-card h-100" onclick="viewRequest(<%= request.id %>)">
+                                    <div class="card-header d-flex justify-content-between align-items-center">
+                                        <strong><%= request.request_type %></strong>
+                                        <span class="badge bg-<%= 
+                                            request.status === 'pending' ? 'warning' : 
+                                            request.status === 'processing' ? 'info' :
+                                            request.status === 'completed' ? 'success' : 'danger'
+                                        %>">
+                                            <%= request.status.toUpperCase() %>
+                                        </span>
+                                    </div>
+                                    <div class="card-body">
+                                        <p><strong>Guest:</strong> <%= request.first_name %> <%= request.last_name %></p>
+                                        <p><strong>Email:</strong> <%= request.email %></p>
+                                        <% if (request.room_number) { %>
+                                            <p><strong>Room:</strong> <%= request.room_number %></p>
+                                        <% } %>
+                                        <p><strong>Submitted:</strong> <%= new Date(request.created_at).toLocaleString() %></p>
+                                        <p class="text-muted"><%= request.message ? request.message.substring(0, 100) + '...' : 'No message' %></p>
+                                    </div>
+                                    <div class="card-footer bg-transparent">
+                                        <div class="btn-group w-100" onclick="event.stopPropagation()">
+                                            <select class="form-select form-select-sm status-update" data-id="<%= request.id %>">
+                                                <option value="pending" <%= request.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                                                <option value="processing" <%= request.status === 'processing' ? 'selected' : '' %>>Processing</option>
+                                                <option value="completed" <%= request.status === 'completed' ? 'selected' : '' %>>Completed</option>
+                                                <option value="cancelled" <%= request.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
+                                            </select>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="viewRequest(<%= request.id %>)">
+                                                <i class="bi bi-eye"></i> Details
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                    
+                    <% if (requests.length === 0) { %>
+                        <div class="alert alert-info">No requests found with the selected filters.</div>
+                    <% } %>
+                    
+                    <!-- Pagination -->
+                    <% if (totalPages > 1) { %>
+                        <nav>
+                            <ul class="pagination justify-content-center">
+                                <% for(let i = 1; i <= totalPages; i++) { %>
+                                    <li class="page-item <%= currentPage === i ? 'active' : '' %>">
+                                        <a class="page-link" href="?page=<%= i %>&type=<%= currentType %>&status=<%= currentStatus %>"><%= i %></a>
+                                    </li>
+                                <% } %>
+                            </ul>
+                        </nav>
+                    <% } %>
+                </div>
+            </div>
+        </div>
     </div>
     
-    <div class="main-content">
-        <h1 class="mb-4">Service Requests</h1>
-        
-        <% requests.forEach(request => { %>
-            <div class="request-card">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h5><%= request.amenity.name %> Request</h5>
-                        <p><strong>Guest:</strong> <%= request.guest_name %> (<%= request.guest_email %>)</p>
-                        <p><strong>Phone:</strong> <%= request.guest_phone %></p>
-                        <% if (request.booking_reference) { %>
-                            <p><strong>Booking:</strong> <%= request.booking_reference %></p>
-                        <% } %>
-                        <p><strong>Details:</strong> <%= request.request_details || 'N/A' %></p>
-                        <% if (request.preferred_date) { %>
-                            <p><strong>Preferred Date:</strong> <%= new Date(request.preferred_date).toLocaleString() %></p>
-                        <% } %>
-                        <p><strong>Submitted:</strong> <%= new Date(request.created_at).toLocaleString() %></p>
-                    </div>
-                    <div>
-                        <select class="form-control status-select" data-id="<%= request.id %>">
-                            <option value="pending" <%= request.status === 'pending' ? 'selected' : '' %>>Pending</option>
-                            <option value="contacted" <%= request.status === 'contacted' ? 'selected' : '' %>>Contacted</option>
-                            <option value="completed" <%= request.status === 'completed' ? 'selected' : '' %>>Completed</option>
-                            <option value="cancelled" <%= request.status === 'cancelled' ? 'selected' : '' %>>Cancelled</option>
-                        </select>
+    <!-- Request Details Modal -->
+    <div class="modal fade" id="requestModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Request Details</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="requestDetails">
+                    <!-- Details will be loaded here -->
+                </div>
+                <div class="modal-footer">
+                    <textarea class="form-control mb-2" id="adminNotes" rows="2" placeholder="Add admin notes..."></textarea>
+                    <div class="w-100">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="updateWithNotes">Update Status</button>
                     </div>
                 </div>
             </div>
-        <% }); %>
-        
-        <% if (requests.length === 0) { %>
-            <div class="text-center py-5">
-                <i class="fas fa-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                <p>No requests yet</p>
-            </div>
-        <% } %>
+        </div>
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.querySelectorAll('.status-select').forEach(select => {
+        let currentRequestId = null;
+        
+        function applyFilters() {
+            const type = document.getElementById('typeFilter').value;
+            const status = document.getElementById('statusFilter').value;
+            window.location.href = `?type=${type}&status=${status}`;
+        }
+        
+        // Update status from dropdown
+        document.querySelectorAll('.status-update').forEach(select => {
             select.addEventListener('change', async (e) => {
-                const id = e.target.dataset.id;
-                const status = e.target.value;
-                await fetch(`/api/requests/${id}`, {
+                e.stopPropagation();
+                const requestId = select.dataset.id;
+                const newStatus = select.value;
+                
+                try {
+                    const response = await fetch(`/admin/requests/${requestId}/status`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ status: newStatus })
+                    });
+                    
+                    const result = await response.json();
+                    if (result.success) {
+                        location.reload();
+                    } else {
+                        alert(result.error);
+                    }
+                } catch (error) {
+                    alert('Error updating status');
+                }
+            });
+        });
+        
+        async function viewRequest(id) {
+            currentRequestId = id;
+            try {
+                const response = await fetch(`/admin/requests/${id}`);
+                const request = await response.json();
+                
+                const modalBody = document.getElementById('requestDetails');
+                modalBody.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Guest Information</h6>
+                            <p>
+                                <strong>Name:</strong> ${request.first_name} ${request.last_name}<br>
+                                <strong>Email:</strong> ${request.email}<br>
+                                <strong>Phone:</strong> ${request.phone || 'N/A'}<br>
+                                <strong>Room:</strong> ${request.room_number || 'Not specified'}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Request Information</h6>
+                            <p>
+                                <strong>Type:</strong> ${request.request_type}<br>
+                                <strong>Status:</strong> <span class="badge bg-${request.status === 'pending' ? 'warning' : request.status === 'processing' ? 'info' : request.status === 'completed' ? 'success' : 'danger'}">${request.status}</span><br>
+                                <strong>Submitted:</strong> ${new Date(request.created_at).toLocaleString()}<br>
+                                <strong>Last Updated:</strong> ${request.updated_at ? new Date(request.updated_at).toLocaleString() : 'N/A'}
+                            </p>
+                        </div>
+                        <div class="col-12">
+                            <h6>Message</h6>
+                            <div class="alert alert-light">
+                                ${request.message || 'No message provided'}
+                            </div>
+                        </div>
+                        ${request.admin_notes ? `
+                            <div class="col-12">
+                                <h6>Admin Notes</h6>
+                                <div class="alert alert-info">
+                                    ${request.admin_notes}
+                                </div>
+                            </div>
+                        ` : ''}
+                        ${request.request_data ? `
+                            <div class="col-12">
+                                <h6>Additional Data</h6>
+                                <pre class="bg-light p-2 rounded">${JSON.stringify(request.request_data, null, 2)}</pre>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                
+                document.getElementById('adminNotes').value = request.admin_notes || '';
+                new bootstrap.Modal(document.getElementById('requestModal')).show();
+            } catch (error) {
+                alert('Error loading request details');
+            }
+        }
+        
+        document.getElementById('updateWithNotes').addEventListener('click', async () => {
+            const status = prompt('Enter new status (pending/processing/completed/cancelled):');
+            if (!status || !['pending', 'processing', 'completed', 'cancelled'].includes(status)) {
+                alert('Invalid status');
+                return;
+            }
+            
+            const adminNotes = document.getElementById('adminNotes').value;
+            
+            try {
+                const response = await fetch(`/admin/requests/${currentRequestId}/status`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status })
+                    body: JSON.stringify({ status, admin_notes: adminNotes })
                 });
-            });
+                
+                const result = await response.json();
+                if (result.success) {
+                    location.reload();
+                } else {
+                    alert(result.error);
+                }
+            } catch (error) {
+                alert('Error updating status');
+            }
         });
     </script>
 </body>

@@ -1,83 +1,122 @@
 const express = require('express');
 const router = express.Router();
-const { MenuCategory, MenuItem, Amenity } = require('../../models');
-const { isAuthenticated } = require('../../middleware/auth');
+const { isAdminAuthenticated } = require('../../middleware/auth');
+const db = require('../../models');
 
-router.use(isAuthenticated);
+// List all menu items with categories
+router.get('/', isAdminAuthenticated, async (req, res) => {
+    const category = req.query.category || 'all';
 
-router.get('/', async (req, res) => {
     try {
-        const amenities = await Amenity.findAll({
-            where: { category: 'paid', is_active: true }
+        const where = {};
+        if (category !== 'all') {
+            where['$category.name$'] = category;
+        }
+
+        const menuItems = await db.MenuItem.findAll({
+            include: [{ model: db.MenuCategory, as: 'category' }],
+            where,
+            order: [[{ model: db.MenuCategory, as: 'category' }, 'display_order', 'ASC'], ['display_order', 'ASC']]
         });
-        const categories = await MenuCategory.findAll({
-            include: [{ model: Amenity, as: 'amenity' }]
+
+        const categories = await db.MenuCategory.findAll({
+            order: [['display_order', 'ASC']]
         });
-        const items = await MenuItem.findAll({
-            include: [{ model: MenuCategory, as: 'category' }]
+
+        res.render('admin/menu', { 
+            menuItems, 
+            categories, 
+            currentCategory: category,
+            session: req.session
         });
-        res.render('admin/menu', { amenities, categories, items, layout: 'admin' });
     } catch (error) {
         console.error(error);
-        res.status(500).send('Server error');
+        res.render('admin/menu', { 
+            menuItems: [], 
+            categories: [], 
+            error: 'Failed to load menu items',
+            session: req.session
+        });
     }
 });
 
-// Category routes
-router.post('/categories', async (req, res) => {
+// Create menu item
+router.post('/', isAdminAuthenticated, async (req, res) => {
+    const { category_id, name, description, price, is_available, is_featured, display_order } = req.body;
+
+    if (!category_id || !name || !price) {
+        return res.status(400).json({ error: 'Category, name, and price are required' });
+    }
+
     try {
-        const category = await MenuCategory.create(req.body);
-        res.json({ success: true, category });
+        const menuItem = await db.MenuItem.create({
+            category_id,
+            name,
+            description,
+            price,
+            is_available: is_available === 'true' ? 1 : 0,
+            is_featured: is_featured === 'true' ? 1 : 0,
+            display_order: display_order || 0
+        });
+
+        res.json({ success: true, message: 'Menu item created successfully', id: menuItem.id });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error(error);
+        res.status(500).json({ error: 'Failed to create menu item' });
     }
 });
 
-router.put('/categories/:id', async (req, res) => {
+// Update menu item
+router.put('/:id', isAdminAuthenticated, async (req, res) => {
+    const { id } = req.params;
+    const { category_id, name, description, price, is_available, is_featured, display_order } = req.body;
+
     try {
-        const category = await MenuCategory.findByPk(req.params.id);
-        await category.update(req.body);
-        res.json({ success: true });
+        await db.MenuItem.update({
+            category_id,
+            name,
+            description,
+            price,
+            is_available: is_available === 'true' ? 1 : 0,
+            is_featured: is_featured === 'true' ? 1 : 0,
+            display_order: display_order || 0
+        }, { where: { id } });
+
+        res.json({ success: true, message: 'Menu item updated successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error(error);
+        res.status(500).json({ error: 'Failed to update menu item' });
     }
 });
 
-router.delete('/categories/:id', async (req, res) => {
+// Delete menu item
+router.delete('/:id', isAdminAuthenticated, async (req, res) => {
+    const { id } = req.params;
+
     try {
-        await MenuCategory.destroy({ where: { id: req.params.id } });
-        res.json({ success: true });
+        await db.MenuItem.destroy({ where: { id } });
+        res.json({ success: true, message: 'Menu item deleted successfully' });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error(error);
+        res.status(500).json({ error: 'Failed to delete menu item' });
     }
 });
 
-// Item routes
-router.post('/items', async (req, res) => {
-    try {
-        const item = await MenuItem.create(req.body);
-        res.json({ success: true, item });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+// Toggle availability
+router.patch('/:id/toggle', isAdminAuthenticated, async (req, res) => {
+    const { id } = req.params;
 
-router.put('/items/:id', async (req, res) => {
     try {
-        const item = await MenuItem.findByPk(req.params.id);
-        await item.update(req.body);
-        res.json({ success: true });
+        const menuItem = await db.MenuItem.findByPk(id);
+        if (!menuItem) {
+            return res.status(404).json({ error: 'Menu item not found' });
+        }
+        
+        await menuItem.update({ is_available: !menuItem.is_available });
+        res.json({ success: true, message: 'Menu item availability toggled' });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-router.delete('/items/:id', async (req, res) => {
-    try {
-        await MenuItem.destroy({ where: { id: req.params.id } });
-        res.json({ success: true });
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        console.error(error);
+        res.status(500).json({ error: 'Failed to toggle availability' });
     }
 });
 

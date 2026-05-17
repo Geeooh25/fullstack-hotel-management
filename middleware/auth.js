@@ -151,7 +151,7 @@ const optionalAuth = async (req, res, next) => {
     next();
 };
 
-// NEW: Middleware for guest users (doesn't require auth, but attaches user if available)
+// Middleware for guest users (doesn't require auth, but attaches user if available)
 const optionalAuthForGuests = async (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token;
     
@@ -169,10 +169,28 @@ const optionalAuthForGuests = async (req, res, next) => {
     next();
 };
 
+// NEW: Check if admin is authenticated for EJS views (session-based)
+const isAdminAuthenticated = async (req, res, next) => {
+    if (req.session && req.session.admin) {
+        return next();
+    }
+    res.redirect('/admin/login');
+};
+
+// NEW: Check if admin is guest (not logged in)
+const isAdminGuest = async (req, res, next) => {
+    if (!req.session || !req.session.admin) {
+        return next();
+    }
+    res.redirect('/admin/dashboard');
+};
+
 module.exports = {
     isAuthenticated,
     isAdmin,
     isStaff,
     optionalAuth,
-    optionalAuthForGuests
+    optionalAuthForGuests,
+    isAdminAuthenticated,  // NEW for admin EJS routes
+    isAdminGuest           // NEW for admin EJS routes
 };
