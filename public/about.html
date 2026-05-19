@@ -3,100 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contact Us - GEEOOH HOTEL</title>
+    <title>About Us - GEEOOH HOTEL</title>
+    
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
     <link rel="stylesheet" href="/css/style.css">
+    
     <style>
-        /* Sticky navbar on scroll - Same as about.html */
-        .navbar {
-            transition: all 0.3s ease;
-            background: white !important;
-        }
-        
-        .navbar.scrolled {
-            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
-        }
-        
-        .contact-info-card {
-            background: white;
-            padding: 2rem;
-            text-align: center;
-            transition: var(--transition);
-            height: 100%;
-            border: 1px solid #eee;
-        }
-        .contact-info-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow);
-        }
-        .contact-icon {
-            width: 70px;
-            height: 70px;
-            background: var(--gold-light);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 1.5rem;
-        }
-        .contact-icon i {
-            font-size: 2rem;
-            color: var(--gold);
-        }
-        .contact-info-card h4 {
-            margin-bottom: 1rem;
-            font-family: 'Playfair Display', serif;
-        }
-        .contact-info-card p {
-            color: var(--text-light);
-            margin-bottom: 0.25rem;
-        }
-        .contact-form-card {
-            background: white;
-            padding: 2rem;
-            border: 1px solid #eee;
-        }
-        .contact-form-card h3 {
-            margin-bottom: 1.5rem;
-            font-family: 'Playfair Display', serif;
-        }
-        .form-control, .form-select {
-            border-radius: 0;
-            border: 1px solid #e0e0e0;
-            padding: 12px;
-        }
-        .form-control:focus, .form-select:focus {
-            border-color: var(--gold);
-            box-shadow: none;
-        }
-        .business-hours {
-            background: var(--gray-bg);
-            padding: 2rem;
-            margin-top: 2rem;
-        }
-        .business-hours h4 {
-            margin-bottom: 1.5rem;
-        }
-        .hours-list {
-            list-style: none;
-            padding: 0;
-        }
-        .hours-list li {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #eee;
-        }
-        .hours-list li:last-child {
-            border-bottom: none;
-        }
-        .hours-list .day {
-            font-weight: 600;
-        }
-        .hours-list .time {
-            color: var(--gold);
-        }
+        /* Floating cart icon */
         .floating-cart {
             position: fixed;
             bottom: 30px;
@@ -133,57 +52,113 @@
             font-weight: bold;
         }
         
-        /* Toast styles */
-        #toast-container {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 9999;
-        }
-        .custom-toast {
+        .about-story {
             background: white;
-            border-radius: 8px;
-            padding: 12px 20px;
-            margin-top: 10px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            min-width: 250px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            animation: slideIn 0.3s ease;
+            padding: 2rem;
+            margin-bottom: 2rem;
         }
-        .custom-toast-success {
-            border-left: 4px solid #28a745;
-            background: #d4edda;
-            color: #155724;
+        
+        .about-story h2 {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            font-family: 'Playfair Display', serif;
         }
-        .custom-toast-error {
-            border-left: 4px solid #dc3545;
-            background: #f8d7da;
-            color: #721c24;
+        
+        .about-story p {
+            color: var(--text-light);
+            line-height: 1.8;
+            margin-bottom: 1rem;
         }
-        .custom-toast-warning {
-            border-left: 4px solid #ffc107;
-            background: #fff3cd;
-            color: #856404;
+        
+        .feature-box {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            transition: var(--transition);
+            height: 100%;
+            border: 1px solid #eee;
         }
-        .toast-close-btn {
-            background: none;
-            border: none;
-            font-size: 1.2rem;
-            cursor: pointer;
-            margin-left: 10px;
+        
+        .feature-box:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
         }
-        @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+        
+        .feature-box i {
+            font-size: 2.5rem;
+            color: var(--gold);
+            margin-bottom: 1rem;
         }
+        
+        .feature-box h4 {
+            margin-bottom: 1rem;
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .feature-box p {
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+        
+        .stats-section {
+            background: var(--gray-bg);
+            padding: 4rem 0;
+            margin: 3rem 0;
+        }
+        
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--gold);
+            font-family: 'Playfair Display', serif;
+        }
+        
+        .stat-label {
+            color: var(--text-light);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+        
+        .team-section {
+            margin-top: 3rem;
+        }
+        
+        .team-card {
+            text-align: center;
+            background: white;
+            padding: 2rem;
+            transition: var(--transition);
+            border: 1px solid #eee;
+        }
+        
+        .team-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+        }
+        
+        .team-card img {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 1rem;
+        }
+        
+        .team-card h4 {
+            margin-bottom: 0.5rem;
+        }
+        
+        .team-card p {
+            color: var(--gold);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .team-card .bio {
+            color: var(--text-light);
+            font-size: 0.85rem;
+        }
+        
         @media (max-width: 768px) {
             .floating-cart {
                 bottom: 20px;
@@ -191,12 +166,15 @@
                 width: 50px;
                 height: 50px;
             }
+            .stat-number {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navigation Bar - Same as working about.html -->
+    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="/">GEEOOH HOTEL</a>
@@ -209,9 +187,9 @@
                     <li class="nav-item"><a class="nav-link" href="/rooms.html">Rooms</a></li>
                     <li class="nav-item"><a class="nav-link" href="/amenities.html">Amenities</a></li>
                     <li class="nav-item"><a class="nav-link" href="/gallery.html">Gallery</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/about.html">About</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/about.html">About</a></li>
                     <li class="nav-item"><a class="nav-link" href="/booking-lookup.html">My Booking</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="/contact.html">Contact</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/contact.html">Contact</a></li>
                     <li class="nav-item" id="authNav">
                         <a class="nav-link" href="/login.html"><i class="fas fa-sign-in-alt"></i> Login</a>
                     </li>
@@ -226,92 +204,124 @@
         <span class="cart-count" id="cartCount">0</span>
     </div>
 
-    <!-- Page Hero - Same margin/padding as about.html -->
+    <!-- Page Hero -->
     <div class="page-hero" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600'); background-size: cover; background-position: center; min-height: 400px; display: flex; align-items: center; text-align: center; color: white; margin-top: 0; padding-top: 80px;">
         <div class="container">
-            <h1>Contact Us</h1>
-            <p>We're here to help. Reach out to us anytime</p>
+            <h1>About GEEOOH Hotel</h1>
+            <p>Luxury, Comfort, and Exceptional Service Since 2024</p>
         </div>
     </div>
 
+    <!-- Our Story -->
     <div class="container mt-5 pt-4">
+        <div class="about-story">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <img src="https://images.unsplash.com/photo-1566073771259-6a8506099945?w=800" alt="Hotel" class="img-fluid" style="width: 100%; height: 400px; object-fit: cover;">
+                </div>
+                <div class="col-lg-6">
+                    <h2>Our Story</h2>
+                    <p>Founded in 2024, Geeooh Hotel has been a beacon of luxury and hospitality in Beverly Hills. Our commitment to excellence and personalized service has made us a favorite among discerning travelers from around the world.</p>
+                    <p>Every detail of our hotel has been carefully designed to provide an unforgettable experience. From our elegantly appointed rooms to our world-class amenities, we ensure that every guest feels like royalty.</p>
+                    <p>Located in the heart of Beverly Hills, we offer easy access to the city's finest shopping, dining, and entertainment. Whether you're visiting for business or pleasure, Geeooh Hotel provides the perfect home away from home.</p>
+                    <a href="/rooms.html" class="btn-gold d-inline-block mt-3" style="padding: 12px 30px;">Explore Our Rooms →</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats-section">
+        <div class="container">
+            <div class="row text-center">
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">500+</div>
+                    <div class="stat-label">LUXURIOUS ROOMS</div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">4.9/5</div>
+                    <div class="stat-label">GUEST RATING</div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">10K+</div>
+                    <div class="stat-label">HAPPY GUESTS</div>
+                </div>
+                <div class="col-md-3 mb-4">
+                    <div class="stat-number">24/7</div>
+                    <div class="stat-label">CONCIERGE SERVICE</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Our Values -->
+    <div class="container">
+        <h2 class="text-center mb-5" style="font-family: 'Playfair Display', serif;">Our Values</h2>
         <div class="row g-4">
             <div class="col-md-4">
-                <div class="contact-info-card">
-                    <div class="contact-icon"><i class="fas fa-map-marker-alt"></i></div>
-                    <h4>Location</h4>
-                    <p>123 Luxury Avenue</p>
-                    <p>Beverly Hills, CA 90210</p>
+                <div class="feature-box">
+                    <i class="fas fa-crown"></i>
+                    <h4>Luxury Experience</h4>
+                    <p>Experience unparalleled luxury and comfort in every aspect of your stay, from our elegantly designed rooms to our premium amenities.</p>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="contact-info-card">
-                    <div class="contact-icon"><i class="fas fa-phone-alt"></i></div>
-                    <h4>Phone</h4>
-                    <p><strong>Reservations:</strong> +1 (555) 123-4567</p>
-                    <p><strong>Front Desk:</strong> +1 (555) 123-4568</p>
+                <div class="feature-box">
+                    <i class="fas fa-concierge-bell"></i>
+                    <h4>Exceptional Service</h4>
+                    <p>Our dedicated staff ensures your every need is met with a smile, providing personalized attention to make your stay unforgettable.</p>
                 </div>
             </div>
             <div class="col-md-4">
-                <div class="contact-info-card">
-                    <div class="contact-icon"><i class="fas fa-envelope"></i></div>
-                    <h4>Email</h4>
-                    <p><strong>General:</strong> info@geeooohotel.com</p>
-                    <p><strong>Reservations:</strong> reservations@geeooohotel.com</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="row mt-5">
-            <div class="col-lg-7">
-                <div class="contact-form-card">
-                    <h3>Send Us a Message</h3>
-                    <form id="contact-form">
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <input type="text" id="name" class="form-control" placeholder="Your Name" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <input type="email" id="email" class="form-control" placeholder="Your Email" required>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <input type="tel" id="phone" class="form-control" placeholder="Your Phone (optional)">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <select id="subject" class="form-select">
-                                    <option value="general">General Inquiry</option>
-                                    <option value="booking">Booking Question</option>
-                                    <option value="events">Event Inquiry</option>
-                                    <option value="feedback">Feedback</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <textarea id="message" class="form-control" rows="5" placeholder="Your Message" required></textarea>
-                        </div>
-                        <button type="submit" class="btn-gold w-100" style="border: none; cursor: pointer;">Send Message</button>
-                    </form>
-                </div>
-            </div>
-            <div class="col-lg-5">
-                <div class="business-hours">
-                    <h4>Business Hours</h4>
-                    <ul class="hours-list">
-                        <li><span class="day">Front Desk</span><span class="time">24/7</span></li>
-                        <li><span class="day">Check-in</span><span class="time">3:00 PM</span></li>
-                        <li><span class="day">Check-out</span><span class="time">11:00 AM</span></li>
-                        <li><span class="day">Restaurant</span><span class="time">6:30 AM - 10:30 PM</span></li>
-                        <li><span class="day">Spa</span><span class="time">9:00 AM - 8:00 PM</span></li>
-                        <li><span class="day">Fitness Center</span><span class="time">24/7</span></li>
-                        <li><span class="day">Swimming Pool</span><span class="time">7:00 AM - 9:00 PM</span></li>
-                    </ul>
+                <div class="feature-box">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h4>Prime Location</h4>
+                    <p>Located in the heart of Beverly Hills, close to world-class shopping, dining, and entertainment venues.</p>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Team Section -->
+    <div class="container team-section">
+        <h2 class="text-center mb-5" style="font-family: 'Playfair Display', serif;">Meet Our Team</h2>
+        <div class="row g-4">
+            <div class="col-md-3 col-sm-6">
+                <div class="team-card">
+                    <img src="https://randomuser.me/api/portraits/men/32.jpg" alt="Team Member">
+                    <h4>James Wilson</h4>
+                    <p>General Manager</p>
+                    <p class="bio">20+ years of luxury hospitality experience</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="team-card">
+                    <img src="https://randomuser.me/api/portraits/women/44.jpg" alt="Team Member">
+                    <h4>Sarah Johnson</h4>
+                    <p>Guest Relations Manager</p>
+                    <p class="bio">Ensuring every guest feels welcomed</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="team-card">
+                    <img src="https://randomuser.me/api/portraits/men/45.jpg" alt="Team Member">
+                    <h4>Michael Chen</h4>
+                    <p>Executive Chef</p>
+                    <p class="bio">Award-winning culinary expert</p>
+                </div>
+            </div>
+            <div class="col-md-3 col-sm-6">
+                <div class="team-card">
+                    <img src="https://randomuser.me/api/portraits/women/68.jpg" alt="Team Member">
+                    <h4>Emma Rodriguez</h4>
+                    <p>Spa Director</p>
+                    <p class="bio">Wellness and relaxation specialist</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
     <footer class="footer mt-5">
         <div class="container">
             <div class="row">
@@ -353,15 +363,15 @@
         </div>
     </footer>
 
-    <div id="toast-container"></div>
+    <div class="toast-container" id="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/cart.js"></script>
-
+    
     <script>
-        // Scroll event for sticky navbar - Same as working about.html
+        // Scroll effect for navbar (same as index page)
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar');
             if (window.scrollY > 50) {
@@ -371,131 +381,45 @@
             }
         });
         
-        // Toast function
-        function showToast(message, type) {
-            const container = document.getElementById('toast-container');
-            if (!container) {
-                console.error('No toast container');
-                return;
-            }
-            
-            const toast = document.createElement('div');
-            toast.className = `custom-toast custom-toast-${type}`;
-            toast.innerHTML = `
-                <span>${message}</span>
-                <button class="toast-close-btn" onclick="this.parentElement.remove()">&times;</button>
-            `;
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                if (toast && toast.remove) toast.remove();
-            }, 5000);
-        }
-
-        // Contact form
-        document.getElementById('contact-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const phone = document.getElementById('phone').value;
-            const subject = document.getElementById('subject').value;
-            const message = document.getElementById('message').value;
-            
-            if (!name || !email || !message) {
-                showToast('Please fill in all required fields', 'warning');
-                return;
-            }
-            
-            const submitBtn = this.querySelector('button[type="submit"]');
-            const originalText = submitBtn.innerHTML;
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-            
-            try {
-                const response = await fetch('/api/contact', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, phone, subject, message })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast('✅ ' + data.message, 'success');
-                    document.getElementById('contact-form').reset();
-                } else {
-                    showToast('❌ ' + (data.error || 'Failed to send message.'), 'error');
-                }
-            } catch (error) {
-                showToast('❌ Network error. Please try again.', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = originalText;
-            }
-        });
-
-        // Newsletter subscription
-        document.getElementById('subscribeBtn').addEventListener('click', async function() {
-            const emailInput = document.getElementById('newsletter-email');
-            const email = emailInput.value;
-            
+        function subscribeNewsletter() {
+            const email = document.getElementById('newsletter-email').value;
             if (!email) {
                 showToast('Please enter your email address', 'warning');
                 return;
             }
-            
-            if (!email.includes('@') || !email.includes('.')) {
-                showToast('Please enter a valid email address', 'warning');
-                return;
-            }
-            
-            const btn = this;
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-            btn.disabled = true;
-            
-            try {
-                const response = await fetch('/api/contact/newsletter', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showToast('✅ ' + data.message, 'success');
-                    emailInput.value = '';
-                } else {
-                    showToast('❌ ' + (data.error || 'Subscription failed'), 'error');
-                }
-            } catch (error) {
-                showToast('❌ Network error. Please try again.', 'error');
-            } finally {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-            }
-        });
-
-        // Floating cart
+            showToast('Thank you for subscribing!', 'success');
+            document.getElementById('newsletter-email').value = '';
+        }
+        
+        function showToast(message, type) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.innerHTML = `<div class="d-flex justify-content-between align-items-center"><span>${message}</span><button class="btn btn-sm btn-link" onclick="this.parentElement.parentElement.remove()">&times;</button></div>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+        
+        // Floating cart click
         document.getElementById('floatingCart').addEventListener('click', () => {
             window.location.href = '/cart.html';
         });
-
+        
+        // Update cart count
         function updateCartCount() {
             const cartCount = document.getElementById('cartCount');
             if (cartCount && typeof hotelCart !== 'undefined') {
                 cartCount.innerText = hotelCart.getItemCount();
             }
         }
-
+        
+        // Update auth nav
         async function updateAuthNav() {
             if (typeof Auth !== 'undefined') {
                 await Auth.updateNav();
             }
         }
-
+        
         // Initialize
         updateCartCount();
         updateAuthNav();

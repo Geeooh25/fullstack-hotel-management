@@ -362,8 +362,19 @@
         let currentFilter = 'all';
         let requestModal = null;
 
+        // Scroll effect for navbar (same as index page)
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', function() {
             requestModal = new bootstrap.Modal(document.getElementById('requestModal'));
+            setActiveNavLink();
         });
 
         async function loadAmenities() {
@@ -494,33 +505,49 @@
         }
 
         function showToast(message, type) {
-    // Create container if it doesn't exist
-    let container = document.getElementById('toast-container');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toast-container';
-        container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
-        document.body.appendChild(container);
-    }
-    
-    const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
-    toast.style.cssText = 'background: white; border-radius: 8px; padding: 12px 20px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-left: 4px solid; animation: slideIn 0.3s ease;';
-    toast.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><span>${message}</span><button style="background: none; border: none; font-size: 1.2rem; cursor: pointer; margin-left: 15px;" onclick="this.parentElement.parentElement.remove()">&times;</button></div>`;
-    
-    if (type === 'success') {
-        toast.style.borderLeftColor = '#28a745';
-        toast.style.background = '#d4edda';
-        toast.style.color = '#155724';
-    } else {
-        toast.style.borderLeftColor = '#dc3545';
-        toast.style.background = '#f8d7da';
-        toast.style.color = '#721c24';
-    }
-    
-    container.appendChild(toast);
-    setTimeout(() => toast.remove(), 3000);
-}
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+                document.body.appendChild(container);
+            }
+            
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            toast.style.cssText = 'background: white; border-radius: 8px; padding: 12px 20px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-left: 4px solid; animation: slideIn 0.3s ease;';
+            toast.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><span>${message}</span><button style="background: none; border: none; font-size: 1.2rem; cursor: pointer; margin-left: 15px;" onclick="this.parentElement.parentElement.remove()">&times;</button></div>`;
+            
+            if (type === 'success') {
+                toast.style.borderLeftColor = '#28a745';
+                toast.style.background = '#d4edda';
+                toast.style.color = '#155724';
+            } else {
+                toast.style.borderLeftColor = '#dc3545';
+                toast.style.background = '#f8d7da';
+                toast.style.color = '#721c24';
+            }
+            
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        // Set active nav link based on current page
+        function setActiveNavLink() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.navbar-nav .nav-link');
+            
+            navLinks.forEach(link => {
+                const href = link.getAttribute('href');
+                if (href === currentPath || (currentPath === '/' && href === '/')) {
+                    link.classList.add('active');
+                } else if (href !== '/' && currentPath.includes(href) && href !== '/') {
+                    link.classList.add('active');
+                } else {
+                    link.classList.remove('active');
+                }
+            });
+        }
 
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -549,8 +576,20 @@
         
         document.getElementById('subscribeBtn')?.addEventListener('click', subscribeNewsletter);
         
+        // Update auth nav
+        async function updateAuthNav() {
+            if (typeof Auth !== 'undefined') {
+                await Auth.updateNav();
+            }
+        }
+        
         loadAmenities();
         updateCartCount();
+        updateAuthNav();
+        
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'hotelCart') updateCartCount();
+        });
     </script>
     <script src="/js/newsletter.js"></script>
 </body>
