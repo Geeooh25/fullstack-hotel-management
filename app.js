@@ -131,7 +131,7 @@ app.get('/simple-rooms', async (req, res) => {
     }
 });
 
-// ==================== FIX DATABASE ROUTES (MUST BE BEFORE ADMIN ROUTES) ====================
+// ==================== FIX DATABASE ROUTES ====================
 
 // TEMPORARY ROUTE - Add missing columns to PostgreSQL
 app.get('/fix-columns', async (req, res) => {
@@ -157,7 +157,6 @@ app.get('/fix-columns', async (req, res) => {
             }
         }
         
-        // Verify columns were added
         const [columns] = await sequelize.query(`
             SELECT column_name 
             FROM information_schema.columns 
@@ -187,6 +186,79 @@ app.get('/fix-columns', async (req, res) => {
     }
 });
 
+// Check admin user
+app.get('/check-admin', async (req, res) => {
+    try {
+        const admin = await User.findOne({ where: { email: 'admin@mansionhotel.com' } });
+        
+        if (admin) {
+            res.json({
+                exists: true,
+                email: admin.email,
+                role: admin.role,
+                is_active: admin.is_active,
+                has_password: !!admin.password
+            });
+        } else {
+            res.json({ exists: false, message: 'Admin user not found' });
+        }
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
+
+// Create admin user
+app.get('/create-admin', async (req, res) => {
+    try {
+        const bcrypt = require('bcrypt');
+        
+        const existing = await User.findOne({ where: { email: 'admin@mansionhotel.com' } });
+        if (existing) {
+            return res.json({ message: 'Admin already exists', email: existing.email });
+        }
+        
+        const hashedPassword = await bcrypt.hash('Admin123!', 10);
+        const admin = await User.create({
+            email: 'admin@mansionhotel.com',
+            password: hashedPassword,
+            first_name: 'Admin',
+            last_name: 'User',
+            role: 'super_admin',
+            is_active: true,
+            status: 'active'
+        });
+        
+        res.json({ success: true, message: 'Admin created', email: admin.email });
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
+
+// Debug login test
+app.post('/debug-login', async (req, res) => {
+    const { email, password } = req.body;
+    const bcrypt = require('bcrypt');
+    
+    try {
+        const user = await User.findOne({ where: { email } });
+        if (!user) {
+            return res.json({ success: false, error: 'User not found', email });
+        }
+        
+        const isValid = await bcrypt.compare(password, user.password);
+        res.json({
+            success: true,
+            user_exists: true,
+            password_valid: isValid,
+            user_role: user.role,
+            user_active: user.is_active,
+            email: user.email
+        });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // ==================== API ROUTES ====================
 app.use('/api/rooms', require('./routes/api/rooms'));
 app.use('/api/availability', require('./routes/api/availability'));
@@ -199,7 +271,6 @@ app.use('/api/menu', require('./routes/api/menu'));
 app.use('/api/requests', require('./routes/api/requests'));
 
 // ==================== ADMIN ROUTES ====================
-// All admin routes are handled by routes/admin.js
 app.use('/admin', require('./routes/admin'));
 
 // Google OAuth
@@ -216,14 +287,18 @@ const startServer = async () => {
     try {
         await sequelize.authenticate();
         console.log('✅ Database connected');
-        await sequelize.sync({ alter: false });
-        console.log('✅ Database synced');
+        
+        // Don't sync tables - just verify
+        console.log('✅ Database ready');
         
         server.listen(PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${PORT}`);
             console.log(`👨‍💼 Admin Login: http://localhost:${PORT}/admin/login`);
             console.log(`🔑 Admin: admin@mansionhotel.com / Admin123!\n`);
-            console.log(`🔧 Fix Database: http://localhost:${PORT}/fix-columns`);
+            console.log(`🔧 Debug URLs:`);
+            console.log(`   Check Admin: http://localhost:${PORT}/check-admin`);
+            console.log(`   Create Admin: http://localhost:${PORT}/create-admin`);
+            console.log(`   Fix Columns: http://localhost:${PORT}/fix-columns`);
         });
     } catch (error) {
         console.error('Failed to start:', error);
