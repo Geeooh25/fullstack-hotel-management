@@ -131,68 +131,7 @@ app.get('/simple-rooms', async (req, res) => {
     }
 });
 
-// ==================== API ROUTES ====================
-app.use('/api/rooms', require('./routes/api/rooms'));
-app.use('/api/availability', require('./routes/api/availability'));
-app.use('/api/bookings', require('./routes/api/bookings'));
-app.use('/api/auth', require('./routes/api/auth'));
-app.use('/api/contact', require('./routes/api/contact'));
-app.use('/api/amenities', require('./routes/api/amenities'));
-app.use('/api/cart', require('./routes/api/cart'));
-app.use('/api/menu', require('./routes/api/menu'));
-app.use('/api/requests', require('./routes/api/requests'));
-
-// ==================== ADMIN ROUTES ====================
-// All admin routes are handled by routes/admin.js
-app.use('/admin', require('./routes/admin'));
-
-// Temporary fix route - remove after using
-app.get('/fix-all', async (req, res) => {
-    try {
-        const { sequelize } = require('./config/database');
-        const { Amenity, RoomType, Room, User } = require('./models');
-        const bcrypt = require('bcrypt');
-        
-        let results = [];
-        
-        // Add missing columns
-        const columns = [
-            'failed_login_attempts INTEGER DEFAULT 0',
-            'locked_until TIMESTAMP',
-            'last_login_ip VARCHAR(45)',
-            'last_login_device TEXT',
-            'password_reset_token VARCHAR(255)',
-            'password_reset_expires TIMESTAMP'
-        ];
-        
-        for (const col of columns) {
-            try {
-                await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col}`);
-                results.push(`✅ Added column`);
-            } catch (err) {
-                results.push(`⚠️ ${err.message}`);
-            }
-        }
-        
-        // Create admin if not exists
-        const admin = await User.findOne({ where: { email: 'admin@mansionhotel.com' } });
-        if (!admin) {
-            await User.create({
-                email: 'admin@mansionhotel.com',
-                password: await bcrypt.hash('Admin123!', 10),
-                first_name: 'Admin',
-                last_name: 'User',
-                role: 'super_admin',
-                is_active: true
-            });
-            results.push('✅ Admin user created');
-        }
-        
-        res.send(`<h1>Fix Results</h1><pre>${results.join('\n')}</pre><a href="/admin/login">Go to Login</a>`);
-    } catch (error) {
-        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
-    }
-});
+// ==================== FIX DATABASE ROUTES (MUST BE BEFORE ADMIN ROUTES) ====================
 
 // TEMPORARY ROUTE - Add missing columns to PostgreSQL
 app.get('/fix-columns', async (req, res) => {
@@ -248,6 +187,21 @@ app.get('/fix-columns', async (req, res) => {
     }
 });
 
+// ==================== API ROUTES ====================
+app.use('/api/rooms', require('./routes/api/rooms'));
+app.use('/api/availability', require('./routes/api/availability'));
+app.use('/api/bookings', require('./routes/api/bookings'));
+app.use('/api/auth', require('./routes/api/auth'));
+app.use('/api/contact', require('./routes/api/contact'));
+app.use('/api/amenities', require('./routes/api/amenities'));
+app.use('/api/cart', require('./routes/api/cart'));
+app.use('/api/menu', require('./routes/api/menu'));
+app.use('/api/requests', require('./routes/api/requests'));
+
+// ==================== ADMIN ROUTES ====================
+// All admin routes are handled by routes/admin.js
+app.use('/admin', require('./routes/admin'));
+
 // Google OAuth
 app.use('/auth', require('./routes/auth'));
 
@@ -269,6 +223,7 @@ const startServer = async () => {
             console.log(`\n🚀 Server running on http://localhost:${PORT}`);
             console.log(`👨‍💼 Admin Login: http://localhost:${PORT}/admin/login`);
             console.log(`🔑 Admin: admin@mansionhotel.com / Admin123!\n`);
+            console.log(`🔧 Fix Database: http://localhost:${PORT}/fix-columns`);
         });
     } catch (error) {
         console.error('Failed to start:', error);
