@@ -226,6 +226,25 @@ app.get('/reset-admin-password', async (req, res) => {
         res.json({ error: error.message });
     }
 });
+// Debug amenities - TEMPORARY
+app.get('/debug-amenities', async (req, res) => {
+    try {
+        const { Amenity } = require('./models');
+        const amenities = await Amenity.findAll();
+        
+        res.json({
+            count: amenities.length,
+            amenities: amenities.map(a => ({
+                id: a.id,
+                name: a.name,
+                category: a.category,
+                is_active: a.is_active
+            }))
+        });
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
 
 // Check admin user
 app.get('/check-admin', async (req, res) => {
