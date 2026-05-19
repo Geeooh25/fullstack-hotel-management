@@ -203,6 +203,30 @@ app.get('/fix-all-columns', async (req, res) => {
     }
 });
 
+// Reset admin password using raw SQL
+app.get('/reset-admin-password', async (req, res) => {
+    try {
+        const bcrypt = require('bcrypt');
+        const { sequelize } = require('./config/database');
+        
+        const hashedPassword = await bcrypt.hash('Admin123!', 10);
+        
+        await sequelize.query(
+            `UPDATE users SET password = :password, role = 'super_admin' WHERE email = 'admin@mansionhotel.com'`,
+            { replacements: { password: hashedPassword } }
+        );
+        
+        res.json({ 
+            success: true, 
+            message: 'Admin password reset successfully',
+            email: 'admin@mansionhotel.com',
+            password: 'Admin123!'
+        });
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
+
 // Check admin user
 app.get('/check-admin', async (req, res) => {
     try {
