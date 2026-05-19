@@ -194,12 +194,58 @@ app.get('/fix-all', async (req, res) => {
     }
 });
 
-// Add this temporary route to app.js
-app.get('/run-setup', async (req, res) => {
-    const { exec } = require('child_process');
-    exec('node scripts/setup-db.js', (error, stdout, stderr) => {
-        res.send(`<pre>${stdout}\n${stderr || ''}</pre>`);
-    });
+// TEMPORARY ROUTE - Add missing columns to PostgreSQL
+app.get('/fix-columns', async (req, res) => {
+    try {
+        const { sequelize } = require('./config/database');
+        const results = [];
+        
+        const columnsToAdd = [
+            { name: 'failed_login_attempts', type: 'INTEGER DEFAULT 0' },
+            { name: 'locked_until', type: 'TIMESTAMP' },
+            { name: 'last_login_ip', type: 'VARCHAR(45)' },
+            { name: 'last_login_device', type: 'TEXT' },
+            { name: 'password_reset_token', type: 'VARCHAR(255)' },
+            { name: 'password_reset_expires', type: 'TIMESTAMP' }
+        ];
+        
+        for (const col of columnsToAdd) {
+            try {
+                await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
+                results.push(`✅ Added column: ${col.name}`);
+            } catch (err) {
+                results.push(`⚠️ Could not add ${col.name}: ${err.message}`);
+            }
+        }
+        
+        // Verify columns were added
+        const [columns] = await sequelize.query(`
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'users' 
+            ORDER BY ordinal_position
+        `);
+        
+        const columnNames = columns.map(c => c.column_name);
+        
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>Fix Database</title></head>
+            <body style="font-family: monospace; padding: 20px;">
+                <h1>🔧 Database Fix Results</h1>
+                <h3>Columns added:</h3>
+                <pre>${results.join('\n')}</pre>
+                <h3>All columns in users table:</h3>
+                <pre>${columnNames.join('\n')}</pre>
+                <hr>
+                <p><a href="/admin/login">Go to Admin Login →</a></p>
+            </body>
+            </html>
+        `);
+    } catch (error) {
+        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
+    }
 });
 
 // Google OAuth
