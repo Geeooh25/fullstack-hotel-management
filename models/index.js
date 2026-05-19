@@ -17,7 +17,7 @@ const CartItem = require('./cartItem');
 const BookingService = require('./bookingService');
 const RequestSubmission = require('./requestSubmission');
 
-// Stage 3 Models - FIXED IMPORTS
+// Stage 3 Models
 const SystemSetting = require('./SystemSetting');
 const NotificationSetting = require('./NotificationSetting');
 const ActivityLog = require('./ActivityLog');
@@ -85,19 +85,21 @@ models.MenuItem.hasMany(models.BookingService, { foreignKey: 'menu_item_id', as:
 models.MenuItem.hasMany(models.CartItem, { foreignKey: 'menu_item_id', as: 'cart_items' });
 models.CartItem.belongsTo(models.MenuItem, { foreignKey: 'menu_item_id', as: 'menu_item' });
 
-// Amenity to RequestSubmission
+// ==================== REQUEST SUBMISSION ASSOCIATIONS ====================
+// Amenity to RequestSubmission (This works - table has amenity_id column)
 models.Amenity.hasMany(models.RequestSubmission, { foreignKey: 'amenity_id', as: 'requests' });
 models.RequestSubmission.belongsTo(models.Amenity, { foreignKey: 'amenity_id', as: 'amenity' });
 
-// User to RequestSubmission
-models.User.hasMany(models.RequestSubmission, { foreignKey: 'user_id', as: 'requests' });
-models.RequestSubmission.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
+// NOTE: User and Booking associations are commented out because the request_submissions table 
+// does not have user_id or booking_id columns. If needed later, add those columns first.
 
-// Booking to RequestSubmission
-models.Booking.hasMany(models.RequestSubmission, { foreignKey: 'booking_id', as: 'requests' });
-models.RequestSubmission.belongsTo(models.Booking, { foreignKey: 'booking_id', as: 'booking' });
+// models.User.hasMany(models.RequestSubmission, { foreignKey: 'user_id', as: 'requests' });
+// models.RequestSubmission.belongsTo(models.User, { foreignKey: 'user_id', as: 'user' });
 
-// ActivityLog associations
+// models.Booking.hasMany(models.RequestSubmission, { foreignKey: 'booking_id', as: 'requests' });
+// models.RequestSubmission.belongsTo(models.Booking, { foreignKey: 'booking_id', as: 'booking' });
+
+// ==================== ACTIVITY LOG ASSOCIATIONS ====================
 models.ActivityLog.belongsTo(models.User, { foreignKey: 'admin_id', as: 'admin' });
 models.User.hasMany(models.ActivityLog, { foreignKey: 'admin_id', as: 'activity_logs' });
 

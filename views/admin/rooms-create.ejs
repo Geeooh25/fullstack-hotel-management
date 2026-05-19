@@ -1,52 +1,164 @@
-<div class="card">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Add New Room</h5>
-    </div>
-    <div class="card-body">
-        <form action="/admin/rooms" method="POST">
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Room Number *</label>
-                    <input type="text" name="room_number" class="form-control" required placeholder="e.g., 101, 201, Suite A">
+<div class="row">
+    <div class="col-md-12">
+        <div class="stats-card">
+            <h5>Add New Room</h5>
+            <form id="addRoomForm">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Room Number *</label>
+                        <input type="text" name="room_number" class="form-control" required placeholder="e.g., 401">
+                        <small class="text-muted">Example: 401, 402, 501</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Room Type *</label>
+                        <select name="room_type_id" class="form-select" required>
+                            <option value="">Select Room Type</option>
+                            <% if (roomTypes && roomTypes.length > 0) { %>
+                                <% roomTypes.forEach(type => { %>
+                                    <option value="<%= type.id %>"><%= type.name %> - $<%= type.base_price %>/night</option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Floor</label>
+                        <input type="number" name="floor" class="form-control" placeholder="e.g., 4">
+                        <small class="text-muted">Floor number where room is located</small>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Initial Status</label>
+                        <select name="status" class="form-select">
+                            <option value="available">Available</option>
+                            <option value="maintenance">Maintenance</option>
+                            <option value="cleaning">Cleaning</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Room Type *</label>
-                    <select name="room_type_id" class="form-select" required>
-                        <option value="">Select Room Type</option>
-                        <% roomTypes.forEach(type => { %>
-                            <option value="<%= type.id %>"><%= type.name %> - $<%= type.base_price %>/night</option>
-                        <% }) %>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Floor</label>
-                    <input type="number" name="floor" class="form-control" placeholder="e.g., 1, 2, 3">
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="available">Available</option>
-                        <option value="occupied">Occupied</option>
-                        <option value="maintenance">Maintenance</option>
-                        <option value="cleaning">Cleaning</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label">Notes</label>
-                <textarea name="notes" class="form-control" rows="3" placeholder="Any special notes about this room..."></textarea>
-            </div>
-            
-            <hr>
-            
-            <div class="d-flex justify-content-between">
+                <button type="submit" class="btn-gold">Add Room</button>
                 <a href="/admin/rooms" class="btn btn-secondary">Cancel</a>
-                <button type="submit" class="btn btn-primary">Create Room</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+<style>
+    .toast-notification {
+        position: relative;
+        background: white;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-width: 280px;
+        animation: slideIn 0.3s ease;
+    }
+    .toast-success {
+        border-left: 4px solid #28a745;
+        background: #d4edda;
+        color: #155724;
+    }
+    .toast-error {
+        border-left: 4px solid #dc3545;
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .toast-info {
+        border-left: 4px solid #17a2b8;
+        background: #d1ecf1;
+        color: #0c5460;
+    }
+    .toast-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .toast-content i {
+        font-size: 1.2rem;
+    }
+    .toast-close {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        margin-left: 15px;
+        color: inherit;
+    }
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        `;
+        container.appendChild(toast);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (toast && toast.remove) toast.remove();
+        }, 3000);
+    }
+    
+    document.getElementById('addRoomForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adding...';
+        
+        const formData = new FormData(e.target);
+        const data = {
+            room_number: formData.get('room_number'),
+            room_type_id: parseInt(formData.get('room_type_id')),
+            floor: formData.get('floor') ? parseInt(formData.get('floor')) : null,
+            status: formData.get('status')
+        };
+        
+        try {
+            const response = await fetch('/admin/rooms/create', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast('✅ Room added successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/admin/rooms';
+                }, 1000);
+            } else {
+                showToast(result.error || '❌ Could not add room', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            showToast('❌ Error: ' + error.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+</script>

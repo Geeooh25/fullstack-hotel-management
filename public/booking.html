@@ -311,6 +311,7 @@
                 navbar.classList.remove('scrolled');
             }
         });
+
         
         function showToast(message, type) {
             const container = document.getElementById('toast-container');
@@ -355,6 +356,21 @@
                 cartCount.innerText = hotelCart.getItemCount();
             }
         }
+        async function checkRoomAvailability(roomId, checkIn, checkOut) {
+    try {
+        const response = await fetch(`/api/availability/room/${roomId}`);
+        const data = await response.json();
+        
+        if (!data.success || !data.room.is_available) {
+            showToast(`Room is currently ${data.room.status}. Please select another room.`, 'error');
+            return false;
+        }
+        return true;
+    } catch (error) {
+        console.error('Availability check error:', error);
+        return false;
+    }
+}
         
         // Update auth nav
         async function updateAuthNav() {

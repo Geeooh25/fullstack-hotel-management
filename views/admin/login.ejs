@@ -1,29 +1,358 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Admin Login</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login - GEEOOH HOTEL</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
-        body { font-family: Arial; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-        .login-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.2); width: 350px; text-align: center; }
-        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
-        button { width: 100%; padding: 12px; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #5a67d8; }
-        .error { color: red; margin: 10px 0; }
-        h2 { color: #333; margin-bottom: 20px; }
+        :root {
+            --gold: #B8860B;
+            --gold-dark: #8B691B;
+            --gold-light: #F5E6D3;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+        }
+        
+        .login-container {
+            width: 100%;
+            max-width: 1200px;  /* Wider on big screens */
+            margin: 0 auto;
+        }
+        
+        .login-card {
+            background: white;
+            border-radius: 30px;
+            box-shadow: 0 30px 80px rgba(0,0,0,0.4);
+            overflow: hidden;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        
+        /* Left Side - Form */
+        .login-form-side {
+            flex: 1;
+            min-width: 380px;
+            padding: 50px 40px;
+        }
+        
+        /* Right Side - Branding/Info */
+        .login-info-side {
+            flex: 1;
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            padding: 50px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            min-width: 380px;
+        }
+        
+        .hotel-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+        
+        .login-info-side h2 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+        }
+        
+        .login-info-side p {
+            font-size: 1rem;
+            opacity: 0.9;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .feature-list {
+            list-style: none;
+            text-align: left;
+            margin-top: 30px;
+        }
+        
+        .feature-list li {
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .feature-list li i {
+            width: 25px;
+            font-size: 1.2rem;
+        }
+        
+        .login-header {
+            margin-bottom: 30px;
+        }
+        
+        .login-header h3 {
+            font-size: 2rem;
+            color: #1a1a2e;
+            margin-bottom: 8px;
+        }
+        
+        .login-header p {
+            color: #666;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .form-control {
+            border-radius: 12px;
+            padding: 14px 18px;
+            border: 1px solid #e0e0e0;
+            width: 100%;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: var(--gold);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(184,134,11,0.1);
+        }
+        
+        .password-wrapper {
+            position: relative;
+        }
+        
+        .toggle-password {
+            position: absolute;
+            right: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #999;
+            font-size: 1.1rem;
+        }
+        
+        .toggle-password:hover {
+            color: var(--gold);
+        }
+        
+        .checkbox-group {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .checkbox-group label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+        }
+        
+        .forgot-link {
+            color: var(--gold);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .forgot-link:hover {
+            text-decoration: underline;
+            color: var(--gold-dark);
+        }
+        
+        .btn-login {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            width: 100%;
+            font-weight: 600;
+            font-size: 1rem;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(184,134,11,0.4);
+        }
+        
+        .btn-login:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px 16px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+            font-size: 0.85rem;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .login-footer {
+            text-align: center;
+            padding-top: 20px;
+            margin-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 0.75rem;
+            color: #999;
+        }
+        
+        /* Responsive */
+        @media (max-width: 992px) {
+            .login-form-side, .login-info-side {
+                min-width: 100%;
+            }
+            .login-info-side {
+                order: -1;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .login-form-side {
+                padding: 30px 25px;
+            }
+            .login-info-side {
+                padding: 30px 25px;
+            }
+            .login-header h3 {
+                font-size: 1.6rem;
+            }
+        }
     </style>
 </head>
 <body>
-    <div class="login-box">
-        <h2>Hotel Admin Login</h2>
-        <% if (error) { %>
-            <div class="error"><%= error %></div>
-        <% } %>
-        <form method="POST" action="/admin/login-page">
-            <input type="email" name="email" placeholder="Email" required value="admin@mansionhotel.com">
-            <input type="password" name="password" placeholder="Password" required value="Admin123!">
-            <button type="submit">Login</button>
-        </form>
-        <p style="margin-top: 20px; font-size: 12px; color: #666;">Use admin@mansionhotel.com / Admin123!</p>
+    <div class="login-container">
+        <div class="login-card">
+            <!-- Left Side - Form -->
+            <div class="login-form-side">
+                <div class="login-header">
+                    <h3>Welcome Back</h3>
+                    <p>Sign in to your administrator account</p>
+                </div>
+                
+                <% if (error) { %>
+                    <div class="error-message">
+                        <i class="fas fa-exclamation-triangle"></i> <%= error %>
+                    </div>
+                <% } %>
+                
+                <form method="POST" action="/admin/login" id="loginForm">
+                    <div class="form-group">
+                        <label><i class="fas fa-envelope"></i> Email Address</label>
+                        <input type="email" name="email" class="form-control" placeholder="admin@mansionhotel.com" required autofocus>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="password" class="form-control" placeholder="Enter your password" required>
+                            <i class="fas fa-eye toggle-password" id="togglePassword"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="checkbox-group">
+                        <label>
+                            <input type="checkbox" name="remember" value="1"> Remember Me
+                        </label>
+                        <a href="/admin/forgot-password" class="forgot-link">Forgot Password?</a>
+                    </div>
+                    
+                    <button type="submit" class="btn-login" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login to Dashboard
+                    </button>
+                </form>
+                
+                <div class="login-footer">
+                    <i class="fas fa-shield-alt"></i> Secure Admin Access Only
+                </div>
+            </div>
+            
+            <!-- Right Side - Branding -->
+            <div class="login-info-side">
+                <div class="hotel-icon">
+                    <i class="fas fa-hotel"></i>
+                </div>
+                <h2>GEEOOH HOTEL</h2>
+                <p>Luxury, Comfort, and Exceptional Service</p>
+                
+                <ul class="feature-list">
+                    <li><i class="fas fa-chart-line"></i> Real-time Analytics</li>
+                    <li><i class="fas fa-calendar-check"></i> Booking Management</li>
+                    <li><i class="fas fa-users"></i> Guest & Staff Management</li>
+                    <li><i class="fas fa-chart-bar"></i> Revenue Reports</li>
+                    <li><i class="fas fa-shield-alt"></i> Secure Access</li>
+                </ul>
+            </div>
+        </div>
     </div>
+
+    <script>
+        // Show/Hide Password
+        const togglePassword = document.getElementById('togglePassword');
+        const passwordInput = document.getElementById('password');
+        
+        if (togglePassword) {
+            togglePassword.addEventListener('click', function() {
+                const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordInput.setAttribute('type', type);
+                this.classList.toggle('fa-eye');
+                this.classList.toggle('fa-eye-slash');
+            });
+        }
+        
+        // Prevent double submission
+        const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        if (loginForm) {
+            loginForm.addEventListener('submit', function() {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            });
+        }
+        
+        // Caps Lock Detection
+        passwordInput.addEventListener('keyup', function(e) {
+            if (e.getModifierState && e.getModifierState('CapsLock')) {
+                // Optional: show caps lock warning
+                console.log('Caps Lock is on');
+            }
+        });
+    </script>
 </body>
 </html>

@@ -1,5 +1,5 @@
 const { Op } = require('sequelize');
-const { Booking, Room, RoomType } = require('../models');
+const db = require('../models');
 const { BOOKING_STATUS, ROOM_STATUS } = require('../utils/constants');
 const { calculateNights, datesOverlap } = require('../utils/dateUtils');
 
@@ -12,28 +12,30 @@ class AvailabilityService {
      * @returns {Promise<boolean>} - True if available
      */
     static async isRoomAvailable(roomId, checkIn, checkOut) {
-        // First check if room exists and is not in maintenance
-        const room = await Room.findByPk(roomId);
-        if (!room) return false;
-        if (room.status === ROOM_STATUS.MAINTENANCE) return false;
+    const room = await db.Room.findByPk(roomId);
+    if (!room) return false;
+    
+    // Check if room is in maintenance or cleaning (not available for booking)
+    if (room.status === 'maintenance') return false;
+    if (room.status === 'cleaning') return false;
+    if (room.status === 'occupied') return false;
+    
+    // Check for overlapping bookings
+    const overlappingBookings = await db.Booking.findAll({
+        where: {
+            room_id: roomId,
+            status: {
+                [Op.notIn]: ['cancelled', 'checked_out']
+            },
+            [Op.and]: [
+                { check_in: { [Op.lt]: checkOut } },
+                { check_out: { [Op.gt]: checkIn } }
+            ]
+        }
+    });
 
-        // Check for overlapping bookings
-        const overlappingBookings = await Booking.findAll({
-            where: {
-                room_id: roomId,
-                status: {
-                    [Op.notIn]: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.CHECKED_OUT]
-                },
-                [Op.and]: [
-                    { check_in: { [Op.lt]: checkOut } },
-                    { check_out: { [Op.gt]: checkIn } }
-                ]
-            }
-        });
-
-        return overlappingBookings.length === 0;
-    }
-
+    return overlappingBookings.length === 0;
+}
     /**
      * Get all available rooms for given dates
      * @param {string} checkIn - YYYY-MM-DD
@@ -46,14 +48,14 @@ class AvailabilityService {
         const totalGuests = adults + children;
 
         // Get all active rooms
-        const allRooms = await Room.findAll({
+        const allRooms = await db.Room.findAll({
             where: {
                 status: {
                     [Op.notIn]: [ROOM_STATUS.MAINTENANCE]
                 }
             },
             include: [{
-                model: RoomType,
+                model: db.RoomType,
                 where: { is_active: true }
             }]
         });
@@ -90,7 +92,7 @@ class AvailabilityService {
      * @returns {Promise<Array>} - List of available rooms of this type
      */
     static async getAvailableRoomsByType(roomTypeId, checkIn, checkOut) {
-        const rooms = await Room.findAll({
+        const rooms = await db.Room.findAll({
             where: {
                 room_type_id: roomTypeId,
                 status: { [Op.notIn]: [ROOM_STATUS.MAINTENANCE] }
@@ -115,7 +117,7 @@ class AvailabilityService {
      * @returns {Promise<Array>} - List of booked room IDs
      */
     static async getBookedRooms(checkIn, checkOut) {
-        const bookings = await Booking.findAll({
+        const bookings = await db.Booking.findAll({
             where: {
                 status: {
                     [Op.notIn]: [BOOKING_STATUS.CANCELLED, BOOKING_STATUS.CHECKED_OUT]
@@ -138,7 +140,7 @@ class AvailabilityService {
      * @returns {Promise<number>} - Occupancy percentage
      */
     static async getOccupancyRate(startDate, endDate) {
-        const totalRooms = await Room.count({
+        const totalRooms = await db.Room.count({
             where: { status: { [Op.ne]: ROOM_STATUS.MAINTENANCE } }
         });
 
@@ -148,6 +150,43 @@ class AvailabilityService {
         const uniqueBookedRooms = [...new Set(bookedRooms)];
         
         return (uniqueBookedRooms.length / totalRooms) * 100;
+    }
+
+    /**
+     * Check if room is available with detailed response
+     * @param {number} roomId - Room ID
+     * @param {string} checkIn - YYYY-MM-DD
+     * @param {string} checkOut - YYYY-MM-DD
+     * @returns {Promise<object>} - Availability result with message
+     */
+    static async checkRoomAvailability(roomId, checkIn, checkOut) {
+        const room = await db.Room.findByPk(roomId);
+        if (!room) {
+            return { available: false, message: 'Room not found' };
+        }
+        
+        if (room.status === ROOM_STATUS.MAINTENANCE) {
+            return { available: false, message: 'Room is under maintenance' };
+        }
+
+        const existingBookings = await db.Booking.findAll({
+            where: {
+                room_id: roomId,
+                status: { [Op.notIn]: ['cancelled', 'checked_out'] },
+                [Op.or]: [
+                    {
+                        check_in: { [Op.lt]: checkOut },
+                        check_out: { [Op.gt]: checkIn }
+                    }
+                ]
+            }
+        });
+
+        if (existingBookings.length > 0) {
+            return { available: false, message: 'Room is already booked for these dates' };
+        }
+
+        return { available: true, message: 'Room is available' };
     }
 }
 

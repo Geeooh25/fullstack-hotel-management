@@ -1,489 +1,354 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Menu Management - Admin Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 5px 0;
-            border-radius: 8px;
-        }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-        .sidebar .nav-link i {
-            margin-right: 10px;
-        }
-        .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        .navbar-top {
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .menu-item-card {
-            transition: transform 0.3s;
-        }
-        .menu-item-card:hover {
-            transform: translateY(-5px);
-        }
-        .price-tag {
-            font-size: 1.2rem;
-            font-weight: bold;
-            color: #28a745;
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 p-0 sidebar">
-                <div class="p-3">
-                    <h4 class="text-white mb-4">Hotel Admin</h4>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/dashboard">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/bookings">
-                                <i class="bi bi-calendar-check"></i> Bookings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/rooms">
-                                <i class="bi bi-door-open"></i> Rooms
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/amenities">
-                                <i class="bi bi-gem"></i> Amenities
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/users">
-                                <i class="bi bi-people"></i> Users
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/requests">
-                                <i class="bi bi-chat-dots"></i> Requests
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="/admin/menu">
-                                <i class="bi bi-menu-up"></i> Menu
-                            </a>
-                        </li>
-                        <li class="nav-item mt-4">
-                            <a class="nav-link" href="/admin/logout">
-                                <i class="bi bi-box-arrow-right"></i> Logout
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Menu Items</h5>
+                <button class="btn-gold" id="openAddMenuModal">
+                    <i class="fas fa-plus"></i> Add Menu Item
+                </button>
             </div>
             
-            <!-- Main Content -->
-            <div class="col-md-10 p-0 main-content">
-                <nav class="navbar-top p-3">
-                    <div class="container-fluid">
-                        <span class="navbar-text">
-                            Welcome, <%= session.admin.username %>
-                        </span>
-                    </div>
-                </nav>
-                
-                <div class="p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Menu Management</h2>
-                        <div>
-                            <button class="btn btn-outline-primary me-2" data-bs-toggle="modal" data-bs-target="#categoryModal" onclick="resetCategoryForm()">
-                                <i class="bi bi-folder-plus"></i> Manage Categories
-                            </button>
-                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#menuItemModal" onclick="resetMenuItemForm()">
-                                <i class="bi bi-plus-circle"></i> Add Menu Item
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <% if (error) { %>
-                        <div class="alert alert-warning"><%= error %></div>
-                    <% } %>
-                    
-                    <!-- Category Tabs -->
-                    <ul class="nav nav-tabs mb-4">
-                        <li class="nav-item">
-                            <a class="nav-link <%= currentCategory === 'all' ? 'active' : '' %>" href="?category=all">
-                                All Items
-                            </a>
-                        </li>
-                        <% categories.forEach(cat => { %>
-                            <li class="nav-item">
-                                <a class="nav-link <%= currentCategory === cat.name ? 'active' : '' %>" href="?category=<%= encodeURIComponent(cat.name) %>">
-                                    <%= cat.name %>
-                                </a>
-                            </li>
-                        <% }) %>
-                    </ul>
-                    
-                    <!-- Menu Items Grid -->
-                    <div class="row">
-                        <% menuItems.forEach(item => { %>
-                            <div class="col-md-4 mb-4">
-                                <div class="card menu-item-card h-100">
-                                    <div class="position-relative">
-                                        <% if (item.is_featured) { %>
-                                            <span class="position-absolute top-0 start-0 badge bg-warning m-2">Featured</span>
-                                        <% } %>
-                                        <div class="position-absolute top-0 end-0">
-                                            <span class="badge bg-<%= item.is_available ? 'success' : 'danger' %> m-2">
-                                                <%= item.is_available ? 'Available' : 'Unavailable' %>
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <h5 class="card-title"><%= item.name %></h5>
-                                        <span class="badge bg-info mb-2"><%= item.category_name %></span>
-                                        <p class="card-text text-muted"><%= item.description || 'No description' %></p>
-                                        <p class="price-tag">$<%= item.price %></p>
-                                        <% if (item.dietary_info) { %>
-                                            <small class="text-muted"><i class="bi bi-info-circle"></i> <%= item.dietary_info %></small><br>
-                                        <% } %>
-                                        <% if (item.preparation_time) { %>
-                                            <small class="text-muted"><i class="bi bi-clock"></i> <%= item.preparation_time %> min</small>
-                                        <% } %>
-                                    </div>
-                                    <div class="card-footer bg-transparent">
-                                        <button class="btn btn-sm btn-warning edit-menu-item" data-id="<%= item.id %>">
-                                            <i class="bi bi-pencil"></i> Edit
+            <% if (menuItems && menuItems.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Price</th>
+                                <th>Available</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% menuItems.forEach(item => { %>
+                                <tr>
+                                    <td><%= item.name %></td>
+                                    <td><span class="badge" style="background: #B8860B; color: white;"><%= item.category ? item.category.name : 'Uncategorized' %></span></td>
+                                    <td><%= item.description ? item.description.substring(0, 50) : '-' %></td>
+                                    <td>$<%= item.price %></td>
+                                    <td>
+                                        <span class="badge <%= item.is_available ? 'badge-success' : 'badge-danger' %>">
+                                            <%= item.is_available ? 'Yes' : 'No' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning edit-menu-item-btn" 
+                                            data-id="<%= item.id %>"
+                                            data-name="<%= item.name %>"
+                                            data-category_id="<%= item.category_id %>"
+                                            data-description="<%= item.description %>"
+                                            data-price="<%= item.price %>"
+                                            data-is_available="<%= item.is_available %>">
+                                            <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-danger delete-menu-item" data-id="<%= item.id %>">
-                                            <i class="bi bi-trash"></i> Delete
+                                        <button class="btn btn-sm btn-danger delete-menu-item-btn" data-id="<%= item.id %>" data-name="<%= item.name %>">
+                                            <i class="fas fa-trash"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-outline-success toggle-availability" data-id="<%= item.id %>">
-                                            <i class="bi bi-<%= item.is_available ? 'x-circle' : 'check-circle' %>"></i>
-                                            <%= item.is_available ? 'Disable' : 'Enable' %>
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }) %>
-                    </div>
-                    
-                    <% if (menuItems.length === 0) { %>
-                        <div class="alert alert-info">No menu items found. Click "Add Menu Item" to get started.</div>
-                    <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+            <% } else { %>
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i> No menu items found. Click "Add Menu Item" to create one.
+                </div>
+            <% } %>
         </div>
     </div>
-    
-    <!-- Menu Item Modal -->
-    <div class="modal fade" id="menuItemModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="menuItemModalTitle">Add Menu Item</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="menuItemForm">
-                        <input type="hidden" id="menuItemId">
-                        <div class="mb-3">
-                            <label class="form-label">Category *</label>
-                            <select class="form-select" id="category_id" required>
-                                <option value="">Select category...</option>
+</div>
+
+<!-- Add Menu Item Modal -->
+<div class="modal fade" id="addMenuItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #B8860B; color: white;">
+                <h5 class="modal-title">Add Menu Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="menuItemForm">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" name="name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category *</label>
+                        <select name="category_id" class="form-select" required>
+                            <option value="">Select Category</option>
+                            <% if (categories && categories.length > 0) { %>
                                 <% categories.forEach(cat => { %>
                                     <option value="<%= cat.id %>"><%= cat.name %></option>
                                 <% }) %>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Name *</label>
-                            <input type="text" class="form-control" id="item_name" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" id="item_description" rows="2"></textarea>
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Price ($) *</label>
-                                <input type="number" class="form-control" id="item_price" step="0.01" required>
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Preparation Time (minutes)</label>
-                                <input type="number" class="form-control" id="preparation_time" step="5">
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Dietary Information</label>
-                            <input type="text" class="form-control" id="dietary_info" placeholder="e.g., Vegetarian, Gluten-free, Vegan">
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Image URL</label>
-                            <input type="text" class="form-control" id="image_url" placeholder="https://example.com/image.jpg">
-                        </div>
-                        <div class="row">
-                            <div class="col-md-6 mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="is_available" checked>
-                                <label class="form-check-label">Available</label>
-                            </div>
-                            <div class="col-md-6 mb-3 form-check">
-                                <input type="checkbox" class="form-check-input" id="is_featured">
-                                <label class="form-check-label">Featured Item</label>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Display Order</label>
-                            <input type="number" class="form-control" id="display_order" value="0">
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveMenuItem">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Category Management Modal -->
-    <div class="modal fade" id="categoryModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Manage Categories</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
+                            <% } %>
+                        </select>
+                    </div>
                     <div class="mb-3">
-                        <label class="form-label">Add New Category</label>
-                        <div class="input-group">
-                            <input type="text" class="form-control" id="newCategoryName" placeholder="Category name">
-                            <input type="text" class="form-control" id="newCategoryIcon" placeholder="Icon (optional)">
-                            <button class="btn btn-primary" id="addCategory">Add</button>
-                        </div>
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="2"></textarea>
                     </div>
-                    <hr>
-                    <h6>Existing Categories</h6>
-                    <div id="categoriesList">
-                        <% categories.forEach(cat => { %>
-                            <div class="mb-2 p-2 border rounded" data-category-id="<%= cat.id %>">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <strong><%= cat.name %></strong>
-                                        <% if (cat.icon) { %>
-                                            <span class="badge bg-secondary"><%= cat.icon %></span>
-                                        <% } %>
-                                    </div>
-                                    <div>
-                                        <button class="btn btn-sm btn-warning edit-category" data-id="<%= cat.id %>" data-name="<%= cat.name %>" data-icon="<%= cat.icon || '' %>" data-description="<%= cat.description || '' %>" data-order="<%= cat.display_order %>">
-                                            <i class="bi bi-pencil"></i>
-                                        </button>
-                                        <button class="btn btn-sm btn-danger delete-category" data-id="<%= cat.id %>">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </div>
-                                </div>
-                                <small class="text-muted"><%= cat.description || 'No description' %></small>
-                            </div>
-                        <% }) %>
+                    <div class="mb-3">
+                        <label class="form-label">Price ($) *</label>
+                        <input type="number" name="price" class="form-control" step="0.01" required>
                     </div>
-                </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="is_available" class="form-check-input" checked>
+                        <label class="form-check-label">Available</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-gold" id="saveMenuItemBtn">Save Item</button>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Edit Menu Item Modal -->
+<div class="modal fade" id="editMenuItemModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #B8860B; color: white;">
+                <h5 class="modal-title">Edit Menu Item</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editMenuItemForm">
+                    <input type="hidden" name="id" id="edit_menu_id">
+                    <div class="mb-3">
+                        <label class="form-label">Name *</label>
+                        <input type="text" name="name" id="edit_menu_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Category *</label>
+                        <select name="category_id" id="edit_menu_category_id" class="form-select" required>
+                            <option value="">Select Category</option>
+                            <% if (categories && categories.length > 0) { %>
+                                <% categories.forEach(cat => { %>
+                                    <option value="<%= cat.id %>"><%= cat.name %></option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" id="edit_menu_description" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Price ($) *</label>
+                        <input type="number" name="price" id="edit_menu_price" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" name="is_available" id="edit_menu_is_available" class="form-check-input">
+                        <label class="form-check-label">Available</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-gold" id="updateMenuItemBtn">Update Item</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+<style>
+    .badge-success {
+        background: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .badge-danger {
+        background: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .toast-notification {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-width: 280px;
+        animation: slideIn 0.3s ease;
+    }
+    .toast-success {
+        border-left: 4px solid #28a745;
+        background: #d4edda;
+        color: #155724;
+    }
+    .toast-error {
+        border-left: 4px solid #dc3545;
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .toast-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .toast-close {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        margin-left: 15px;
+        color: inherit;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+
+<script>
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        if (!container) return;
+        
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        `;
+        container.appendChild(toast);
+        
+        setTimeout(() => {
+            if (toast && toast.remove) toast.remove();
+        }, 3000);
+    }
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Save menu item
-        document.getElementById('saveMenuItem').addEventListener('click', async () => {
-            const id = document.getElementById('menuItemId').value;
-            const data = {
-                category_id: document.getElementById('category_id').value,
-                name: document.getElementById('item_name').value,
-                description: document.getElementById('item_description').value,
-                price: document.getElementById('item_price').value,
-                preparation_time: document.getElementById('preparation_time').value,
-                dietary_info: document.getElementById('dietary_info').value,
-                image_url: document.getElementById('image_url').value,
-                is_available: document.getElementById('is_available').checked,
-                is_featured: document.getElementById('is_featured').checked,
-                display_order: document.getElementById('display_order').value
-            };
-            
-            if (!data.category_id || !data.name || !data.price) {
-                alert('Please fill in required fields');
-                return;
-            }
-            
-            const url = id ? `/admin/menu/${id}` : '/admin/menu';
-            const method = id ? 'PUT' : 'POST';
-            
-            try {
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.error);
-                }
-            } catch (error) {
-                alert('Error saving menu item');
-            }
-        });
+    // Open Add Modal
+    document.getElementById('openAddMenuModal').addEventListener('click', function() {
+        document.getElementById('menuItemForm').reset();
+        const modal = new bootstrap.Modal(document.getElementById('addMenuItemModal'));
+        modal.show();
+    });
+    
+    // Save Menu Item
+    document.getElementById('saveMenuItemBtn').addEventListener('click', async function() {
+        const form = document.getElementById('menuItemForm');
+        const data = {
+            name: form.querySelector('[name="name"]').value,
+            category_id: form.querySelector('[name="category_id"]').value,
+            description: form.querySelector('[name="description"]').value,
+            price: parseFloat(form.querySelector('[name="price"]').value),
+            is_available: form.querySelector('[name="is_available"]').checked
+        };
         
-        // Edit menu item
-        document.querySelectorAll('.edit-menu-item').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.dataset.id;
-                const card = btn.closest('.card');
-                const name = card.querySelector('.card-title').textContent;
-                const description = card.querySelector('.card-text.text-muted')?.textContent || '';
-                const price = card.querySelector('.price-tag').textContent.replace('$', '');
-                const categoryName = card.querySelector('.badge.bg-info').textContent;
-                const dietaryInfo = card.querySelector('.text-muted i.bi-info-circle')?.parentElement?.textContent.replace('ℹ️ ', '') || '';
-                const prepTime = card.querySelector('.text-muted i.bi-clock')?.parentElement?.textContent.replace('⏰ ', '').replace(' min', '') || '';
-                
-                // Find category ID from name
-                const categorySelect = document.getElementById('category_id');
-                for(let i = 0; i < categorySelect.options.length; i++) {
-                    if (categorySelect.options[i].text === categoryName) {
-                        categorySelect.value = categorySelect.options[i].value;
-                        break;
-                    }
-                }
-                
-                document.getElementById('menuItemModalTitle').textContent = 'Edit Menu Item';
-                document.getElementById('menuItemId').value = id;
-                document.getElementById('item_name').value = name;
-                document.getElementById('item_description').value = description !== 'No description' ? description : '';
-                document.getElementById('item_price').value = price;
-                document.getElementById('preparation_time').value = prepTime;
-                document.getElementById('dietary_info').value = dietaryInfo;
-                document.getElementById('is_available').checked = true;
-                document.getElementById('is_featured').checked = false;
-                
-                new bootstrap.Modal(document.getElementById('menuItemModal')).show();
-            });
-        });
-        
-        // Delete menu item
-        document.querySelectorAll('.delete-menu-item').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (confirm('Are you sure you want to delete this menu item?')) {
-                    const id = btn.dataset.id;
-                    try {
-                        const response = await fetch(`/admin/menu/${id}`, { method: 'DELETE' });
-                        const result = await response.json();
-                        if (result.success) {
-                            location.reload();
-                        } else {
-                            alert(result.error);
-                        }
-                    } catch (error) {
-                        alert('Error deleting menu item');
-                    }
-                }
-            });
-        });
-        
-        // Toggle availability
-        document.querySelectorAll('.toggle-availability').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.dataset.id;
-                try {
-                    const response = await fetch(`/admin/menu/${id}/toggle`, { method: 'PATCH' });
-                    const result = await response.json();
-                    if (result.success) {
-                        location.reload();
-                    } else {
-                        alert(result.error);
-                    }
-                } catch (error) {
-                    alert('Error toggling availability');
-                }
-            });
-        });
-        
-        // Category management
-        document.getElementById('addCategory').addEventListener('click', async () => {
-            const name = document.getElementById('newCategoryName').value;
-            const icon = document.getElementById('newCategoryIcon').value;
-            
-            if (!name) {
-                alert('Please enter a category name');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/admin/menu/categories', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, icon, description: '', display_order: 0 })
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.error);
-                }
-            } catch (error) {
-                alert('Error adding category');
-            }
-        });
-        
-        document.querySelectorAll('.delete-category').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (confirm('Delete this category? All menu items must be moved or deleted first.')) {
-                    const id = btn.dataset.id;
-                    try {
-                        const response = await fetch(`/admin/menu/categories/${id}`, { method: 'DELETE' });
-                        const result = await response.json();
-                        if (result.success) {
-                            location.reload();
-                        } else {
-                            alert(result.error);
-                        }
-                    } catch (error) {
-                        alert('Error deleting category');
-                    }
-                }
-            });
-        });
-        
-        function resetMenuItemForm() {
-            document.getElementById('menuItemModalTitle').textContent = 'Add Menu Item';
-            document.getElementById('menuItemId').value = '';
-            document.getElementById('menuItemForm').reset();
-            document.getElementById('is_available').checked = true;
+        if (!data.name || !data.category_id || !data.price) {
+            showToast('Please fill in all required fields', 'error');
+            return;
         }
         
-        function resetCategoryForm() {
-            document.getElementById('newCategoryName').value = '';
-            document.getElementById('newCategoryIcon').value = '';
+        const btn = document.getElementById('saveMenuItemBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        
+        try {
+            const response = await fetch('/admin/menu', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast('Menu item added successfully!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(result.error || 'Could not save', 'error');
+            }
+        } catch (error) {
+            showToast('Error: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Save Item';
         }
-    </script>
-</body>
-</html>
+    });
+    
+    // Delete Menu Item
+    document.querySelectorAll('.delete-menu-item-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            if (confirm(`Delete "${name}"?`)) {
+                const response = await fetch(`/admin/menu/${id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast(`"${name}" deleted`, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Delete failed', 'error');
+                }
+            }
+        });
+    });
+    
+    // Edit Menu Item - Open Modal
+    document.querySelectorAll('.edit-menu-item-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('edit_menu_id').value = this.dataset.id;
+            document.getElementById('edit_menu_name').value = this.dataset.name;
+            document.getElementById('edit_menu_category_id').value = this.dataset.category_id;
+            document.getElementById('edit_menu_description').value = this.dataset.description || '';
+            document.getElementById('edit_menu_price').value = this.dataset.price;
+            document.getElementById('edit_menu_is_available').checked = this.dataset.is_available === 'true';
+            
+            const modal = new bootstrap.Modal(document.getElementById('editMenuItemModal'));
+            modal.show();
+        });
+    });
+    
+    // Update Menu Item
+    document.getElementById('updateMenuItemBtn').addEventListener('click', async function() {
+        const id = document.getElementById('edit_menu_id').value;
+        const data = {
+            name: document.getElementById('edit_menu_name').value,
+            category_id: document.getElementById('edit_menu_category_id').value,
+            description: document.getElementById('edit_menu_description').value,
+            price: parseFloat(document.getElementById('edit_menu_price').value),
+            is_available: document.getElementById('edit_menu_is_available').checked
+        };
+        
+        const btn = document.getElementById('updateMenuItemBtn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        
+        try {
+            const response = await fetch(`/admin/menu/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast('Menu item updated!', 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(result.error || 'Could not update', 'error');
+            }
+        } catch (error) {
+            showToast('Error: ' + error.message, 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = 'Update Item';
+        }
+    });
+</script>

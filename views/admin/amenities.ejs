@@ -1,397 +1,488 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Amenity Management - Admin Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 5px 0;
-            border-radius: 8px;
-        }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-        .sidebar .nav-link i {
-            margin-right: 10px;
-        }
-        .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        .navbar-top {
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .amenity-card {
-            transition: transform 0.3s;
-            cursor: pointer;
-        }
-        .amenity-card:hover {
-            transform: translateY(-5px);
-        }
-        .status-badge {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 p-0 sidebar">
-                <div class="p-3">
-                    <h4 class="text-white mb-4">Hotel Admin</h4>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/dashboard">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/bookings">
-                                <i class="bi bi-calendar-check"></i> Bookings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/rooms">
-                                <i class="bi bi-door-open"></i> Rooms
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="/admin/amenities">
-                                <i class="bi bi-gem"></i> Amenities
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/users">
-                                <i class="bi bi-people"></i> Users
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/requests">
-                                <i class="bi bi-chat-dots"></i> Requests
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/menu">
-                                <i class="bi bi-menu-up"></i> Menu
-                            </a>
-                        </li>
-                        <li class="nav-item mt-4">
-                            <a class="nav-link" href="/admin/logout">
-                                <i class="bi bi-box-arrow-right"></i> Logout
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-concierge-bell"></i> Amenities Management</h5>
+                <button class="btn-gold" id="openAddAmenityModal">
+                    <i class="fas fa-plus"></i> Add Amenity
+                </button>
             </div>
             
-            <!-- Main Content -->
-            <div class="col-md-10 p-0 main-content">
-                <nav class="navbar-top p-3">
-                    <div class="container-fluid">
-                        <span class="navbar-text">
-                            Welcome, <%= session.admin.username %>
-                        </span>
-                    </div>
-                </nav>
-                
-                <div class="p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h2>Amenity Management</h2>
-                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#amenityModal" onclick="resetForm()">
-                            <i class="bi bi-plus-circle"></i> Add Amenity
-                        </button>
-                    </div>
-                    
-                    <% if (error) { %>
-                        <div class="alert alert-warning"><%= error %></div>
-                    <% } %>
-                    
-                    <!-- Category Filter -->
-                    <div class="mb-4">
-                        <label class="form-label">Filter by Category:</label>
-                        <div class="btn-group" role="group">
-                            <button class="btn btn-outline-secondary filter-btn active" data-category="all">All</button>
-                            <% categories.forEach(cat => { %>
-                                <button class="btn btn-outline-secondary filter-btn" data-category="<%= cat %>"><%= cat %></button>
-                            <% }) %>
-                        </div>
-                    </div>
-                    
-                    <!-- Amenities Grid -->
-                    <div class="row" id="amenitiesGrid">
-                        <% amenities.forEach(amenity => { %>
-                            <div class="col-md-4 mb-4 amenity-item" data-category="<%= amenity.category %>">
-                                <div class="card amenity-card h-100">
-                                    <div class="status-badge">
-                                        <span class="badge bg-<%= amenity.is_available ? 'success' : 'danger' %>">
-                                            <%= amenity.is_available ? 'Available' : 'Unavailable' %>
-                                        </span>
-                                    </div>
-                                    <div class="card-body">
-                                        <h5 class="card-title"><%= amenity.name %></h5>
-                                        <span class="badge bg-info mb-2"><%= amenity.category %></span>
-                                        <p class="card-text text-muted"><%= amenity.description || 'No description' %></p>
-                                        <% if (amenity.price > 0) { %>
-                                            <p class="card-text"><strong>Price:</strong> $<%= amenity.price %></p>
+            <% if (amenities && amenities.length > 0) { %>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Description</th>
+                                <th>Price</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% amenities.forEach(amenity => { %>
+                                <tr id="amenity-row-<%= amenity.id %>">
+                                    <td>
+                                        <strong><%= amenity.name %></strong><br>
+                                        <small class="text-muted"><i class="fas fa-clock"></i> <%= amenity.hours || '24/7' %> | <i class="fas fa-map-marker-alt"></i> <%= amenity.location || 'Hotel' %></small>
+                                    </td>
+                                    <td>
+                                        <% if (amenity.category === 'free') { %>
+                                            <span class="badge" style="background: #28a745; color: white;">Free</span>
+                                        <% } else if (amenity.category === 'paid') { %>
+                                            <span class="badge" style="background: #B8860B; color: white;">Paid</span>
+                                        <% } else { %>
+                                            <span class="badge" style="background: #17a2b8; color: white;">Request Only</span>
                                         <% } %>
-                                        <p class="card-text"><small>Assigned to <%= amenity.assigned_rooms || 0 %> rooms</small></p>
-                                    </div>
-                                    <div class="card-footer bg-transparent">
-                                        <button class="btn btn-sm btn-warning edit-amenity" data-id="<%= amenity.id %>">
-                                            <i class="bi bi-pencil"></i> Edit
+                                    </td>
+                                    <td>
+                                        <%= amenity.description ? amenity.description.substring(0, 60) : '-' %>
+                                        <% if (amenity.requires_booking) { %>
+                                            <br><small class="text-warning"><i class="fas fa-calendar-alt"></i> Booking Required</small>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <% if (amenity.category === 'free') { %>
+                                            <span class="badge" style="background: #28a745; color: white;">Free</span>
+                                        <% } else if (amenity.category === 'paid') { %>
+                                            $<%= amenity.price || 0 %>
+                                        <% } else { %>
+                                            <span class="badge" style="background: #17a2b8; color: white;"><i class="fas fa-ticket-alt"></i> Submit Request</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="badge <%= amenity.is_active ? 'badge-success' : 'badge-danger' %>">
+                                            <%= amenity.is_active ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-sm btn-warning edit-amenity-btn" 
+                                            data-id="<%= amenity.id %>"
+                                            data-name="<%= amenity.name %>"
+                                            data-category="<%= amenity.category %>"
+                                            data-description="<%= amenity.description %>"
+                                            data-price="<%= amenity.price %>"
+                                            data-hours="<%= amenity.hours %>"
+                                            data-location="<%= amenity.location %>"
+                                            data-icon="<%= amenity.icon %>"
+                                            data-requires_booking="<%= amenity.requires_booking %>"
+                                            data-is_active="<%= amenity.is_active %>">
+                                            <i class="fas fa-edit"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-danger delete-amenity" data-id="<%= amenity.id %>">
-                                            <i class="bi bi-trash"></i> Delete
+                                        <button class="btn btn-sm btn-danger delete-amenity-btn" data-id="<%= amenity.id %>" data-name="<%= amenity.name %>">
+                                            <i class="fas fa-trash"></i>
                                         </button>
-                                        <button class="btn btn-sm btn-info assign-room" data-id="<%= amenity.id %>" data-name="<%= amenity.name %>">
-                                            <i class="bi bi-door-closed"></i> Assign to Room
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        <% }) %>
-                    </div>
-                    
-                    <% if (amenities.length === 0) { %>
-                        <div class="alert alert-info">No amenities found. Click "Add Amenity" to get started.</div>
-                    <% } %>
+                                        
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+            <% } else { %>
+                <div class="alert alert-info text-center">
+                    <i class="fas fa-info-circle"></i> No amenities found. Click "Add Amenity" to create one.
+                </div>
+            <% } %>
         </div>
     </div>
-    
-    <!-- Amenity Modal -->
-    <div class="modal fade" id="amenityModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Add Amenity</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="amenityForm">
-                        <input type="hidden" id="amenityId">
-                        <div class="mb-3">
+</div>
+
+<!-- Add Amenity Modal -->
+<div class="modal fade" id="addAmenityModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #B8860B; color: white;">
+                <h5 class="modal-title"><i class="fas fa-plus"></i> Add New Amenity</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="amenityForm">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
                             <label class="form-label">Name *</label>
-                            <input type="text" class="form-control" id="name" required>
+                            <input type="text" name="name" class="form-control" required>
                         </div>
-                        <div class="mb-3">
+                        <div class="col-md-4 mb-3">
                             <label class="form-label">Category *</label>
-                            <input type="text" class="form-control" id="category" list="categoryOptions" required>
-                            <datalist id="categoryOptions">
-                                <option>Room Feature</option>
-                                <option>Hotel Service</option>
-                                <option>Entertainment</option>
-                                <option>Business</option>
-                                <option>Wellness</option>
-                            </datalist>
+                            <select name="category" id="amenityCategorySelect" class="form-select" required>
+                                <option value="free">Free</option>
+                                <option value="paid">Paid</option>
+                                <option value="request">Request Only</option>
+                            </select>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" id="description" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Price ($)</label>
-                            <input type="number" class="form-control" id="price" step="0.01" value="0">
-                        </div>
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="is_available" checked>
-                            <label class="form-check-label">Available</label>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="saveAmenity">Save</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Assign Room Modal -->
-    <div class="modal fade" id="assignRoomModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Assign Amenity to Room</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Assigning: <strong id="amenityName"></strong></p>
-                    <div class="mb-3">
-                        <label class="form-label">Select Room</label>
-                        <select class="form-select" id="roomSelect"></select>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" id="assignRoom">Assign</button>
-                </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Hours</label>
+                            <input type="text" name="hours" class="form-control" placeholder="e.g., 24/7, 9AM-9PM" value="24/7">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" name="location" class="form-control" placeholder="e.g., Lobby, 2nd Floor" value="Main Building">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea name="description" class="form-control" rows="3" placeholder="Describe what this amenity offers..."></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3" id="priceFieldAdd">
+                            <label class="form-label">Price ($)</label>
+                            <input type="number" name="price" class="form-control" step="0.01" value="0">
+                            <small class="text-muted">Only for paid amenities</small>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Icon (FontAwesome)</label>
+                            <input type="text" name="icon" class="form-control" placeholder="fas fa-star" value="fas fa-star">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3 form-check">
+                            <input type="checkbox" name="is_active" class="form-check-input" checked>
+                            <label class="form-check-label">Active</label>
+                        </div>
+                        <div class="col-md-6 mb-3 form-check">
+                            <input type="checkbox" name="requires_booking" class="form-check-input">
+                            <label class="form-check-label">Requires Advance Booking</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-gold" id="saveAmenityBtn">Save Amenity</button>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Edit Amenity Modal -->
+<div class="modal fade" id="editAmenityModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #B8860B; color: white;">
+                <h5 class="modal-title"><i class="fas fa-edit"></i> Edit Amenity</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editAmenityForm">
+                    <input type="hidden" id="edit_amenity_id">
+                    <div class="row">
+                        <div class="col-md-8 mb-3">
+                            <label class="form-label">Name *</label>
+                            <input type="text" id="edit_amenity_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label class="form-label">Category *</label>
+                            <select id="edit_amenity_category" class="form-select" required>
+                                <option value="free">Free</option>
+                                <option value="paid">Paid</option>
+                                <option value="request">Request Only</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Hours</label>
+                            <input type="text" id="edit_amenity_hours" class="form-control">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" id="edit_amenity_location" class="form-control">
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Description</label>
+                        <textarea id="edit_amenity_description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3" id="priceFieldEdit">
+                            <label class="form-label">Price ($)</label>
+                            <input type="number" id="edit_amenity_price" class="form-control" step="0.01" value="0">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Icon (FontAwesome)</label>
+                            <input type="text" id="edit_amenity_icon" class="form-control">
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3 form-check">
+                            <input type="checkbox" id="edit_amenity_is_active" class="form-check-input">
+                            <label class="form-check-label">Active</label>
+                        </div>
+                        <div class="col-md-6 mb-3 form-check">
+                            <input type="checkbox" id="edit_amenity_requires_booking" class="form-check-input">
+                            <label class="form-check-label">Requires Advance Booking</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn-gold" id="updateAmenityBtn">Update Amenity</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+<style>
+    .badge-success {
+        background: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .badge-danger {
+        background: #dc3545;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+    }
+    .toast-notification {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        min-width: 280px;
+        animation: slideIn 0.3s ease;
+    }
+    .toast-success {
+        border-left: 4px solid #28a745;
+        background: #d4edda;
+        color: #155724;
+    }
+    .toast-error {
+        border-left: 4px solid #dc3545;
+        background: #f8d7da;
+        color: #721c24;
+    }
+    .toast-content {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .toast-close {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        cursor: pointer;
+        margin-left: 15px;
+        color: inherit;
+    }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+
+<script>
+    // Toast function
+    function showToast(message, type) {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `
+            <div class="toast-content">
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i>
+                <span>${message}</span>
+            </div>
+            <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+        `;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
     
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        let currentAmenityId = null;
-        
-        // Filter functionality
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const category = btn.dataset.category;
-                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                
-                document.querySelectorAll('.amenity-item').forEach(item => {
-                    if (category === 'all' || item.dataset.category === category) {
-                        item.style.display = '';
-                    } else {
-                        item.style.display = 'none';
-                    }
-                });
-            });
-        });
-        
-        // Save amenity
-        document.getElementById('saveAmenity').addEventListener('click', async () => {
-            const id = document.getElementById('amenityId').value;
-            const data = {
-                name: document.getElementById('name').value,
-                category: document.getElementById('category').value,
-                description: document.getElementById('description').value,
-                price: document.getElementById('price').value,
-                is_available: document.getElementById('is_available').checked
-            };
-            
-            const url = id ? `/admin/amenities/${id}` : '/admin/amenities';
-            const method = id ? 'PUT' : 'POST';
-            
-            try {
-                const response = await fetch(url, {
-                    method: method,
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                if (result.success) {
-                    location.reload();
-                } else {
-                    alert(result.error);
-                }
-            } catch (error) {
-                alert('Error saving amenity');
+    // Toggle price field based on category for Add Modal
+    const amenityCategorySelect = document.getElementById('amenityCategorySelect');
+    const priceFieldAdd = document.getElementById('priceFieldAdd');
+    
+    if (amenityCategorySelect) {
+        amenityCategorySelect.addEventListener('change', function() {
+            if (this.value === 'free' || this.value === 'request') {
+                priceFieldAdd.style.display = 'none';
+            } else {
+                priceFieldAdd.style.display = 'block';
             }
         });
-        
-        // Edit amenity
-        document.querySelectorAll('.edit-amenity').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                const id = btn.dataset.id;
-                const card = btn.closest('.card');
-                const name = card.querySelector('.card-title').textContent;
-                const category = card.querySelector('.badge.bg-info').textContent;
-                const description = card.querySelector('.card-text.text-muted')?.textContent || '';
-                const priceText = card.querySelector('.card-text strong')?.parentElement?.textContent;
-                const price = priceText ? priceText.replace('Price: $', '') : 0;
-                const isAvailable = card.querySelector('.status-badge .badge').classList.contains('bg-success');
-                
-                document.getElementById('modalTitle').textContent = 'Edit Amenity';
-                document.getElementById('amenityId').value = id;
-                document.getElementById('name').value = name;
-                document.getElementById('category').value = category;
-                document.getElementById('description').value = description !== 'No description' ? description : '';
-                document.getElementById('price').value = price;
-                document.getElementById('is_available').checked = isAvailable;
-                
-                new bootstrap.Modal(document.getElementById('amenityModal')).show();
-            });
+        // Initialize
+        if (amenityCategorySelect.value === 'free' || amenityCategorySelect.value === 'request') {
+            priceFieldAdd.style.display = 'none';
+        }
+    }
+    
+    // Toggle price field for Edit Modal
+    const editCategorySelect = document.getElementById('edit_amenity_category');
+    const priceFieldEdit = document.getElementById('priceFieldEdit');
+    
+    if (editCategorySelect) {
+        editCategorySelect.addEventListener('change', function() {
+            if (this.value === 'free' || this.value === 'request') {
+                priceFieldEdit.style.display = 'none';
+            } else {
+                priceFieldEdit.style.display = 'block';
+            }
         });
-        
-        // Delete amenity
-        document.querySelectorAll('.delete-amenity').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                if (confirm('Are you sure you want to delete this amenity?')) {
-                    const id = btn.dataset.id;
-                    try {
-                        const response = await fetch(`/admin/amenities/${id}`, { method: 'DELETE' });
-                        const result = await response.json();
-                        if (result.success) {
-                            location.reload();
-                        } else {
-                            alert(result.error);
-                        }
-                    } catch (error) {
-                        alert('Error deleting amenity');
-                    }
-                }
-            });
+    }
+    
+    // Open Add Modal
+    const openAddBtn = document.getElementById('openAddAmenityModal');
+    if (openAddBtn) {
+        openAddBtn.addEventListener('click', function() {
+            document.getElementById('amenityForm').reset();
+            document.getElementById('amenityCategorySelect').value = 'free';
+            priceFieldAdd.style.display = 'none';
+            const modal = new bootstrap.Modal(document.getElementById('addAmenityModal'));
+            modal.show();
         });
-        
-        // Assign room
-        document.querySelectorAll('.assign-room').forEach(btn => {
-            btn.addEventListener('click', async () => {
-                currentAmenityId = btn.dataset.id;
-                document.getElementById('amenityName').textContent = btn.dataset.name;
-                
-                // Load rooms
-                const response = await fetch('/admin/amenities/rooms');
-                const rooms = await response.json();
-                
-                const select = document.getElementById('roomSelect');
-                select.innerHTML = '<option value="">Select a room...</option>' + 
-                    rooms.map(room => `<option value="${room.id}">Room ${room.room_number} - ${room.room_type}</option>`).join('');
-                
-                new bootstrap.Modal(document.getElementById('assignRoomModal')).show();
-            });
-        });
-        
-        document.getElementById('assignRoom').addEventListener('click', async () => {
-            const roomId = document.getElementById('roomSelect').value;
-            if (!roomId) {
-                alert('Please select a room');
+    }
+    
+    // Save Amenity
+    const saveBtn = document.getElementById('saveAmenityBtn');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function() {
+            const form = document.getElementById('amenityForm');
+            const category = form.querySelector('[name="category"]').value;
+            
+            const data = {
+                name: form.querySelector('[name="name"]').value,
+                category: category,
+                description: form.querySelector('[name="description"]').value,
+                hours: form.querySelector('[name="hours"]').value,
+                location: form.querySelector('[name="location"]').value,
+                icon: form.querySelector('[name="icon"]').value,
+                price: (category === 'free' || category === 'request') ? 0 : parseFloat(form.querySelector('[name="price"]').value) || 0,
+                is_active: form.querySelector('[name="is_active"]').checked,
+                requires_booking: form.querySelector('[name="requires_booking"]').checked,
+                slug: form.querySelector('[name="name"]').value.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                short_description: form.querySelector('[name="description"]').value?.substring(0, 255) || ''
+            };
+            
+            if (!data.name) {
+                showToast('Please enter a name', 'error');
                 return;
             }
             
+            const btn = document.getElementById('saveAmenityBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            
             try {
-                const response = await fetch(`/admin/amenities/${currentAmenityId}/assign`, {
+                const response = await fetch('/admin/amenities', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ room_id: roomId })
+                    body: JSON.stringify(data)
                 });
-                
                 const result = await response.json();
                 if (result.success) {
-                    alert('Amenity assigned successfully');
-                    location.reload();
+                    showToast('Amenity added successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
                 } else {
-                    alert(result.error);
+                    showToast(result.error || 'Could not save', 'error');
                 }
             } catch (error) {
-                alert('Error assigning amenity');
+                showToast('Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Save Amenity';
             }
         });
-        
-        function resetForm() {
-            document.getElementById('modalTitle').textContent = 'Add Amenity';
-            document.getElementById('amenityId').value = '';
-            document.getElementById('amenityForm').reset();
-            document.getElementById('is_available').checked = true;
-        }
-    </script>
-</body>
-</html>
+    }
+    
+    // Delete Amenity
+    document.querySelectorAll('.delete-amenity-btn').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            if (confirm(`Delete "${this.dataset.name}"? This will also delete related requests.`)) {
+                const response = await fetch(`/admin/amenities/${this.dataset.id}`, { method: 'DELETE' });
+                if (response.ok) {
+                    showToast('Amenity deleted', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('Delete failed', 'error');
+                }
+            }
+        });
+    });
+    
+    // Edit Amenity - Open Modal
+    document.querySelectorAll('.edit-amenity-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.getElementById('edit_amenity_id').value = this.dataset.id;
+            document.getElementById('edit_amenity_name').value = this.dataset.name;
+            document.getElementById('edit_amenity_category').value = this.dataset.category;
+            document.getElementById('edit_amenity_description').value = this.dataset.description || '';
+            document.getElementById('edit_amenity_hours').value = this.dataset.hours || '24/7';
+            document.getElementById('edit_amenity_location').value = this.dataset.location || 'Main Building';
+            document.getElementById('edit_amenity_icon').value = this.dataset.icon || 'fas fa-star';
+            document.getElementById('edit_amenity_price').value = this.dataset.price || 0;
+            document.getElementById('edit_amenity_is_active').checked = this.dataset.is_active === 'true';
+            document.getElementById('edit_amenity_requires_booking').checked = this.dataset.requires_booking === 'true';
+            
+            // Hide price field for free or request categories
+            if (this.dataset.category === 'free' || this.dataset.category === 'request') {
+                priceFieldEdit.style.display = 'none';
+            } else {
+                priceFieldEdit.style.display = 'block';
+            }
+            
+            const modal = new bootstrap.Modal(document.getElementById('editAmenityModal'));
+            modal.show();
+        });
+    });
+    
+    // Update Amenity
+    const updateBtn = document.getElementById('updateAmenityBtn');
+    if (updateBtn) {
+        updateBtn.addEventListener('click', async function() {
+            const id = document.getElementById('edit_amenity_id').value;
+            const category = document.getElementById('edit_amenity_category').value;
+            
+            const data = {
+                name: document.getElementById('edit_amenity_name').value,
+                category: category,
+                description: document.getElementById('edit_amenity_description').value,
+                hours: document.getElementById('edit_amenity_hours').value,
+                location: document.getElementById('edit_amenity_location').value,
+                icon: document.getElementById('edit_amenity_icon').value,
+                price: (category === 'free' || category === 'request') ? 0 : parseFloat(document.getElementById('edit_amenity_price').value) || 0,
+                is_active: document.getElementById('edit_amenity_is_active').checked,
+                requires_booking: document.getElementById('edit_amenity_requires_booking').checked
+            };
+            
+            const btn = document.getElementById('updateAmenityBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+            
+            try {
+                const response = await fetch(`/admin/amenities/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    showToast('Amenity updated successfully!', 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(result.error || 'Update failed', 'error');
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = 'Update Amenity';
+            }
+        });
+    }
+</script>

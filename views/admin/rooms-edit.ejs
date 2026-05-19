@@ -1,56 +1,155 @@
-<div class="card">
-    <div class="card-header bg-white">
-        <h5 class="mb-0">Edit Room <%= room.room_number %></h5>
-    </div>
-    <div class="card-body">
-        <form action="/admin/rooms/<%= room.id %>?_method=PUT" method="POST">
-            <input type="hidden" name="_method" value="PUT">
-            
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Room Number *</label>
-                    <input type="text" name="room_number" class="form-control" value="<%= room.room_number %>" required>
-                </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Room Type *</label>
-                    <select name="room_type_id" class="form-select" required>
-                        <option value="">Select Room Type</option>
-                        <% roomTypes.forEach(type => { %>
-                            <option value="<%= type.id %>" <%= room.room_type_id == type.id ? 'selected' : '' %>>
-                                <%= type.name %> - $<%= type.base_price %>/night
-                            </option>
-                        <% }) %>
-                    </select>
-                </div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-edit"></i> Edit Room</h5>
+                <a href="/admin/rooms" class="btn btn-secondary">← Back to Rooms</a>
             </div>
             
-            <div class="row">
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Floor</label>
-                    <input type="number" name="floor" class="form-control" value="<%= room.floor || '' %>">
+            <form id="editRoomForm">
+                <input type="hidden" id="room_id" value="<%= room.id %>">
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Room Number *</label>
+                        <input type="text" id="room_number" class="form-control" value="<%= room.room_number %>" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Room Type *</label>
+                        <select id="room_type_id" class="form-select" required>
+                            <option value="">Select Room Type</option>
+                            <% if (roomTypes && roomTypes.length > 0) { %>
+                                <% roomTypes.forEach(type => { %>
+                                    <option value="<%= type.id %>" <%= room.room_type_id === type.id ? 'selected' : '' %>>
+                                        <%= type.name %> - $<%= type.base_price %>/night
+                                    </option>
+                                <% }) %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Floor</label>
+                        <input type="number" id="floor" class="form-control" value="<%= room.floor || '' %>" placeholder="e.g., 1, 2, 3">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Status</label>
+                        <select id="status" class="form-select">
+                            <option value="available" <%= room.status === 'available' ? 'selected' : '' %>>Available</option>
+                            <option value="occupied" <%= room.status === 'occupied' ? 'selected' : '' %>>Occupied</option>
+                            <option value="maintenance" <%= room.status === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
+                            <option value="cleaning" <%= room.status === 'cleaning' ? 'selected' : '' %>>Cleaning</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="col-md-6 mb-3">
-                    <label class="form-label">Status</label>
-                    <select name="status" class="form-select">
-                        <option value="available" <%= room.status === 'available' ? 'selected' : '' %>>Available</option>
-                        <option value="occupied" <%= room.status === 'occupied' ? 'selected' : '' %>>Occupied</option>
-                        <option value="maintenance" <%= room.status === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
-                        <option value="cleaning" <%= room.status === 'cleaning' ? 'selected' : '' %>>Cleaning</option>
-                    </select>
+                
+                <div class="mt-3">
+                    <button type="submit" class="btn-gold">Update Room</button>
+                    <a href="/admin/rooms" class="btn btn-secondary">Cancel</a>
                 </div>
-            </div>
-            
-            <div class="mb-3">
-                <label class="form-label">Notes</label>
-                <textarea name="notes" class="form-control" rows="3"><%= room.notes || '' %></textarea>
-            </div>
-            
-            <hr>
-            
-            <div class="d-flex justify-content-between">
-                <a href="/admin/rooms" class="btn btn-secondary">Cancel</a>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
-            </div>
-        </form>
+            </form>
+        </div>
     </div>
 </div>
+
+<!-- Toast Container -->
+<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+<style>
+    .stats-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .btn-gold {
+        background: #B8860B;
+        color: white;
+        border: none;
+        padding: 10px 25px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+    .btn-gold:hover {
+        background: #8B691B;
+    }
+    .btn-secondary {
+        background: #6c757d;
+        color: white;
+        padding: 10px 25px;
+        border-radius: 5px;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-secondary:hover {
+        background: #5a6268;
+        color: white;
+    }
+    .toast-notification {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        min-width: 280px;
+        animation: slideIn 0.3s ease;
+    }
+    .toast-success { border-left: 4px solid #28a745; background: #d4edda; color: #155724; }
+    .toast-error { border-left: 4px solid #dc3545; background: #f8d7da; color: #721c24; }
+    .toast-content { display: flex; align-items: center; gap: 10px; }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+
+<script>
+    function showToast(message, type) {
+        let container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `<div class="toast-content"><i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span><button style="background:none;border:none;margin-left:10px;cursor:pointer;" onclick="this.parentElement.remove()">&times;</button></div>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    document.getElementById('editRoomForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Updating...';
+        
+        const id = document.getElementById('room_id').value;
+        const data = {
+            room_number: document.getElementById('room_number').value,
+            room_type_id: parseInt(document.getElementById('room_type_id').value),
+            floor: document.getElementById('floor').value ? parseInt(document.getElementById('floor').value) : null,
+            status: document.getElementById('status').value
+        };
+        
+        try {
+            const response = await fetch(`/api/rooms/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                showToast('Room updated successfully!', 'success');
+                setTimeout(() => {
+                    window.location.href = '/admin/rooms';
+                }, 1500);
+            } else {
+                showToast(result.error || 'Update failed', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }
+        } catch (error) {
+            showToast('Error: ' + error.message, 'error');
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+</script>

@@ -1,379 +1,61 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Activity Log - Admin Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
-    <style>
-        .sidebar {
-            min-height: 100vh;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .sidebar .nav-link {
-            color: rgba(255,255,255,0.8);
-            padding: 12px 20px;
-            margin: 5px 0;
-            border-radius: 8px;
-        }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            background: rgba(255,255,255,0.2);
-            color: white;
-        }
-        .sidebar .nav-link i {
-            margin-right: 10px;
-        }
-        .main-content {
-            background: #f8f9fa;
-            min-height: 100vh;
-        }
-        .navbar-top {
-            background: white;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .log-entry {
-            transition: background 0.2s;
-            cursor: pointer;
-        }
-        .log-entry:hover {
-            background: #f8f9fa;
-        }
-        .log-details {
-            background: #f8f9fa;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            display: none;
-            margin-top: 10px;
-        }
-        .badge-action {
-            font-size: 11px;
-            padding: 5px 10px;
-        }
-    </style>
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <!-- Sidebar -->
-            <div class="col-md-2 p-0 sidebar">
-                <div class="p-3">
-                    <h4 class="text-white mb-4">Hotel Admin</h4>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/dashboard">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/bookings">
-                                <i class="bi bi-calendar-check"></i> Bookings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/rooms">
-                                <i class="bi bi-door-open"></i> Rooms
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/amenities">
-                                <i class="bi bi-gem"></i> Amenities
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/users">
-                                <i class="bi bi-people"></i> Users
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/requests">
-                                <i class="bi bi-chat-dots"></i> Requests
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/menu">
-                                <i class="bi bi-menu-up"></i> Menu
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/reports">
-                                <i class="bi bi-graph-up"></i> Reports
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="/admin/settings">
-                                <i class="bi bi-gear"></i> Settings
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link active" href="/admin/activity">
-                                <i class="bi bi-activity"></i> Activity Log
-                            </a>
-                        </li>
-                        <li class="nav-item mt-4">
-                            <a class="nav-link" href="/admin/logout">
-                                <i class="bi bi-box-arrow-right"></i> Logout
-                            </a>
-                        </li>
-                    </ul>
-                </div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-history"></i> Activity Logs</h5>
+                <button class="btn btn-sm btn-secondary" id="refreshLogs">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
             
-            <!-- Main Content -->
-            <div class="col-md-10 p-0 main-content">
-                <nav class="navbar-top p-3">
-                    <div class="container-fluid d-flex justify-content-between align-items-center">
-                        <span class="navbar-text">
-                            Welcome, <%= session.admin.username %>
-                        </span>
-                        <button class="btn btn-sm btn-danger" onclick="clearLogs()">
-                            <i class="bi bi-trash"></i> Clear Old Logs
-                        </button>
-                    </div>
-                </nav>
-                
-                <div class="p-4">
-                    <h2 class="mb-4">Activity Log</h2>
-                    
-                    <% if (error) { %>
-                        <div class="alert alert-warning"><%= error %></div>
-                    <% } %>
-                    
-                    <!-- Filters -->
-                    <div class="card mb-4">
-                        <div class="card-body">
-                            <form method="GET" class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">Action Type</label>
-                                    <select name="action" class="form-select">
-                                        <option value="">All Actions</option>
-                                        <% uniqueActions.forEach(action => { %>
-                                            <option value="<%= action %>" <%= filters.action === action ? 'selected' : '' %>><%= action.replace(/_/g, ' ').toUpperCase() %></option>
-                                        <% }) %>
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Start Date</label>
-                                    <input type="date" name="start_date" class="form-control" value="<%= filters.startDate %>">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">End Date</label>
-                                    <input type="date" name="end_date" class="form-control" value="<%= filters.endDate %>">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">&nbsp;</label>
-                                    <button type="submit" class="btn btn-primary d-block w-100">Apply Filters</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    
-                    <div class="row">
-                        <!-- Activity Log Table -->
-                        <div class="col-md-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="mb-0">Recent Activities</h5>
-                                </div>
-                                <div class="card-body p-0">
-                                    <div class="table-responsive">
-                                        <table class="table table-hover mb-0">
-                                            <thead>
-                                                <tr>
-                                                    <th>Time</th>
-                                                    <th>Admin</th>
-                                                    <th>Action</th>
-                                                    <th>Details</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                <% logs.forEach(log => { %>
-                                                    <tr class="log-entry" onclick="toggleDetails(<%= log.id %>)">
-                                                        <td style="width: 160px;">
-                                                            <small><%= new Date(log.created_at).toLocaleString() %></small>
-                                                        </td>
-                                                        <td>
-                                                            <strong><%= log.admin_username %></strong>
-                                                        </td>
-                                                        <td>
-                                                            <span class="badge bg-primary badge-action">
-                                                                <%= log.action.replace(/_/g, ' ').toUpperCase() %>
-                                                            </span>
-                                                        </td>
-                                                        <td>
-                                                            <div>
-                                                                <% if (log.details && Object.keys(log.details).length > 0) { %>
-                                                                    <small class="text-muted">
-                                                                        <% if (log.details.type) { %>
-                                                                            <i class="bi bi-tag"></i> <%= log.details.type %>
-                                                                        <% } %>
-                                                                        <% if (log.details.id) { %>
-                                                                            | ID: <%= log.details.id %>
-                                                                        <% } %>
-                                                                        <% if (log.details.status) { %>
-                                                                            | Status: <%= log.details.status %>
-                                                                        <% } %>
-                                                                    </small>
-                                                                <% } else { %>
-                                                                    <small class="text-muted">View details</small>
-                                                                <% } %>
-                                                            </div>
-                                                            <div id="details-<%= log.id %>" class="log-details">
-                                                                <pre><%= JSON.stringify(log.details, null, 2) %></pre>
-                                                            </div>
-                                                        </td>
-                                                    </tr>
-                                                <% }) %>
-                                                <% if (logs.length === 0) { %>
-                                                    <tr>
-                                                        <td colspan="4" class="text-center py-4">
-                                                            <i class="bi bi-inbox" style="font-size: 48px; color: #ccc;"></i>
-                                                            <p class="text-muted mt-2">No activity logs found</p>
-                                                        </td>
-                                                    </tr>
-                                                <% } %>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Pagination -->
-                            <% if (totalPages > 1) { %>
-                                <nav class="mt-4">
-                                    <ul class="pagination justify-content-center">
-                                        <% for(let i = 1; i <= totalPages; i++) { %>
-                                            <li class="page-item <%= currentPage === i ? 'active' : '' %>">
-                                                <a class="page-link" href="?page=<%= i %>&action=<%= filters.action %>&start_date=<%= filters.startDate %>&end_date=<%= filters.endDate %>">
-                                                    <%= i %>
-                                                </a>
-                                            </li>
-                                        <% } %>
-                                    </ul>
-                                </nav>
-                            <% } %>
-                        </div>
-                        
-                        <!-- Statistics Sidebar -->
-                        <div class="col-md-4">
-                            <!-- Action Summary -->
-                            <div class="card mb-4">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Action Summary (Last 30 Days)</h6>
-                                </div>
-                                <div class="card-body">
-                                    <canvas id="actionChart" height="200"></canvas>
-                                    <div class="mt-3">
-                                        <% actionsSummary.slice(0, 5).forEach(action => { %>
-                                            <div class="d-flex justify-content-between align-items-center mb-2">
-                                                <span><%= action.action.replace(/_/g, ' ') %></span>
-                                                <span class="badge bg-secondary"><%= action.count %></span>
-                                            </div>
-                                        <% }) %>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Admin Stats -->
-                            <div class="card">
-                                <div class="card-header">
-                                    <h6 class="mb-0">Admin Activity Stats</h6>
-                                </div>
-                                <div class="card-body">
-                                    <% adminStats.forEach(admin => { %>
-                                        <div class="mb-3">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <strong><%= admin.admin_username %></strong>
-                                                <span class="badge bg-primary"><%= admin.total_actions %> actions</span>
-                                            </div>
-                                            <div class="progress mt-1" style="height: 5px;">
-                                                <div class="progress-bar" style="width: <%= (admin.total_actions / adminStats[0]?.total_actions * 100) || 0 %>%"></div>
-                                            </div>
-                                            <small class="text-muted">
-                                                Active for <%= admin.active_days %> days<br>
-                                                Last action: <%= new Date(admin.last_action).toLocaleDateString() %>
-                                            </small>
-                                        </div>
-                                        <% if (adminStats.indexOf(admin) < adminStats.length - 1) { %>
-                                            <hr>
-                                        <% } %>
-                                    <% }) %>
-                                    <% if (adminStats.length === 0) { %>
-                                        <p class="text-muted">No admin activity data available</p>
-                                    <% } %>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>Admin</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                            <th>IP Address</th>
+                            <th>Details</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (logs && logs.length > 0) { %>
+                            <% logs.forEach(log => { 
+                                let roleColor = '';
+                                if (log.details && log.details.role === 'super_admin') roleColor = '#dc3545';
+                                else if (log.details && log.details.role === 'admin') roleColor = '#ffc107';
+                                else if (log.details && log.details.role === 'receptionist') roleColor = '#17a2b8';
+                                else roleColor = '#6c757d';
+                            %>
+                                <tr>
+                                    <td style="white-space: nowrap;"><%= new Date(log.created_at).toLocaleString() %></td>
+                                    <td><%= log.admin_username %></td>
+                                    <td>
+                                        <span class="badge" style="background: <%= roleColor %>; color: <%= log.details && log.details.role === 'admin' ? '#333' : 'white' %>;">
+                                            <%= log.details && log.details.role ? log.details.role : 'staff' %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge <%= log.action === 'login' ? 'bg-success' : 'bg-warning' %>">
+                                            <%= log.action %>
+                                        </span>
+                                    </td>
+                                    <td><%= log.ip_address || 'N/A' %></td>
+                                    <td><%= log.user_agent ? log.user_agent.substring(0, 50) + '...' : '-' %></td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="6" class="text-center">No activity logs found</td></tr>
+                        <% } %>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
-    
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        // Toggle log details
-        function toggleDetails(id) {
-            const detailsDiv = document.getElementById(`details-${id}`);
-            if (detailsDiv.style.display === 'none' || detailsDiv.style.display === '') {
-                detailsDiv.style.display = 'block';
-            } else {
-                detailsDiv.style.display = 'none';
-            }
-        }
-        
-        // Action chart
-        const ctx = document.getElementById('actionChart').getContext('2d');
-        const actionLabels = <%= JSON.stringify(actionsSummary.slice(0, 7).map(a => a.action.replace(/_/g, ' '))) %>;
-        const actionCounts = <%= JSON.stringify(actionsSummary.slice(0, 7).map(a => a.count)) %>;
-        
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: actionLabels,
-                datasets: [{
-                    data: actionCounts,
-                    backgroundColor: ['#667eea', '#764ba2', '#28a745', '#ffc107', '#dc3545', '#17a2b8', '#6c757d']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { font: { size: 10 } }
-                    }
-                }
-            }
-        });
-        
-        // Clear old logs
-        async function clearLogs() {
-            const days = prompt('Delete logs older than how many days? (Default: 90)', '90');
-            if (days && confirm(`Delete all logs older than ${days} days? This action cannot be undone.`)) {
-                try {
-                    const response = await fetch('/admin/activity/clear', {
-                        method: 'DELETE',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ days: parseInt(days) })
-                    });
-                    
-                    const result = await response.json();
-                    if (result.success) {
-                        alert(result.message);
-                        location.reload();
-                    } else {
-                        alert(result.error);
-                    }
-                } catch (error) {
-                    alert('Error clearing logs');
-                }
-            }
-        }
-    </script>
-</body>
-</html>
+</div>
+
+<script>
+    document.getElementById('refreshLogs')?.addEventListener('click', () => location.reload());
+</script>

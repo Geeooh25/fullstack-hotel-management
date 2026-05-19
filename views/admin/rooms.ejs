@@ -1,49 +1,161 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Rooms - Admin Panel</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container-fluid">
-        <div class="row">
-            <div class="col-md-2 bg-dark vh-100 p-3">
-                <h4 class="text-white">Admin Panel</h4>
-                <hr class="bg-light">
-                <ul class="nav flex-column">
-                    <li class="nav-item"><a href="/admin/dashboard" class="nav-link text-white">Dashboard</a></li>
-                    <li class="nav-item"><a href="/admin/bookings" class="nav-link text-white">Bookings</a></li>
-                    <li class="nav-item"><a href="/admin/rooms" class="nav-link text-white">Rooms</a></li>
-                    <li class="nav-item"><a href="/admin/amenities" class="nav-link text-white">Amenities</a></li>
-                    <li class="nav-item"><a href="/admin/users" class="nav-link text-white">Users</a></li>
-                    <li class="nav-item"><a href="/admin/requests" class="nav-link text-white">Requests</a></li>
-                    <li class="nav-item"><a href="/admin/menu" class="nav-link text-white">Menu</a></li>
-                    <li class="nav-item"><a href="/admin/reports" class="nav-link text-white">Reports</a></li>
-                    <li class="nav-item"><a href="/admin/settings" class="nav-link text-white">Settings</a></li>
-                    <li class="nav-item"><a href="/admin/activity" class="nav-link text-white">Activity Log</a></li>
-                    <li class="nav-item mt-4"><a href="/admin/logout" class="nav-link text-white">Logout</a></li>
-                </ul>
+<div class="row">
+    <div class="col-md-12">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5>Rooms Management</h5>
+                <a href="/admin/rooms/create" class="btn-gold">
+                    <i class="fas fa-plus"></i> Add Room
+                </a>
             </div>
-            <div class="col-md-10 p-4">
-                <h2>Rooms Management</h2>
-                <div class="alert alert-info">Rooms module is ready.</div>
-                <table class="table">
+            <div class="table-responsive">
+                <table class="table table-hover">
                     <thead>
-                        <tr><th>Room #</th><th>Type</th><th>Floor</th><th>Status</th></tr>
+                        <tr>
+                            <th>Room #</th>
+                            <th>Type</th>
+                            <th>Floor</th>
+                            <th>Price/Night</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
                     </thead>
                     <tbody>
-                        <% rooms.forEach(room => { %>
-                        <tr>
-                            <td><%= room.room_number %></td>
-                            <td><%= room.RoomType ? room.RoomType.name : 'N/A' %></td>
-                            <td><%= room.floor || 'N/A' %></td>
-                            <td><span class="badge bg-<%= room.status === 'available' ? 'success' : 'warning' %>"><%= room.status %></span></td>
-                        </tr>
-                        <% }) %>
+                        <% if (rooms && rooms.length > 0) { %>
+                            <% rooms.forEach(room => { %>
+                                <tr id="room-row-<%= room.id %>">
+                                    <td><strong><%= room.room_number %></strong></td>
+                                    <td><%= room.RoomType ? room.RoomType.name : 'N/A' %></td>
+                                    <td><%= room.floor || 'N/A' %></td>
+                                    <td>$<%= room.RoomType ? room.RoomType.base_price : 'N/A' %></td>
+                                    <td>
+                                        <select class="form-select status-select" data-id="<%= room.id %>" style="width: 120px;">
+                                            <option value="available" <%= room.status === 'available' ? 'selected' : '' %>>Available</option>
+                                            <option value="occupied" <%= room.status === 'occupied' ? 'selected' : '' %>>Occupied</option>
+                                            <option value="maintenance" <%= room.status === 'maintenance' ? 'selected' : '' %>>Maintenance</option>
+                                            <option value="cleaning" <%= room.status === 'cleaning' ? 'selected' : '' %>>Cleaning</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <a href="/admin/rooms/edit/<%= room.id %>" class="btn btn-sm btn-info">Edit</a>
+                                        <button class="btn btn-sm btn-danger delete-room" data-id="<%= room.id %>" data-name="<%= room.room_number %>">Delete</button>
+                                    </td>
+                                
+                            <% }) %>
+                        <% } else { %>
+                            <tr><td colspan="6" class="text-center">No rooms found</td
+                        <% } %>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
-</body>
-</html>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+<style>
+    .btn-gold {
+        background: #B8860B;
+        color: white;
+        border: none;
+        padding: 8px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-gold:hover {
+        background: #8B691B;
+        color: white;
+    }
+    .toast-notification {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        min-width: 280px;
+        animation: slideIn 0.3s ease;
+    }
+    .toast-success { border-left: 4px solid #28a745; background: #d4edda; color: #155724; }
+    .toast-error { border-left: 4px solid #dc3545; background: #f8d7da; color: #721c24; }
+    .toast-content { display: flex; align-items: center; gap: 10px; }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+
+<script>
+    function showToast(message, type) {
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `<div class="toast-content"><i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span><button style="background:none;border:none;margin-left:10px;cursor:pointer;" onclick="this.parentElement.remove()">&times;</button></div>`;
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+    
+    // Status update - CORRECTED URL: /admin/rooms/${id}/status
+    document.querySelectorAll('.status-select').forEach(select => {
+        select.addEventListener('change', async function() {
+            const id = this.dataset.id;
+            const status = this.value;
+            const oldValue = this.value;
+            
+            this.disabled = true;
+            
+            try {
+                const response = await fetch(`/admin/rooms/${id}/status`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status })
+                });
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showToast(`Room status updated to ${status}`, 'success');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast(result.error || 'Update failed', 'error');
+                    this.value = oldValue;
+                    this.disabled = false;
+                }
+            } catch (error) {
+                showToast('Error: ' + error.message, 'error');
+                this.value = oldValue;
+                this.disabled = false;
+            }
+        });
+    });
+    
+    // Delete room
+    document.querySelectorAll('.delete-room').forEach(btn => {
+        btn.addEventListener('click', async function() {
+            const id = this.dataset.id;
+            const name = this.dataset.name;
+            
+            if (confirm(`Delete Room ${name}? This action cannot be undone.`)) {
+                try {
+                    const response = await fetch(`/api/rooms/${id}`, { method: 'DELETE' });
+                    const result = await response.json();
+                    if (response.ok && result.success) {
+                        showToast(`Room ${name} deleted successfully`, 'success');
+                        setTimeout(() => location.reload(), 1000);
+                    } else {
+                        showToast(result.error || 'Delete failed', 'error');
+                    }
+                } catch (error) {
+                    showToast('Error: ' + error.message, 'error');
+                }
+            }
+        });
+    });
+</script>

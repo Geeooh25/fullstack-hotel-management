@@ -6,6 +6,176 @@ const { validateBooking } = require('../../middleware/validation');
 const { bookingLimiter } = require('../../middleware/rateLimiter');
 const EmailService = require('../../services/emailService');
 const { Op } = require('sequelize');
+const db = require('../../models');
+
+// ==================== HISTORICAL BOOKING (Super Admin Only) ====================
+// POST /api/bookings/historical - Record past stays (Super Admin only)
+router.post('/historical', async (req, res) => {
+    // Check if user is super admin
+    if (!req.session.admin || req.session.admin.role !== 'super_admin') {
+        return res.status(403).json({ 
+            success: false, 
+            error: 'Only Super Admin can create historical bookings' 
+        });
+    }
+    
+    try {
+        const { 
+            guest_name, guest_email, guest_phone, room_id, 
+            check_in, check_out, adults, children, 
+            total_amount, payment_method, special_requests,
+            id_number, address 
+        } = req.body;
+        
+        console.log('📜 Historical booking request:', { guest_name, guest_email, room_id, check_in, check_out });
+        
+        // Validate dates
+        const checkInDate = new Date(check_in);
+        const checkOutDate = new Date(check_out);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
+            return res.status(400).json({ success: false, error: 'Invalid date format' });
+        }
+        
+        if (checkOutDate <= checkInDate) {
+            return res.status(400).json({ success: false, error: 'Check-out must be after check-in' });
+        }
+        
+        // Check if historical (past date)
+        const isHistorical = checkInDate < today;
+        
+        // Split name
+        const nameParts = guest_name.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        // Create or get guest
+        let guest = await db.Guest.findOne({ where: { email: guest_email } });
+        if (!guest) {
+            guest = await db.Guest.create({
+                first_name: firstName,
+                last_name: lastName,
+                email: guest_email,
+                phone: guest_phone,
+                id_card_number: id_number,
+                address: address
+            });
+        }
+        
+        // Create booking with historical flag
+        const booking = await db.Booking.create({
+            booking_reference: 'HIST-' + Date.now(),
+            guest_id: guest.id,
+            room_id: parseInt(room_id),
+            check_in: check_in,
+            check_out: check_out,
+            adults: adults || 2,
+            children: children || 0,
+            total_amount: total_amount,
+            status: 'checked_out', // Past stays are checked out
+            payment_status: 'paid',
+            source: 'historical',
+            special_requests: special_requests || null,
+            is_historical: isHistorical,
+            created_by_admin_id: req.session.admin.id
+        });
+        
+        // Create payment record
+        await db.Payment.create({
+            booking_id: booking.id,
+            amount: total_amount,
+            payment_method: payment_method || 'cash',
+            status: 'completed',
+            transaction_id: 'HIST-' + Date.now()
+        });
+        
+        // Log the action
+        await db.ActivityLog.create({
+            admin_id: req.session.admin.id,
+            admin_username: req.session.admin.email,
+            action: 'historical_booking',
+            details: JSON.stringify({ 
+                booking_id: booking.id,
+                guest: guest_email,
+                check_in, 
+                check_out,
+                is_historical: true,
+                warning: 'Past date booking recorded'
+            }),
+            ip_address: req.ip,
+            user_agent: req.headers['user-agent']
+        });
+        
+        res.json({ 
+            success: true, 
+            booking,
+            warning: isHistorical ? 'Past date booking recorded successfully' : null
+        });
+        
+    } catch (error) {
+        console.error('Historical booking error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// ==================== COUNTER BOOKING ====================
+router.post('/counter', async (req, res) => {
+    try {
+        const { guest_name, guest_email, guest_phone, room_id, check_in, check_out, adults, children, payment_method, special_requests, total_amount, id_number, address } = req.body;
+        
+        console.log('📝 Counter booking request:', { guest_name, guest_email, room_id, check_in, check_out });
+        
+        // Split name
+        const nameParts = guest_name.split(' ');
+        const firstName = nameParts[0] || '';
+        const lastName = nameParts.slice(1).join(' ') || '';
+        
+        // Create or get guest
+        let guest = await db.Guest.findOne({ where: { email: guest_email } });
+        if (!guest) {
+            guest = await db.Guest.create({
+                first_name: firstName,
+                last_name: lastName,
+                email: guest_email,
+                phone: guest_phone,
+                id_card_number: id_number,
+                address: address
+            });
+        }
+        
+        // Create booking
+        const booking = await db.Booking.create({
+            booking_reference: 'WALK-' + Date.now(),
+            guest_id: guest.id,
+            room_id: parseInt(room_id),
+            check_in: check_in,
+            check_out: check_out,
+            adults: adults || 2,
+            children: children || 0,
+            total_amount: total_amount,
+            status: 'confirmed',
+            payment_status: 'completed',
+            source: 'walk_in',
+            special_requests: special_requests
+        });
+        
+        // Create payment record
+        await db.Payment.create({
+            booking_id: booking.id,
+            amount: total_amount,
+            payment_method: payment_method,
+            status: 'completed',
+            transaction_id: 'WALK-' + Date.now()
+        });
+        
+        res.json({ success: true, booking });
+    } catch (error) {
+        console.error('Counter booking error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 // POST /api/bookings - Create a new booking (with optional cart)
 router.post('/', bookingLimiter, validateBooking, async (req, res, next) => {
@@ -90,6 +260,7 @@ router.post('/', bookingLimiter, validateBooking, async (req, res, next) => {
         next(error);
     }
 });
+
 // POST /api/bookings/add-services-pending - RESTRICTED to confirmed/future bookings only
 router.post('/add-services-pending', async (req, res) => {
     try {
@@ -97,7 +268,6 @@ router.post('/add-services-pending', async (req, res) => {
         
         console.log('📝 Saving pending services:', { booking_reference, guest_email, services });
         
-        // Validate required fields
         if (!booking_reference || !guest_email || !services || !services.length) {
             return res.status(400).json({ 
                 success: false, 
@@ -122,7 +292,6 @@ router.post('/add-services-pending', async (req, res) => {
         today.setHours(0, 0, 0, 0);
         const checkInDate = new Date(booking.check_in);
         
-        // Check if booking is confirmed
         if (booking.status !== 'confirmed') {
             return res.status(400).json({ 
                 success: false, 
@@ -130,7 +299,6 @@ router.post('/add-services-pending', async (req, res) => {
             });
         }
         
-        // Check if booking is not in the past
         if (checkInDate < today) {
             return res.status(400).json({ 
                 success: false, 
@@ -138,7 +306,6 @@ router.post('/add-services-pending', async (req, res) => {
             });
         }
         
-        // Remove any existing pending services for this booking
         await BookingServiceModel.destroy({
             where: { booking_id: booking.id, status: 'pending' }
         });
@@ -146,7 +313,6 @@ router.post('/add-services-pending', async (req, res) => {
         let servicesTotal = 0;
         
         for (const service of services) {
-            // Validate each service
             if (!service.menu_item_id || !service.quantity || !service.price) {
                 console.log('⚠️ Invalid service data:', service);
                 continue;
@@ -299,7 +465,7 @@ router.post('/add-services', async (req, res) => {
     }
 });
 
-// GET /api/bookings/lookup - WITH MenuItem include for service names
+// GET /api/bookings/lookup
 router.get('/lookup', async (req, res) => {
     try {
         const { reference, email } = req.query;
@@ -360,7 +526,7 @@ router.get('/lookup', async (req, res) => {
     }
 });
 
-// GET /api/bookings/reference/:ref - WITH MenuItem include
+// GET /api/bookings/reference/:ref
 router.get('/reference/:ref', async (req, res) => {
     try {
         const reference = req.params.ref;
@@ -388,7 +554,7 @@ router.get('/reference/:ref', async (req, res) => {
     }
 });
 
-// GET /api/bookings/:id - WITH MenuItem include
+// GET /api/bookings/:id
 router.get('/:id', async (req, res) => {
     try {
         const bookingId = parseInt(req.params.id);
@@ -445,6 +611,56 @@ router.delete('/:id/cancel', async (req, res) => {
         console.error('❌ Cancel error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
+});
+
+// Get today's arrivals
+router.get('/today/arrivals', async (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    const bookings = await db.Booking.findAll({
+        where: { check_in: today, status: 'confirmed' },
+        include: [{ model: db.Guest }, { model: db.Room }]
+    });
+    res.json(bookings);
+});
+
+// Get today's departures
+router.get('/today/departures', async (req, res) => {
+    const today = new Date().toISOString().split('T')[0];
+    const bookings = await db.Booking.findAll({
+        where: { check_out: today, status: ['confirmed', 'checked_in'] },
+        include: [{ model: db.Guest }, { model: db.Room }]
+    });
+    res.json(bookings);
+});
+
+// Check-in
+router.post('/:id/checkin', async (req, res) => {
+    await db.Booking.update({ status: 'checked_in', checked_in_at: new Date() }, { where: { id: req.params.id } });
+    res.json({ success: true });
+});
+
+// Check-out
+router.post('/:id/checkout', async (req, res) => {
+    await db.Booking.update({ status: 'checked_out', checked_out_at: new Date() }, { where: { id: req.params.id } });
+    res.json({ success: true });
+});
+
+// Search bookings
+router.get('/search', async (req, res) => {
+    const { q } = req.query;
+    const bookings = await db.Booking.findAll({
+        where: {
+            [Op.or]: [
+                { booking_reference: { [Op.like]: `%${q}%` } },
+                { '$guest.first_name$': { [Op.like]: `%${q}%` } },
+                { '$guest.last_name$': { [Op.like]: `%${q}%` } },
+                { '$guest.email$': { [Op.like]: `%${q}%` } },
+                { '$room.room_number$': { [Op.like]: `%${q}%` } }
+            ]
+        },
+        include: [{ model: db.Guest }, { model: db.Room }]
+    });
+    res.json(bookings);
 });
 
 module.exports = router;

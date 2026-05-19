@@ -42,10 +42,47 @@ const User = sequelize.define('User', {
         type: DataTypes.BOOLEAN,
         defaultValue: false
     },
-    role: {
-        type: DataTypes.ENUM('admin', 'receptionist', 'housekeeping', 'guest'),
-        defaultValue: 'guest'
-    },
+    // Add these fields to your User model
+failed_login_attempts: {
+    type: DataTypes.INTEGER,
+    defaultValue: 0
+},
+locked_until: {
+    type: DataTypes.DATE,
+    allowNull: true
+},
+last_login_ip: {
+    type: DataTypes.STRING(45),
+    allowNull: true
+},
+last_login_device: {
+    type: DataTypes.TEXT,
+    allowNull: true
+},
+password_reset_token: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+},
+password_reset_expires: {
+    type: DataTypes.DATE,
+    allowNull: true
+},
+    // roles
+role: {
+    type: DataTypes.ENUM('super_admin', 'admin', 'receptionist', 'housekeeping', 'guest'),
+    defaultValue: 'guest'
+},
+permissions: {
+    type: DataTypes.JSON,
+    defaultValue: {
+        manage_bookings: false,
+        manage_rooms: false,
+        manage_guests: false,
+        manage_staff: false,
+        view_reports: false,
+        manage_settings: false
+    }
+},
     is_active: {
         type: DataTypes.BOOLEAN,
         defaultValue: true

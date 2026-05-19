@@ -77,7 +77,7 @@ const Booking = sequelize.define('Booking', {
         defaultValue: 'unpaid'
     },
     source: {
-        type: DataTypes.ENUM('online', 'phone', 'walk_in', 'agency'),
+        type: DataTypes.ENUM('online', 'phone', 'walk_in', 'agency', 'historical'),
         defaultValue: 'online'
     },
     special_requests: {
@@ -106,6 +106,21 @@ const Booking = sequelize.define('Booking', {
     },
     // NEW: Link to User account
     user_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'users',
+            key: 'id'
+        }
+    },
+    // NEW: Flag for historical bookings (past dates)
+    is_historical: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false,
+        allowNull: false
+    },
+    // NEW: Who created this historical booking
+    created_by_admin_id: {
         type: DataTypes.INTEGER,
         allowNull: true,
         references: {

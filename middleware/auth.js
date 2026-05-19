@@ -59,7 +59,8 @@ const isAdmin = async (req, res, next) => {
             }
         } catch (error) {}
     }
-    
+
+   
     // Check session
     if (!req.session || !req.session.userId) {
         if (req.originalUrl.startsWith('/api')) {
@@ -185,12 +186,70 @@ const isAdminGuest = async (req, res, next) => {
     res.redirect('/admin/dashboard');
 };
 
+// Check if user has specific role
+const hasRole = (roles) => {
+    return (req, res, next) => {
+        if (!req.session.admin) {
+            return res.redirect('/admin/login');
+        }
+        if (roles.includes(req.session.admin.role)) {
+            return next();
+        }
+        return res.status(403).render('admin/error', { 
+            title: 'Access Denied', 
+            message: 'You do not have permission to access this page.',
+            session: req.session 
+        });
+    };
+};
+
+// Check if user is super admin (only one who can manage staff)
+const isSuperAdmin = (req, res, next) => {
+    if (!req.session.admin) return res.redirect('/admin/login');
+    if (req.session.admin.role === 'super_admin') {
+        return next();
+    }
+    return res.status(403).render('admin/error', { 
+        title: 'Access Denied', 
+        message: 'Only Super Admin can access this page.',
+        session: req.session 
+    });
+};
+
+// Check if user can delete (only super admin and admin, but not self)
+const canDelete = (req, res, next) => {
+    if (!req.session.admin) return res.redirect('/admin/login');
+    const targetId = parseInt(req.params.id);
+    const currentUserId = req.session.admin.id;
+    
+    // Cannot delete yourself
+    if (targetId === currentUserId) {
+        return res.status(403).json({ error: 'You cannot delete your own account' });
+    }
+    
+    // Super admin can delete anyone except themselves
+    if (req.session.admin.role === 'super_admin') {
+        return next();
+    }
+    
+    // Admin can delete only guests and receptionists, not other admins
+    if (req.session.admin.role === 'admin') {
+        // You would need to check target role here
+        return next();
+    }
+    
+    return res.status(403).json({ error: 'You do not have permission to delete' });
+};
+
 module.exports = {
     isAuthenticated,
     isAdmin,
     isStaff,
     optionalAuth,
     optionalAuthForGuests,
-    isAdminAuthenticated,  // NEW for admin EJS routes
-    isAdminGuest           // NEW for admin EJS routes
+    isAdminAuthenticated,
+    isAdminGuest,
+    hasRole,
+    isSuperAdmin,
+    canDelete
 };

@@ -1,0 +1,353 @@
+<div class="row">
+    <div class="col-md-12">
+        <div class="stats-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5><i class="fas fa-users"></i> Staff Management</h5>
+                <button class="btn-gold" id="openAddStaffBtn">
+                    <i class="fas fa-plus"></i> Add Staff
+                </button>
+            </div>
+            
+            <% if (error) { %>
+                <div class="alert alert-danger"><%= error %></div>
+            <% } %>
+            
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th>Last Login</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (staff && staff.length > 0) { %>
+                            <% staff.forEach(member => { %>
+                                <tr id="staff-row-<%= member.id %>">
+                                    <td class="align-middle"><%= member.id %></td>
+                                    <td class="align-middle"><%= member.first_name %> <%= member.last_name %></td>
+                                    <td class="align-middle"><%= member.email %></td>
+                                    <td class="align-middle">
+                                        <span class="badge" style="background: #17a2b8; color: white; padding: 5px 12px; border-radius: 20px;">
+                                            <%= member.role %>
+                                        </span>
+                                    </td>
+                                    <td class="align-middle">
+                                        <span class="badge" style="background: <%= member.is_active ? '#28a745' : '#dc3545' %>; color: white; padding: 5px 12px; border-radius: 20px;">
+                                            <%= member.is_active ? 'Active' : 'Inactive' %>
+                                        </span>
+                                    </td>
+                                    <td class="align-middle"><%= member.last_login ? new Date(member.last_login).toLocaleDateString() : 'Never' %></td>
+                                    <td class="align-middle">
+                                        <% if (member.id !== session.admin.id) { %>
+                                            <button class="btn btn-sm btn-warning edit-staff-btn" 
+                                                data-id="<%= member.id %>" 
+                                                data-name="<%= member.first_name %> <%= member.last_name %>" 
+                                                data-email="<%= member.email %>" 
+                                                data-role="<%= member.role %>" 
+                                                data-active="<%= member.is_active %>">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                            <button class="btn btn-sm btn-danger delete-staff-btn" 
+                                                data-id="<%= member.id %>" 
+                                                data-name="<%= member.first_name %> <%= member.last_name %>">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        <% } else { %>
+                                            <span class="badge" style="background: #6c757d; color: white; padding: 5px 12px; border-radius: 20px;">
+                                                <i class="fas fa-user-shield"></i> Current User
+                                            </span>
+                                        <% } %>
+                                    </td>
+                                </tr>
+                            <% }) %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="7" class="text-center">No staff members found. Click "Add Staff" to create one.</td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Staff Modal -->
+<div class="modal fade" id="addStaffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #B8860B; color: white;">
+                <h5 class="modal-title">Add New Staff</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addStaffForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" name="first_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" name="last_name" class="form-control" required>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email *</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role *</label>
+                        <select name="role" class="form-select" required>
+                            <option value="receptionist">Receptionist</option>
+                            <option value="admin">Admin</option>
+                            <option value="housekeeping">Housekeeping</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Temporary Password</label>
+                        <input type="text" name="password" id="tempPassword" class="form-control" readonly>
+                        <small class="text-muted">Share this password with the staff member</small>
+                    </div>
+                    <button type="submit" class="btn-gold w-100">Create Staff Account</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Staff Modal -->
+<div class="modal fade" id="editStaffModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: #B8860B; color: white;">
+                <h5 class="modal-title">Edit Staff</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editStaffForm">
+                    <input type="hidden" id="edit_staff_id">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" id="edit_staff_name" class="form-control" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="edit_staff_email" class="form-control" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Role</label>
+                        <select id="edit_staff_role" class="form-select">
+                            <option value="receptionist">Receptionist</option>
+                            <option value="admin">Admin</option>
+                            <option value="housekeeping">Housekeeping</option>
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" id="edit_staff_active" class="form-check-input">
+                        <label class="form-check-label">Active</label>
+                    </div>
+                    <button type="submit" class="btn-gold w-100">Update Staff</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Toast Container -->
+<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
+
+<style>
+    .align-middle { vertical-align: middle; }
+    .btn-gold {
+        background: #B8860B;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all 0.3s;
+    }
+    .btn-gold:hover {
+        background: #8B691B;
+        transform: translateY(-1px);
+    }
+    .toast-notification {
+        background: white;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        min-width: 280px;
+        animation: slideIn 0.3s ease;
+    }
+    .toast-success { border-left: 4px solid #28a745; background: #d4edda; color: #155724; }
+    .toast-error { border-left: 4px solid #dc3545; background: #f8d7da; color: #721c24; }
+    .toast-content { display: flex; align-items: center; gap: 10px; }
+    @keyframes slideIn {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+</style>
+
+<script>
+    function showToast(message, type) {
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = `toast-notification toast-${type}`;
+        toast.innerHTML = `<div class="toast-content"><i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span><button style="background:none;border:none;margin-left:10px;cursor:pointer;" onclick="this.parentElement.remove()">&times;</button></div>`;
+        container.appendChild(toast);
+        setTimeout(function() { toast.remove(); }, 3000);
+    }
+    
+    // Open Add Staff Modal
+    var openBtn = document.getElementById('openAddStaffBtn');
+    if (openBtn) {
+        openBtn.addEventListener('click', function() {
+            var randomPass = Math.random().toString(36).slice(-8);
+            document.getElementById('tempPassword').value = randomPass;
+            var modal = new bootstrap.Modal(document.getElementById('addStaffModal'));
+            modal.show();
+        });
+    }
+    
+    // Add Staff Form Submit
+    var addForm = document.getElementById('addStaffForm');
+    if (addForm) {
+        addForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var submitBtn = this.querySelector('button[type="submit"]');
+            var originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating...';
+            
+            var formData = new FormData(this);
+            var data = {};
+            formData.forEach(function(value, key) {
+                data[key] = value;
+            });
+            
+            fetch('/admin/staff', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    showToast('Staff added successfully', 'success');
+                    setTimeout(function() { location.reload(); }, 1000);
+                } else {
+                    showToast(result.error || 'Error adding staff', 'error');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            })
+            .catch(function(error) {
+                showToast('Error: ' + error.message, 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            });
+        });
+    }
+    
+    // Edit Staff - Open Modal
+    var editBtns = document.querySelectorAll('.edit-staff-btn');
+    editBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var currentUserId = '<%= session.admin.id %>';
+            if (this.dataset.id === currentUserId) {
+                showToast('You cannot edit your own account', 'error');
+                return;
+            }
+            document.getElementById('edit_staff_id').value = this.dataset.id;
+            document.getElementById('edit_staff_name').value = this.dataset.name;
+            document.getElementById('edit_staff_email').value = this.dataset.email;
+            document.getElementById('edit_staff_role').value = this.dataset.role;
+            document.getElementById('edit_staff_active').checked = this.dataset.active === 'true';
+            var modal = new bootstrap.Modal(document.getElementById('editStaffModal'));
+            modal.show();
+        });
+    });
+    
+    // Update Staff Form Submit
+    var editForm = document.getElementById('editStaffForm');
+    if (editForm) {
+        editForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            var id = document.getElementById('edit_staff_id').value;
+            var currentUserId = '<%= session.admin.id %>';
+            
+            if (id === currentUserId) {
+                showToast('You cannot edit your own account', 'error');
+                return;
+            }
+            
+            var data = {
+                role: document.getElementById('edit_staff_role').value,
+                is_active: document.getElementById('edit_staff_active').checked
+            };
+            
+            fetch('/admin/staff/' + id, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(function(response) { return response.json(); })
+            .then(function(result) {
+                if (result.success) {
+                    showToast('Staff updated successfully', 'success');
+                    setTimeout(function() { location.reload(); }, 1000);
+                } else {
+                    showToast(result.error || 'Error updating staff', 'error');
+                }
+            })
+            .catch(function(error) {
+                showToast('Error: ' + error.message, 'error');
+            });
+        });
+    }
+    
+    // Delete Staff
+    var deleteBtns = document.querySelectorAll('.delete-staff-btn');
+    deleteBtns.forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            var name = this.dataset.name;
+            var id = this.dataset.id;
+            var currentUserId = '<%= session.admin.id %>';
+            
+            if (id === currentUserId) {
+                showToast('You cannot delete your own account', 'error');
+                return;
+            }
+            
+            if (confirm('Delete ' + name + '? This action cannot be undone.')) {
+                fetch('/admin/staff/' + id, { method: 'DELETE' })
+                .then(function(response) { return response.json(); })
+                .then(function(result) {
+                    if (result.success) {
+                        showToast('Staff deleted successfully', 'success');
+                        setTimeout(function() { location.reload(); }, 1000);
+                    } else {
+                        showToast(result.error || 'Error deleting staff', 'error');
+                    }
+                })
+                .catch(function(error) {
+                    showToast('Error: ' + error.message, 'error');
+                });
+            }
+        });
+    });
+</script>

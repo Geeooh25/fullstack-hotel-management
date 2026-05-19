@@ -23,7 +23,12 @@ const ActivityLog = sequelize.define('ActivityLog', {
         type: DataTypes.TEXT,
         get() {
             const raw = this.getDataValue('details');
-            return raw ? JSON.parse(raw) : {};
+            if (!raw) return {};
+            try {
+                return JSON.parse(raw);
+            } catch (e) {
+                return {};
+            }
         },
         set(value) {
             this.setDataValue('details', JSON.stringify(value));
@@ -73,6 +78,7 @@ ActivityLog.getLogs = async function(filters = {}) {
     });
 };
 
+// SQLite compatible version - no PostgreSQL specific syntax
 ActivityLog.getActionsSummary = async function() {
     const sequelize = require('../config/database').sequelize;
     const [results] = await sequelize.query(`
@@ -81,13 +87,14 @@ ActivityLog.getActionsSummary = async function() {
             COUNT(*) as count,
             DATE(created_at) as date
         FROM activity_logs
-        WHERE created_at >= NOW() - INTERVAL '30 days'
+        WHERE created_at >= DATE('now', '-30 days')
         GROUP BY action, DATE(created_at)
         ORDER BY date DESC
     `);
     return results;
 };
 
+// SQLite compatible version
 ActivityLog.getAdminStats = async function() {
     const sequelize = require('../config/database').sequelize;
     const [results] = await sequelize.query(`
@@ -105,9 +112,12 @@ ActivityLog.getAdminStats = async function() {
 };
 
 ActivityLog.cleanup = async function(days = 90) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - days);
+    
     return await this.destroy({
         where: {
-            created_at: { [Op.lt]: new Date(Date.now() - days * 24 * 60 * 60 * 1000) }
+            created_at: { [Op.lt]: cutoffDate }
         }
     });
 };

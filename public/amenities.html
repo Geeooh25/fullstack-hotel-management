@@ -107,7 +107,6 @@
             width: 25px;
         }
         
-        /* Filter Buttons */
         .filter-buttons {
             display: flex;
             justify-content: center;
@@ -132,7 +131,6 @@
             color: white;
         }
         
-        /* Loading State */
         .skeleton-card {
             height: 300px;
             background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
@@ -146,21 +144,6 @@
             100% { background-position: -200% 0; }
         }
         
-        /* Cart Toast */
-        .cart-toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: var(--gold);
-            color: white;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            z-index: 9999;
-            animation: slideIn 0.3s ease;
-            box-shadow: var(--shadow-hover);
-        }
-        
-        /* Floating cart icon */
         .floating-cart {
             position: fixed;
             bottom: 30px;
@@ -198,36 +181,47 @@
         }
         
         @keyframes slideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+        }
+        
+        .toast {
+            background: white;
+            border-radius: 8px;
+            padding: 12px 20px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-left: 4px solid;
+        }
+        
+        .toast-success {
+            border-left-color: #28a745;
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .toast-error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+            color: #721c24;
         }
         
         @media (max-width: 768px) {
-            .filter-buttons {
-                gap: 0.5rem;
-            }
-            .filter-btn {
-                padding: 0.3rem 1rem;
-                font-size: 0.8rem;
-            }
-            .floating-cart {
-                bottom: 20px;
-                right: 20px;
-                width: 50px;
-                height: 50px;
-            }
+            .filter-buttons { gap: 0.5rem; }
+            .filter-btn { padding: 0.3rem 1rem; font-size: 0.8rem; }
+            .floating-cart { bottom: 20px; right: 20px; width: 50px; height: 50px; }
         }
     </style>
 </head>
 <body>
 
-    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="/">GEEOOH HOTEL</a>
@@ -251,13 +245,11 @@
         </div>
     </nav>
 
-    <!-- Floating Cart Icon -->
     <div class="floating-cart" id="floatingCart">
         <i class="fas fa-shopping-cart"></i>
         <span class="cart-count" id="cartCount">0</span>
     </div>
 
-    <!-- Page Hero -->
     <div class="page-hero" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1575429198097-0414ec08e8cd?w=1600'); background-size: cover; background-position: center; margin-top: 0; padding-top: 80px;">
         <div class="container">
             <h1>Facilities & Amenities</h1>
@@ -265,7 +257,6 @@
         </div>
     </div>
 
-    <!-- Filter Buttons -->
     <div class="container mt-5 pt-4">
         <div class="filter-buttons">
             <button class="filter-btn active" data-filter="all">All</button>
@@ -275,23 +266,20 @@
         </div>
     </div>
 
-    <!-- Main Amenities Grid -->
     <div class="container">
         <div class="row g-4" id="amenitiesGrid">
-            <!-- Loading Skeletons -->
             <div class="col-md-4"><div class="skeleton-card"></div></div>
             <div class="col-md-4"><div class="skeleton-card"></div></div>
             <div class="col-md-4"><div class="skeleton-card"></div></div>
         </div>
     </div>
 
-    <!-- Premium Services Section -->
     <div class="feature-section">
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
                     <h2 style="font-family: 'Playfair Display', serif; margin-bottom: 1.5rem;">Premium Services</h2>
-                    <ul class="feature-list" id="premiumServicesList">
+                    <ul class="feature-list">
                         <li><i class="fas fa-check-circle"></i> 24/7 Room Service</li>
                         <li><i class="fas fa-check-circle"></i> Daily Housekeeping</li>
                         <li><i class="fas fa-check-circle"></i> Laundry & Dry Cleaning</li>
@@ -309,7 +297,6 @@
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="row">
@@ -353,7 +340,7 @@
 
     <div class="toast-container" id="toast-container"></div>
 
-    <!-- Request Modal (Hidden by default) -->
+    <!-- Request Modal -->
     <div class="modal fade" id="requestModal" tabindex="-1">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
@@ -361,9 +348,7 @@
                     <h5 class="modal-title" id="requestModalTitle">Request Service</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body" id="requestModalBody">
-                    <!-- Dynamic form loads here -->
-                </div>
+                <div class="modal-body" id="requestModalBody"></div>
             </div>
         </div>
     </div>
@@ -375,13 +360,16 @@
     <script>
         let allAmenities = [];
         let currentFilter = 'all';
+        let requestModal = null;
 
-        // Load amenities from API
+        document.addEventListener('DOMContentLoaded', function() {
+            requestModal = new bootstrap.Modal(document.getElementById('requestModal'));
+        });
+
         async function loadAmenities() {
             try {
                 const response = await fetch('/api/amenities');
                 const data = await response.json();
-                
                 if (data.success) {
                     allAmenities = data.amenities;
                     renderAmenities();
@@ -389,173 +377,151 @@
                     showToast('Failed to load amenities', 'error');
                 }
             } catch (error) {
-                console.error('Error loading amenities:', error);
                 showToast('Error loading amenities', 'error');
             }
         }
 
-        // Render amenities based on current filter
         function renderAmenities() {
             const grid = document.getElementById('amenitiesGrid');
-            let filteredAmenities = allAmenities;
-            
-            if (currentFilter !== 'all') {
-                filteredAmenities = allAmenities.filter(a => a.category === currentFilter);
-            }
+            let filteredAmenities = currentFilter === 'all' ? allAmenities : allAmenities.filter(a => a.category === currentFilter);
             
             if (filteredAmenities.length === 0) {
-                grid.innerHTML = `
-                    <div class="col-12 text-center py-5">
-                        <i class="fas fa-info-circle" style="font-size: 3rem; color: var(--gold);"></i>
-                        <h3 class="mt-3">No amenities found</h3>
-                        <p>Check back later for more services.</p>
-                    </div>
-                `;
+                grid.innerHTML = `<div class="col-12 text-center py-5"><i class="fas fa-info-circle" style="font-size: 3rem; color: var(--gold);"></i><h3 class="mt-3">No amenities found</h3></div>`;
                 return;
             }
             
             grid.innerHTML = filteredAmenities.map(amenity => `
                 <div class="col-md-4">
                     <div class="amenity-card" data-amenity-id="${amenity.id}" data-category="${amenity.category}">
-                        <span class="amenity-badge badge-${amenity.category}">
-                            ${amenity.category === 'free' ? 'FREE' : amenity.category === 'paid' ? 'PAID' : 'REQUEST'}
-                        </span>
-                        <div class="amenity-icon">
-                            <i class="${amenity.icon}"></i>
-                        </div>
+                        <span class="amenity-badge badge-${amenity.category}">${amenity.category === 'free' ? 'FREE' : amenity.category === 'paid' ? 'PAID' : 'REQUEST'}</span>
+                        <div class="amenity-icon"><i class="${amenity.icon}"></i></div>
                         <h3>${amenity.name}</h3>
                         <p>${amenity.short_description}</p>
                     </div>
                 </div>
             `).join('');
             
-            // Add click handlers to cards
             document.querySelectorAll('.amenity-card').forEach(card => {
-                card.addEventListener('click', (e) => {
-                    const amenityId = parseInt(card.dataset.amenityId);
-                    const category = card.dataset.category;
-                    const amenity = allAmenities.find(a => a.id === amenityId);
-                    handleAmenityClick(amenity, category);
+                card.addEventListener('click', () => {
+                    const amenity = allAmenities.find(a => a.id === parseInt(card.dataset.amenityId));
+                    if (card.dataset.category === 'free') showFreeInfo(amenity);
+                    else if (card.dataset.category === 'paid') window.location.href = `/amenity-detail.html?id=${amenity.id}`;
+                    else showRequestForm(amenity);
                 });
             });
         }
 
-        // Handle click based on category
-        function handleAmenityClick(amenity, category) {
-            if (category === 'free') {
-                showFreeAmenityInfo(amenity);
-            } else if (category === 'paid') {
-                window.location.href = `/amenity-detail.html?id=${amenity.id}`;
-            } else if (category === 'request') {
-                showRequestModal(amenity);
-            }
-        }
-
-        // Show free amenity info
-        function showFreeAmenityInfo(amenity) {
-            const modalHtml = `
+        function showFreeInfo(amenity) {
+            document.getElementById('requestModalTitle').innerText = amenity.name;
+            document.getElementById('requestModalBody').innerHTML = `
                 <div class="text-center">
-                    <div class="amenity-icon" style="margin: 0 auto 1rem;">
-                        <i class="${amenity.icon}" style="font-size: 3rem; color: var(--gold);"></i>
-                    </div>
+                    <div class="amenity-icon" style="margin: 0 auto 1rem;"><i class="${amenity.icon}" style="font-size: 3rem; color: var(--gold);"></i></div>
                     <h3>${amenity.name}</h3>
                     <p>${amenity.description}</p>
                     <hr>
-                    <div class="text-start">
-                        <h5>Hours:</h5>
-                        <p>${amenity.hours || '24/7'}</p>
-                        <h5>Location:</h5>
-                        <p>${amenity.location || 'Main Building'}</p>
-                        ${amenity.additional_info ? `<h5>Additional Info:</h5><p>${amenity.additional_info}</p>` : ''}
-                    </div>
+                    <div class="text-start"><h5>Hours:</h5><p>${amenity.hours || '24/7'}</p><h5>Location:</h5><p>${amenity.location || 'Main Building'}</p></div>
                 </div>
             `;
-            
-            const modalContainer = document.getElementById('requestModal');
-            document.getElementById('requestModalTitle').innerText = amenity.name;
-            document.getElementById('requestModalBody').innerHTML = modalHtml;
-            const modal = new bootstrap.Modal(modalContainer);
-            modal.show();
+            requestModal.show();
         }
 
-        // Show request form modal
-        function showRequestModal(amenity) {
-            let formHtml = '';
-            
-            if (amenity.name === 'Concierge') {
-                formHtml = `
-                    <form id="requestForm">
-                        <input type="hidden" name="amenity_id" value="${amenity.id}">
-                        <div class="mb-3"><label class="form-label">Full Name *</label><input type="text" class="form-control" name="guest_name" required></div>
-                        <div class="mb-3"><label class="form-label">Email *</label><input type="email" class="form-control" name="guest_email" required></div>
-                        <div class="mb-3"><label class="form-label">Phone *</label><input type="tel" class="form-control" name="guest_phone" required></div>
-                        <div class="mb-3"><label class="form-label">Booking Reference (Optional)</label><input type="text" class="form-control" name="booking_reference"></div>
-                        <div class="mb-3"><label class="form-label">Request Type *</label><select class="form-control" name="request_type" required><option value="">Select...</option><option value="restaurant_reservation">Restaurant Reservation</option><option value="transportation">Transportation</option><option value="special_request">Special Request</option><option value="other">Other</option></select></div>
-                        <div class="mb-3"><label class="form-label">Preferred Date *</label><input type="date" class="form-control" name="preferred_date" required></div>
-                        <div class="mb-3"><label class="form-label">Request Details *</label><textarea class="form-control" name="request_details" rows="3" required></textarea></div>
-                        <button type="submit" class="btn-gold w-100">Submit Request</button>
-                    </form>
-                `;
-            } else if (amenity.name === 'Tours') {
-                formHtml = `
-                    <form id="requestForm">
-                        <input type="hidden" name="amenity_id" value="${amenity.id}">
-                        <div class="mb-3"><label class="form-label">Full Name *</label><input type="text" class="form-control" name="guest_name" required></div>
-                        <div class="mb-3"><label class="form-label">Email *</label><input type="email" class="form-control" name="guest_email" required></div>
-                        <div class="mb-3"><label class="form-label">Phone *</label><input type="tel" class="form-control" name="guest_phone" required></div>
-                        <div class="mb-3"><label class="form-label">Tour Name *</label><input type="text" class="form-control" name="tour_name" required></div>
-                        <div class="mb-3"><label class="form-label">Number of People *</label><input type="number" class="form-control" name="number_of_people" min="1" required></div>
-                        <div class="mb-3"><label class="form-label">Preferred Date *</label><input type="date" class="form-control" name="preferred_date" required></div>
-                        <div class="mb-3"><label class="form-label">Special Requests</label><textarea class="form-control" name="request_details" rows="3"></textarea></div>
-                        <button type="submit" class="btn-gold w-100">Submit Request</button>
-                    </form>
-                `;
-            } else if (amenity.name === 'Tickets') {
-                formHtml = `
-                    <form id="requestForm">
-                        <input type="hidden" name="amenity_id" value="${amenity.id}">
-                        <div class="mb-3"><label class="form-label">Full Name *</label><input type="text" class="form-control" name="guest_name" required></div>
-                        <div class="mb-3"><label class="form-label">Email *</label><input type="email" class="form-control" name="guest_email" required></div>
-                        <div class="mb-3"><label class="form-label">Phone *</label><input type="tel" class="form-control" name="guest_phone" required></div>
-                        <div class="mb-3"><label class="form-label">Event Name *</label><input type="text" class="form-control" name="event_name" required></div>
-                        <div class="mb-3"><label class="form-label">Number of Tickets *</label><input type="number" class="form-control" name="number_of_tickets" min="1" required></div>
-                        <div class="mb-3"><label class="form-label">Seating Preference</label><select class="form-control" name="seating_preference"><option value="">No preference</option><option value="orchestra">Orchestra</option><option value="mezzanine">Mezzanine</option><option value="balcony">Balcony</option><option value="vip">VIP</option></select></div>
-                        <div class="mb-3"><label class="form-label">Event Date *</label><input type="date" class="form-control" name="preferred_date" required></div>
-                        <button type="submit" class="btn-gold w-100">Submit Request</button>
-                    </form>
-                `;
-            }
-            
+        function showRequestForm(amenity) {
             document.getElementById('requestModalTitle').innerText = amenity.name;
-            document.getElementById('requestModalBody').innerHTML = formHtml;
-            const modal = new bootstrap.Modal(document.getElementById('requestModal'));
-            modal.show();
+            document.getElementById('requestModalBody').innerHTML = `
+                <form id="requestForm">
+                    <input type="hidden" name="amenity_id" value="${amenity.id}">
+                    <div class="mb-3"><label class="form-label">Full Name *</label><input type="text" name="guest_name" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Email *</label><input type="email" name="guest_email" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Phone *</label><input type="tel" name="guest_phone" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Request Type</label>
+                        <select name="request_type" class="form-control">
+                            <option value="general">General Request</option>
+                            <option value="restaurant">Restaurant Reservation</option>
+                            <option value="tour">Tour Booking</option>
+                            <option value="transport">Transportation</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="mb-3"><label class="form-label">Request Details *</label><textarea name="request_details" class="form-control" rows="3" required></textarea></div>
+                    <div class="mb-3"><label class="form-label">Preferred Date</label><input type="date" name="preferred_date" class="form-control"></div>
+                    <div id="formMessage" style="display: none; margin-top: 15px;"></div>
+                    <button type="submit" class="btn-gold w-100">Submit Request</button>
+                </form>
+            `;
+            requestModal.show();
             
             document.getElementById('requestForm').addEventListener('submit', async (e) => {
                 e.preventDefault();
-                const formData = new FormData(e.target);
-                const data = Object.fromEntries(formData);
+                
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                const messageDiv = document.getElementById('formMessage');
+                
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+                messageDiv.style.display = 'none';
+                
+                const data = Object.fromEntries(new FormData(e.target));
                 
                 try {
-                    const response = await fetch('/api/requests', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
+                    const res = await fetch('/api/requests', { 
+                        method: 'POST', 
+                        headers: { 'Content-Type': 'application/json' }, 
+                        body: JSON.stringify(data) 
                     });
-                    const result = await response.json();
+                    const result = await res.json();
+                    
                     if (result.success) {
-                        showToast('Request submitted successfully! We will contact you soon.', 'success');
-                        modal.hide();
+                        messageDiv.style.display = 'block';
+                        messageDiv.className = 'alert alert-success';
+                        messageDiv.innerHTML = '<i class="fas fa-check-circle"></i> ' + (result.message || 'Request submitted successfully! We will contact you within 2 hours.');
+                        e.target.reset();
+                        setTimeout(() => requestModal.hide(), 2500);
                     } else {
-                        showToast(result.error || 'Failed to submit request', 'error');
+                        messageDiv.style.display = 'block';
+                        messageDiv.className = 'alert alert-danger';
+                        messageDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> ' + (result.error || 'Failed to submit request');
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Submit Request';
                     }
-                } catch (error) {
-                    showToast('Error submitting request', 'error');
+                } catch (err) { 
+                    messageDiv.style.display = 'block';
+                    messageDiv.className = 'alert alert-danger';
+                    messageDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Network error. Please try again.';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = 'Submit Request';
                 }
             });
         }
 
-        // Filter buttons
+        function showToast(message, type) {
+    // Create container if it doesn't exist
+    let container = document.getElementById('toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toast-container';
+        container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+        document.body.appendChild(container);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.style.cssText = 'background: white; border-radius: 8px; padding: 12px 20px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-left: 4px solid; animation: slideIn 0.3s ease;';
+    toast.innerHTML = `<div style="display: flex; justify-content: space-between; align-items: center;"><span>${message}</span><button style="background: none; border: none; font-size: 1.2rem; cursor: pointer; margin-left: 15px;" onclick="this.parentElement.parentElement.remove()">&times;</button></div>`;
+    
+    if (type === 'success') {
+        toast.style.borderLeftColor = '#28a745';
+        toast.style.background = '#d4edda';
+        toast.style.color = '#155724';
+    } else {
+        toast.style.borderLeftColor = '#dc3545';
+        toast.style.background = '#f8d7da';
+        toast.style.color = '#721c24';
+    }
+    
+    container.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+}
+
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -565,62 +531,27 @@
             });
         });
 
-        // Floating cart click
-        document.getElementById('floatingCart').addEventListener('click', () => {
-            window.location.href = '/cart.html';
-        });
-
-        // Update cart count
+        document.getElementById('floatingCart').addEventListener('click', () => window.location.href = '/cart.html');
+        
         function updateCartCount() {
             const cart = JSON.parse(localStorage.getItem('hotelCart') || '[]');
-            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
-            const cartCountElem = document.getElementById('cartCount');
-            if (cartCountElem) cartCountElem.innerText = totalItems;
+            const total = cart.reduce((s, i) => s + i.quantity, 0);
+            const el = document.getElementById('cartCount');
+            if (el) el.innerText = total;
         }
-
-        // Update auth nav
-        async function updateAuthNav() {
-            if (typeof Auth !== 'undefined') {
-                await Auth.updateNav();
-            }
-        }
-
+        
         function subscribeNewsletter() {
             const email = document.getElementById('newsletter-email').value;
-            if (!email) {
-                showToast('Please enter your email address', 'warning');
-                return;
-            }
+            if (!email) { showToast('Enter email address', 'error'); return; }
             showToast('Thank you for subscribing!', 'success');
             document.getElementById('newsletter-email').value = '';
         }
         
-        window.addEventListener('scroll', function() {
-            const navbar = document.querySelector('.navbar');
-            if (window.scrollY > 50) {
-                navbar.classList.add('scrolled');
-            } else {
-                navbar.classList.remove('scrolled');
-            }
-        });
+        document.getElementById('subscribeBtn')?.addEventListener('click', subscribeNewsletter);
         
-        function showToast(message, type) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `<div class="d-flex justify-content-between align-items-center"><span>${message}</span><button class="btn btn-sm btn-link" onclick="this.parentElement.parentElement.remove()">&times;</button></div>`;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-        
-        // Initialize
         loadAmenities();
         updateCartCount();
-        updateAuthNav();
-        
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'hotelCart') updateCartCount();
-        });
     </script>
-<script src="/js/newsletter.js"></script></body>
+    <script src="/js/newsletter.js"></script>
+</body>
 </html>
