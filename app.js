@@ -194,6 +194,65 @@ app.get('/fix-enums', async (req, res) => {
     }
 });
 
+// Fix request_submissions table only
+app.get('/fix-requests', async (req, res) => {
+    try {
+        const { sequelize } = require('./config/database');
+        const fs = require('fs');
+        const path = require('path');
+        
+        const backup = JSON.parse(fs.readFileSync(path.join(__dirname, 'backup-data.json')));
+        const RequestSubmission = require('./models/requestSubmission');
+        const results = [];
+        
+        const rows = backup.request_submissions || [];
+        
+        if (rows.length === 0) {
+            return res.send('No request_submissions data found');
+        }
+        
+        // Clear existing
+        await RequestSubmission.destroy({ where: {}, truncate: true, cascade: true });
+        results.push('🗑️ Cleared request_submissions');
+        
+        let imported = 0;
+        let failed = 0;
+        
+        for (const row of rows) {
+            try {
+                // Clean up invalid dates
+                const cleanRow = {
+                    ...row,
+                    preferred_date: (row.preferred_date === 'Invalid date' || row.preferred_date === 'undefined') ? null : row.preferred_date,
+                    created_at: row.created_at === 'Invalid date' ? new Date().toISOString() : row.created_at,
+                    updated_at: row.updated_at === 'Invalid date' ? new Date().toISOString() : row.updated_at
+                };
+                
+                await RequestSubmission.create(cleanRow);
+                imported++;
+            } catch (err) {
+                failed++;
+                results.push(`   ⚠️ Failed row ${row.id}: ${err.message}`);
+            }
+        }
+        
+        results.push(`✅ Imported ${imported} rows to request_submissions`);
+        if (failed > 0) results.push(`⚠️ ${failed} rows failed`);
+        
+        res.send(`
+            <html><body style="padding:20px;font-family:monospace;">
+            <h1>🔧 Fix Request Submissions</h1>
+            <pre>${results.join('\n')}</pre>
+            <hr>
+            <p><a href="/admin/login">Go to Admin Login →</a></p>
+            <p><a href="/admin/requests">Check Requests Page →</a></p>
+            </body></html>
+        `);
+    } catch (error) {
+        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
+    }
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
 
