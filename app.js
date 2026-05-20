@@ -141,11 +141,15 @@ const startServer = async () => {
         await sequelize.authenticate();
         console.log('✅ Database connected');
 
-        // Auto-sync database schema on every deploy
-        // This adds missing columns without deleting data
+        // Auto-sync database schema (skip errors for incompatible column types)
         console.log('🔄 Checking database schema...');
-        await sequelize.sync({ alter: true });
-        console.log('✅ Database schema up to date');
+        try {
+            await sequelize.sync({ alter: true });
+            console.log('✅ Database schema up to date');
+        } catch (syncError) {
+            console.error('⚠️ Sync warning (non-critical):', syncError.message);
+            console.log('✅ Server continuing despite schema sync warning');
+        }
 
         server.listen(PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${PORT}`);
