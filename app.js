@@ -312,6 +312,99 @@ app.get('/create-menu', async (req, res) => {
         res.json({ error: error.message });
     }
 });
+// Add parking and business center menus
+app.get('/add-parking-business', async (req, res) => {
+    try {
+        const { MenuCategory, MenuItem, Amenity } = require('./models');
+        const results = [];
+        
+        // Get amenities
+        const parking = await Amenity.findOne({ where: { slug: 'parking' } });
+        const business = await Amenity.findOne({ where: { slug: 'business-center' } });
+        
+        if (!parking) {
+            results.push('❌ Parking amenity not found');
+        }
+        if (!business) {
+            results.push('❌ Business Center amenity not found');
+        }
+        
+        // Create Parking category if parking exists
+        if (parking) {
+            let parkingCategory = await MenuCategory.findOne({ 
+                where: { amenity_id: parking.id, name: 'Parking Options' }
+            });
+            
+            if (!parkingCategory) {
+                parkingCategory = await MenuCategory.create({
+                    amenity_id: parking.id,
+                    name: 'Parking Options',
+                    display_order: 1,
+                    is_active: true
+                });
+                results.push('✅ Created Parking Options category');
+            } else {
+                results.push('⚠️ Parking Options category already exists');
+            }
+            
+            // Check if parking items already exist
+            const existingItems = await MenuItem.count({ where: { category_id: parkingCategory.id } });
+            
+            if (existingItems === 0) {
+                const parkingItems = [
+                    { category_id: parkingCategory.id, name: 'Self Parking - Daily', description: 'Self-parking for 24 hours', price: 15.00, is_available: true, display_order: 1 },
+                    { category_id: parkingCategory.id, name: 'Valet Parking - Daily', description: 'Valet parking service for 24 hours', price: 25.00, is_available: true, display_order: 2 },
+                    { category_id: parkingCategory.id, name: 'Electric Vehicle Charging', description: 'EV charging station access', price: 10.00, is_available: true, display_order: 3 },
+                    { category_id: parkingCategory.id, name: 'Weekly Parking Pass', description: '7 days of parking access', price: 80.00, is_available: true, display_order: 4 }
+                ];
+                await MenuItem.bulkCreate(parkingItems);
+                results.push(`✅ Added ${parkingItems.length} parking options`);
+            } else {
+                results.push(`⚠️ Parking items already exist (${existingItems} items)`);
+            }
+        }
+        
+        // Create Business Center category if business exists
+        if (business) {
+            let businessCategory = await MenuCategory.findOne({ 
+                where: { amenity_id: business.id, name: 'Business Services' }
+            });
+            
+            if (!businessCategory) {
+                businessCategory = await MenuCategory.create({
+                    amenity_id: business.id,
+                    name: 'Business Services',
+                    display_order: 1,
+                    is_active: true
+                });
+                results.push('✅ Created Business Services category');
+            } else {
+                results.push('⚠️ Business Services category already exists');
+            }
+            
+            // Check if business items already exist
+            const existingItems = await MenuItem.count({ where: { category_id: businessCategory.id } });
+            
+            if (existingItems === 0) {
+                const businessItems = [
+                    { category_id: businessCategory.id, name: 'Meeting Room - Small', description: 'Small meeting room for up to 6 people', price: 150.00, duration_minutes: 120, requires_appointment: true, is_available: true, display_order: 1 },
+                    { category_id: businessCategory.id, name: 'Meeting Room - Large', description: 'Large meeting room for up to 20 people', price: 300.00, duration_minutes: 240, requires_appointment: true, is_available: true, display_order: 2 },
+                    { category_id: businessCategory.id, name: 'Secretarial Services', description: 'Printing, scanning, copying, and document preparation', price: 50.00, duration_minutes: 60, requires_appointment: true, is_available: true, display_order: 3 },
+                    { category_id: businessCategory.id, name: 'Video Conferencing', description: 'Professional video conferencing setup', price: 75.00, duration_minutes: 60, requires_appointment: true, is_available: true, display_order: 4 },
+                    { category_id: businessCategory.id, name: 'Workstation Rental', description: 'Private desk with monitor and high-speed internet', price: 35.00, duration_minutes: 240, requires_appointment: true, is_available: true, display_order: 5 }
+                ];
+                await MenuItem.bulkCreate(businessItems);
+                results.push(`✅ Added ${businessItems.length} business services`);
+            } else {
+                results.push(`⚠️ Business items already exist (${existingItems} items)`);
+            }
+        }
+        
+        res.json({ success: true, results });
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
 
 // Debug amenities
 app.get('/debug-amenities', async (req, res) => {
