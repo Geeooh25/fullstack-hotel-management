@@ -893,6 +893,18 @@ router.post('/:id/checkout', async (req, res) => {
     res.json({ success: true });
 });
 
+// TEMP: Fix booking ID sequence
+router.post('/fix-sequence', async (req, res) => {
+    try {
+        await db.sequelize.query(`
+            SELECT setval('"bookings_id_seq"', (SELECT MAX(id) FROM "bookings"))
+        `);
+        res.json({ success: true, message: 'Sequence fixed' });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // Search bookings
 router.get('/search', async (req, res) => {
     try {
