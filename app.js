@@ -62,56 +62,102 @@ app.use(session({
         maxAge: 30 * 24 * 60 * 60 * 1000
     }
 }));
-// TEMPORARY ROUTE - Import data to Render PostgreSQL
+// TEMPORARY ROUTE - Import data to Render PostgreSQL (REMOVE AFTER USE)
 app.get('/import-data', async (req, res) => {
     try {
         const { sequelize } = require('./config/database');
         const fs = require('fs');
+        const path = require('path');
         
         // Read backup file
-        const backup = JSON.parse(fs.readFileSync('backup-data.json'));
+        const backupPath = path.join(__dirname, 'backup-data.json');
+        
+        if (!fs.existsSync(backupPath)) {
+            return res.send('<h1>Error</h1><p>backup-data.json not found</p>');
+        }
+        
+        const backup = JSON.parse(fs.readFileSync(backupPath));
         const results = [];
+        
+        results.push('📥 Starting import to PostgreSQL...');
+        
+        // Disable foreign key checks temporarily
+        await sequelize.query('SET CONSTRAINTS ALL DEFERRED');
+        results.push('✅ Foreign key checks disabled');
         
         // Sync tables
         await sequelize.sync({ alter: false });
         results.push('✅ Tables synced');
         
-        // Import each table
-        const models = {
-            users: require('./models/User'),
-            amenities: require('./models/amenity'),
-            room_types: require('./models/RoomType'),
-            rooms: require('./models/Room'),
-            guests: require('./models/Guest'),
-            bookings: require('./models/Booking'),
-            payments: require('./models/Payment'),
-            menu_categories: require('./models/menuCategory'),
-            menu_items: require('./models/menuItem'),
-            request_submissions: require('./models/requestSubmission')
-        };
+        // Define models in correct order (parents first, then children)
+        const importOrder = [
+            { table: 'users', model: require('./models/User') },
+            { table: 'room_types', model: require('./models/RoomType') },
+            { table: 'amenities', model: require('./models/amenity') },
+            { table: 'rooms', model: require('./models/Room') },
+            { table: 'guests', model: require('./models/Guest') },
+            { table: 'menu_categories', model: require('./models/menuCategory') },
+            { table: 'bookings', model: require('./models/Booking') },
+            { table: 'payments', model: require('./models/Payment') },
+            { table: 'menu_items', model: require('./models/menuItem') },
+            { table: 'request_submissions', model: require('./models/requestSubmission') }
+        ];
         
-        for (const [table, rows] of Object.entries(backup)) {
-            if (rows.length === 0 || !models[table]) continue;
+        for (const item of importOrder) {
+            const { table, model } = item;
+            const rows = backup[table];
             
-            // Clear existing
-            await models[table].destroy({ where: {}, truncate: true });
-            results.push(`🗑️ Cleared ${table}`);
+            if (!rows || rows.length === 0) {
+                results.push(`⚠️ No data in ${table}`);
+                continue;
+            }
             
-            // Insert
-            await models[table].bulkCreate(rows);
-            results.push(`✅ Imported ${rows.length} rows to ${table}`);
+            try {
+                // Delete existing data (in reverse order to handle foreign keys)
+                await model.destroy({ where: {}, truncate: true, cascade: true });
+                results.push(`🗑️ Cleared ${table}`);
+                
+                // Insert new data
+                await model.bulkCreate(rows);
+                results.push(`✅ Imported ${rows.length} rows to ${table}`);
+            } catch (err) {
+                results.push(`❌ Error importing ${table}: ${err.message}`);
+                // Try individual inserts
+                for (const row of rows) {
+                    try {
+                        await model.create(row);
+                    } catch (e) {
+                        results.push(`   ⚠️ Could not insert row ${row.id}: ${e.message}`);
+                    }
+                }
+            }
         }
         
+        // Re-enable foreign key checks
+        await sequelize.query('SET CONSTRAINTS ALL IMMEDIATE');
+        results.push('✅ Foreign key checks re-enabled');
+        
         res.send(`
-            <html><body style="padding:20px;font-family:monospace;">
-            <h1>📥 Import Results</h1>
-            <pre>${results.join('\n')}</pre>
-            <hr>
-            <p><a href="/admin/login">Go to Admin Login →</a></p>
-            </body></html>
+            <!DOCTYPE html>
+            <html>
+            <head><title>Import Results</title></head>
+            <body style="font-family: monospace; padding: 20px;">
+                <h1>📥 Import to PostgreSQL Results</h1>
+                <pre>${results.join('\n')}</pre>
+                <hr>
+                <p><strong>Next Steps:</strong></p>
+                <ol>
+                    <li><a href="/admin/login">Test Admin Login →</a></li>
+                    <li><a href="/admin/dashboard">Check Dashboard →</a></li>
+                    <li><a href="/admin/amenities">Check Amenities →</a></li>
+                </ol>
+                <hr>
+                <p style="color: red;"><strong>⚠️ After verifying everything works, REMOVE THIS ROUTE from app.js!</strong></p>
+            </body>
+            </html>
         `);
     } catch (error) {
-        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
+        res.send(`<h1>Error</h1><pre>${error.message}</pre><pre>${error.stack}</pre>`);
     }
 });
 
