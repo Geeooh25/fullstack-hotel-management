@@ -152,6 +152,7 @@
             text-decoration: none;
             display: block;
             color: inherit;
+            cursor: pointer;
         }
         
         .booking-list-item:hover {
@@ -175,11 +176,59 @@
             background: var(--gold-dark);
             color: white;
         }
+        
+        .btn-gold {
+            background: var(--gold);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+        }
+        
+        .btn-gold:hover {
+            background: var(--gold-dark);
+        }
+        
+        .btn-outline-gold {
+            border: 2px solid var(--gold);
+            background: transparent;
+            color: var(--gold);
+            padding: 8px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 600;
+        }
+        
+        .btn-outline-gold:hover {
+            background: var(--gold);
+            color: white;
+        }
+        
+        .btn-outline-gold:disabled {
+            border: 1px solid #ccc;
+            color: #999;
+            cursor: not-allowed;
+            background: transparent;
+        }
+        
+        .cancel-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 5px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            color: #856404;
+            margin-top: 8px;
+        }
     </style>
 </head>
 <body>
 
-    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="/">GEEOOH HOTEL</a>
@@ -203,14 +252,12 @@
         </div>
     </nav>
 
-    <!-- Floating Cart Icon -->
     <div class="floating-cart" id="floatingCart">
         <i class="fas fa-shopping-cart"></i>
         <span class="cart-count" id="cartCount">0</span>
     </div>
 
-    <!-- Page Hero -->
-    <div class="page-hero" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600'); background-size: cover; background-position: center; min-height: 350px; display: flex; align-items: center; text-align: center; color: white; margin-top: 0; padding-top: 80px;">
+    <div class="page-hero" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=1600'); background-size: cover; background-position: center; min-height: 350px; display: flex; align-items: center; text-align: center; color: white; margin-top: 0; padding-top: 80px;">
         <div class="container">
             <h1>Find Your Booking</h1>
             <p>View, modify, or cancel your reservation</p>
@@ -249,7 +296,6 @@
                     </ul>
                     
                     <div class="tab-content">
-                        <!-- Reference Lookup -->
                         <div class="tab-pane fade show active" id="reference" role="tabpanel">
                             <form id="reference-form">
                                 <div class="mb-3">
@@ -276,11 +322,9 @@
             </div>
         </div>
         
-        <!-- Results Container -->
         <div id="results-container" class="row justify-content-center mt-4"></div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer mt-5">
         <div class="container">
             <div class="row">
@@ -311,7 +355,7 @@
                     <h5 class="mt-4">Newsletter</h5>
                     <div class="input-group">
                         <input type="email" id="newsletter-email" class="form-control" placeholder="Your email">
-                        <button class="btn-gold" id="subscribeBtn">Subscribe</button>
+                        <button class="btn-gold" id="subscribeBtn" onclick="subscribeNewsletter()">Subscribe</button>
                     </div>
                 </div>
             </div>
@@ -330,10 +374,30 @@
     <script src="/js/cart.js"></script>
     
     <script>
-        // Pagination variables
+        let currentBookingId = null;
+        let currentBookingReference = null;
         let currentBookingsList = [];
         let currentBookingPage = 1;
         const itemsPerPage = 5;
+        
+        // Download receipt function
+        async function downloadReceipt() {
+            if (!currentBookingId && !currentBookingReference) {
+                showToast('No booking selected', 'error');
+                return;
+            }
+            
+            const identifier = currentBookingId || currentBookingReference;
+            console.log('Downloading receipt for:', identifier);
+            
+            try {
+                const url = `/api/bookings/${identifier}/receipt`;
+                window.open(url, '_blank');
+            } catch (error) {
+                console.error('Receipt download error:', error);
+                showToast('Error downloading receipt', 'error');
+            }
+        }
         
         function subscribeNewsletter() {
             const email = document.getElementById('newsletter-email').value;
@@ -374,7 +438,6 @@
             }
         }
         
-        // Display paginated bookings
         function displayPaginatedBookings() {
             const container = document.getElementById('myBookingsList');
             if (!container) return;
@@ -389,13 +452,23 @@
             const endIndex = startIndex + itemsPerPage;
             const paginatedBookings = currentBookingsList.slice(startIndex, endIndex);
             
-            let html = paginatedBookings.map(booking => `
+            let html = paginatedBookings.map(booking => {
+                // Check cancellation availability for each booking
+                const checkIn = new Date(booking.check_in);
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                checkIn.setHours(0, 0, 0, 0);
+                const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
+                const canCancel = daysUntilCheckIn >= 3 && booking.status === 'confirmed';
+                
+                return `
                 <a href="javascript:void(0)" onclick="lookupByReferenceAndScroll('${booking.booking_reference}')" class="booking-list-item">
                     <div class="d-flex justify-content-between align-items-center flex-wrap">
                         <div>
                             <strong class="booking-reference">${booking.booking_reference}</strong>
                             <br>
                             <small><i class="fas fa-calendar-alt"></i> ${new Date(booking.check_in).toLocaleDateString()} - ${new Date(booking.check_out).toLocaleDateString()}</small>
+                            ${canCancel ? ' <span class="badge bg-warning text-dark" style="font-size: 0.6rem;">Cancellable</span>' : ''}
                         </div>
                         <div class="mt-2 mt-sm-0">
                             <span class="badge status-${booking.status} me-2">${booking.status}</span>
@@ -403,7 +476,8 @@
                         </div>
                     </div>
                 </a>
-            `).join('');
+                `;
+            }).join('');
             
             if (totalPages > 1) {
                 html += `
@@ -439,44 +513,75 @@
             document.getElementById('myBookingsContainer').scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
         
-        // Load my bookings
-        window.loadMyBookings = async function(email) {
+        async function loadMyBookingsForUser(email, userId) {
             const container = document.getElementById('myBookingsList');
             if (!container) return;
             
             container.innerHTML = '<div class="text-center py-3"><div class="loader"></div><p class="mt-2">Loading your bookings...</p></div>';
             
+            console.log('Loading bookings for - email:', email, 'userId:', userId);
+            
+            let url = `/api/bookings/lookup?email=${encodeURIComponent(email)}`;
+            if (userId) {
+                url += `&user_id=${encodeURIComponent(userId)}`;
+            }
+            
             try {
-                const response = await fetch(`/api/bookings/lookup?email=${email}`);
+                const response = await fetch(url);
                 const data = await response.json();
+                console.log('Bookings API full response:', JSON.stringify(data));
                 
                 if (data.success && data.bookings && data.bookings.length > 0) {
                     currentBookingsList = data.bookings;
                     currentBookingPage = 1;
                     displayPaginatedBookings();
+                    console.log('Displaying', data.bookings.length, 'bookings');
                 } else {
-                    container.innerHTML = '<p class="text-muted text-center">No bookings found.</p>';
+                    console.log('No bookings returned from API');
+                    container.innerHTML = `
+                        <div class="text-center py-3">
+                            <i class="fas fa-info-circle fa-2x" style="color: var(--gold); opacity: 0.5;"></i>
+                            <p class="text-muted mt-2">No bookings found for <strong>${email}</strong></p>
+                            <p class="text-muted small">If you just made a booking, it may take a moment to appear.</p>
+                            <button onclick="location.reload()" class="btn-outline-gold mt-2" style="font-size: 0.8rem; padding: 5px 15px;">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    `;
                 }
             } catch (error) {
                 console.error('Error loading my bookings:', error);
-                container.innerHTML = '<p class="text-danger text-center">Error loading your bookings.</p>';
+                container.innerHTML = '<p class="text-danger text-center">Error loading your bookings. <button onclick="location.reload()" class="btn-outline-gold">Retry</button></p>';
             }
-        };
+        }
         
-        // Reference lookup with scroll to receipt
+        window.loadMyBookings = loadMyBookingsForUser;
+        
         async function lookupByReferenceAndScroll(reference) {
+            currentBookingReference = reference;
+            currentBookingId = null;
             const container = document.getElementById('results-container');
             container.innerHTML = '<div class="col-12 text-center py-5"><div class="loader"></div><p class="mt-2">Searching...</p></div>';
             
             try {
-                const response = await fetch(`/api/bookings/lookup?reference=${reference}`);
+                const response = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(reference)}`);
                 const data = await response.json();
                 
                 if (data.success && data.booking) {
                     const booking = data.booking;
+                    currentBookingId = booking.id;
+                    
                     const guest = booking.Guest || booking.guest || {};
                     const room = booking.Room || booking.room || {};
                     const roomType = room.RoomType || room.roomType || {};
+                    
+                    // Calculate cancellation availability
+                    const checkIn = new Date(booking.check_in);
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    checkIn.setHours(0, 0, 0, 0);
+                    const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
+                    const canCancel = daysUntilCheckIn >= 3 && booking.status === 'confirmed';
                     
                     let servicesHtml = '';
                     let servicesTotal = 0;
@@ -497,6 +602,55 @@
                     const roomTotal = parseFloat(booking.total_amount || 0) - servicesTotal;
                     const roomDisplay = room.room_number ? `${roomType.name || 'Standard Room'} (Room ${room.room_number})` : (roomType.name || 'Standard Room');
                     
+                    // Build actions HTML based on cancellation rules
+                    let actionsHtml = '';
+                    
+                    if (booking.status === 'confirmed') {
+                        if (canCancel) {
+                            actionsHtml = `
+                                <button onclick="cancelBooking('${booking.booking_reference}')" class="btn-outline-gold mt-2" style="border: 1px solid #dc3545; color: #dc3545; background: transparent; padding: 8px 20px; cursor: pointer;">
+                                    <i class="fas fa-times-circle"></i> Cancel Booking
+                                </button>
+                                <small class="d-block text-success mt-1">
+                                    <i class="fas fa-check-circle"></i> Free cancellation available (${daysUntilCheckIn} days before check-in)
+                                </small>
+                            `;
+                        } else if (daysUntilCheckIn < 3 && daysUntilCheckIn >= 0) {
+                            actionsHtml = `
+                                <button class="btn-outline-gold mt-2" disabled style="border: 1px solid #ccc; color: #999; background: transparent; padding: 8px 20px; cursor: not-allowed;">
+                                    <i class="fas fa-lock"></i> Cancel Booking
+                                </button>
+                                <div class="cancel-notice mt-1">
+                                    <i class="fas fa-info-circle"></i> Cancellation is only available 3+ days before check-in.
+                                    ${daysUntilCheckIn === 0 ? ' Your check-in is today.' : 
+                                      daysUntilCheckIn === 1 ? ' Your check-in is tomorrow.' : 
+                                      `Only ${daysUntilCheckIn} days until check-in.`}
+                                </div>
+                            `;
+                        } else {
+                            // Past check-in date
+                            actionsHtml = `
+                                <button class="btn-outline-gold mt-2" disabled style="border: 1px solid #ccc; color: #999; background: transparent; padding: 8px 20px; cursor: not-allowed;">
+                                    <i class="fas fa-lock"></i> Cancel Booking
+                                </button>
+                                <small class="d-block text-muted mt-1">Check-in date has passed</small>
+                            `;
+                        }
+                    } else if (booking.status === 'pending') {
+                        actionsHtml = `
+                            <button class="btn-outline-gold mt-2" disabled style="border: 1px solid #ccc; color: #999; background: transparent; padding: 8px 20px; cursor: not-allowed;">
+                                <i class="fas fa-clock"></i> Cancel Booking
+                            </button>
+                            <small class="d-block text-muted mt-1">Booking is pending confirmation</small>
+                        `;
+                    } else if (booking.status === 'cancelled') {
+                        actionsHtml = `
+                            <small class="d-block text-muted mt-1">
+                                <i class="fas fa-info-circle"></i> This booking was cancelled on ${booking.cancelled_at ? new Date(booking.cancelled_at).toLocaleDateString() : 'N/A'}
+                            </small>
+                        `;
+                    }
+                    
                     const html = `
                         <div class="col-lg-8" id="receiptSection">
                             <div class="result-card">
@@ -507,6 +661,7 @@
                                     </div>
                                     <div class="col-md-6 text-md-end">
                                         <span class="status-badge status-${booking.status}">${booking.status.toUpperCase()}</span>
+                                        ${canCancel ? '<br><span class="badge bg-warning text-dark mt-2" style="font-size: 0.7rem;">Cancellable</span>' : ''}
                                     </div>
                                 </div>
                                 <hr>
@@ -526,9 +681,10 @@
                                 <div class="row mt-3">
                                     <div class="col-md-6">
                                         <h6>Stay Dates</h6>
-                                        <p class="mb-1">Check-in: <strong>${new Date(booking.check_in).toLocaleDateString()}</strong></p>
-                                        <p class="mb-1">Check-out: <strong>${new Date(booking.check_out).toLocaleDateString()}</strong></p>
+                                        <p class="mb-1">Check-in: <strong>${new Date(booking.check_in).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}</strong></p>
+                                        <p class="mb-1">Check-out: <strong>${new Date(booking.check_out).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}</strong></p>
                                         <p class="mb-1">Nights: <strong>${booking.total_nights || 0}</strong></p>
+                                        <p class="mb-1">Days until check-in: <strong>${daysUntilCheckIn}</strong></p>
                                     </div>
                                     <div class="col-md-6">
                                         <h6>Guests</h6>
@@ -549,8 +705,10 @@
                                     </div>
                                     <div class="col-md-6">
                                         <h6>Actions</h6>
-                                        ${booking.status === 'confirmed' ? `<button onclick="cancelBooking('${booking.booking_reference}')" class="btn-outline-gold mt-2" style="border: 1px solid #dc3545; color: #dc3545; background: transparent; padding: 8px 20px; cursor: pointer;">Cancel Booking</button>` : ''}
-                                        <button onclick="window.print()" class="btn-outline-gold mt-2 ms-2" style="padding: 8px 20px;">Print Details</button>
+                                        ${actionsHtml}
+                                        <button onclick="downloadReceipt()" class="btn-gold mt-2" style="padding: 8px 20px; display: block; width: 100%;">
+                                            <i class="fas fa-download"></i> Download Receipt (PDF)
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -558,7 +716,6 @@
                     `;
                     container.innerHTML = html;
                     
-                    // Scroll to receipt after a short delay
                     setTimeout(() => {
                         const receiptSection = document.getElementById('receiptSection');
                         if (receiptSection) {
@@ -574,18 +731,12 @@
             }
         }
         
-        // Original lookup by reference (without scroll, for compatibility)
-        async function lookupByReference(reference) {
-            await lookupByReferenceAndScroll(reference);
-        }
-        
-        // Email lookup
         async function lookupByEmail(email) {
             const container = document.getElementById('results-container');
             container.innerHTML = '<div class="col-12 text-center py-5"><div class="loader"></div><p class="mt-2">Searching...</p></div>';
             
             try {
-                const response = await fetch(`/api/bookings/lookup?email=${email}`);
+                const response = await fetch(`/api/bookings/lookup?email=${encodeURIComponent(email)}`);
                 const data = await response.json();
                 
                 if (data.success && data.bookings && data.bookings.length > 0) {
@@ -593,7 +744,15 @@
                     data.bookings.forEach(booking => {
                         const room = booking.Room || booking.room || {};
                         const roomType = room.RoomType || room.roomType || {};
-                        bookingsHtml += `<tr><td><strong>${booking.booking_reference}</strong></td><td>${roomType.name || 'Room'}</td><td>${new Date(booking.check_in).toLocaleDateString()}</td><td>${new Date(booking.check_out).toLocaleDateString()}</td><td><span class="status-badge status-${booking.status}">${booking.status}</span></td><td>$${parseFloat(booking.total_amount || 0).toFixed(2)}</td><td><button onclick="lookupByReferenceAndScroll('${booking.booking_reference}')" class="btn-outline-gold" style="padding: 5px 15px; font-size: 0.8rem;">View</button></td></tr>`;
+                        bookingsHtml += `<tr>
+                            <td><strong>${booking.booking_reference}</strong></td>
+                            <td>${roomType.name || 'Room'}</td>
+                            <td>${new Date(booking.check_in).toLocaleDateString()}</td>
+                            <td>${new Date(booking.check_out).toLocaleDateString()}</td>
+                            <td><span class="status-badge status-${booking.status}">${booking.status}</span></td>
+                            <td>$${parseFloat(booking.total_amount || 0).toFixed(2)}</td>
+                            <td><button onclick="lookupByReferenceAndScroll('${booking.booking_reference}')" class="btn-outline-gold" style="padding: 5px 15px; font-size: 0.8rem;">View</button></td>
+                        </tr>`;
                     });
                     bookingsHtml += `</tbody></table></div></div></div>`;
                     container.innerHTML = bookingsHtml;
@@ -608,21 +767,45 @@
         }
         
         window.cancelBooking = async function(reference) {
-            if (!confirm('Are you sure you want to cancel this booking? Cancellation fees may apply.')) return;
+            // Check cancellation eligibility first
             try {
-                const lookupResponse = await fetch(`/api/bookings/lookup?reference=${reference}`);
+                const lookupResponse = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(reference)}`);
                 const lookupData = await lookupResponse.json();
+                
                 if (!lookupData.success || !lookupData.booking) {
                     showToast('Booking not found', 'error');
                     return;
                 }
-                const bookingId = lookupData.booking.id;
+                
+                const booking = lookupData.booking;
+                const checkIn = new Date(booking.check_in);
+                const now = new Date();
+                now.setHours(0, 0, 0, 0);
+                checkIn.setHours(0, 0, 0, 0);
+                const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
+                
+                if (daysUntilCheckIn < 3) {
+                    showToast('Cancellation is only allowed 3 or more days before check-in', 'error');
+                    return;
+                }
+                
+                if (booking.status !== 'confirmed') {
+                    showToast('Only confirmed bookings can be cancelled', 'error');
+                    return;
+                }
+                
+                if (!confirm(`Are you sure you want to cancel this booking?\n\nCheck-in: ${new Date(booking.check_in).toLocaleDateString()}\nRoom: ${booking.Room?.room_number || 'N/A'}\n\nCancellation is free (${daysUntilCheckIn} days before check-in).`)) {
+                    return;
+                }
+                
+                const bookingId = booking.id;
                 const response = await fetch(`/api/bookings/${bookingId}/cancel`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reason: 'Cancelled by guest' })
                 });
                 const data = await response.json();
+                
                 if (data.success) {
                     showToast('Booking cancelled successfully', 'success');
                     setTimeout(() => location.reload(), 1500);
@@ -635,24 +818,118 @@
             }
         };
         
-        // Load my bookings if logged in
-        document.addEventListener('DOMContentLoaded', async function() {
+        // Initialize page
+        async function initializePage() {
             updateCartCount();
-            if (typeof Auth !== 'undefined') {
-                const user = await Auth.getCurrentUser();
-                if (user && user.email) {
-                    document.getElementById('myBookingsContainer').style.display = 'block';
-                    window.loadMyBookings(user.email);
+            
+            const newBookingFlag = localStorage.getItem('newBookingJustMade');
+            const newBookingEmail = localStorage.getItem('newBookingEmail');
+            
+            if (newBookingFlag === 'true') {
+                console.log('Detected new booking was just made');
+                localStorage.removeItem('newBookingJustMade');
+                localStorage.removeItem('newBookingEmail');
+            }
+            
+            let userEmail = null;
+            let userId = null;
+            
+            try {
+                const userData = localStorage.getItem('user');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    if (user) {
+                        userEmail = user.email || user.emailAddress || user.email;
+                        userId = user.id || user.user_id || user.ID || user._id;
+                        console.log('Found user in localStorage:', { userEmail, userId });
+                    }
+                }
+            } catch (e) {
+                console.log('Error parsing localStorage user:', e);
+            }
+            
+            if (!userEmail) {
+                try {
+                    const sessionUser = sessionStorage.getItem('user');
+                    if (sessionUser) {
+                        const user = JSON.parse(sessionUser);
+                        if (user) {
+                            userEmail = user.email || user.emailAddress || user.email;
+                            userId = user.id || user.user_id || user.ID || user._id;
+                            console.log('Found user in sessionStorage:', { userEmail, userId });
+                        }
+                    }
+                } catch (e) {}
+            }
+            
+            if (!userEmail && typeof Auth !== 'undefined') {
+                try {
+                    const user = await Auth.getCurrentUser();
+                    if (user) {
+                        userEmail = user.email || user.emailAddress || user.email;
+                        userId = user.id || user.user_id || user.ID || user._id;
+                        console.log('Found user via Auth:', { userEmail, userId });
+                    }
+                } catch (e) {
+                    console.log('Auth.getCurrentUser failed:', e);
                 }
             }
-        });
+            
+            if (!userEmail) {
+                try {
+                    const token = localStorage.getItem('token') || sessionStorage.getItem('token') || localStorage.getItem('authToken');
+                    if (token) {
+                        const payload = JSON.parse(atob(token.split('.')[1]));
+                        userEmail = payload.email || payload.emailAddress;
+                        userId = payload.id || payload.user_id || payload.sub || payload.userId;
+                        console.log('Found user via token:', { userEmail, userId });
+                    }
+                } catch (e) {}
+            }
+            
+            if (!userEmail) {
+                try {
+                    const cookies = document.cookie.split(';');
+                    for (let cookie of cookies) {
+                        const [name, value] = cookie.trim().split('=');
+                        if (name.trim() === 'userEmail' || name.trim() === 'email') {
+                            userEmail = decodeURIComponent(value);
+                        }
+                        if (name.trim() === 'userId' || name.trim() === 'user_id') {
+                            userId = decodeURIComponent(value);
+                        }
+                    }
+                } catch (e) {}
+            }
+            
+            if (!userEmail && newBookingEmail) {
+                userEmail = newBookingEmail;
+                console.log('Using new booking email:', userEmail);
+            }
+            
+            console.log('Final user info:', { userEmail, userId });
+            
+            if (userEmail) {
+                document.getElementById('myBookingsContainer').style.display = 'block';
+                
+                if (newBookingFlag === 'true') {
+                    console.log('Waiting for backend to process new booking...');
+                    document.getElementById('myBookingsList').innerHTML = 
+                        '<div class="text-center py-3"><div class="loader"></div><p class="mt-2">Loading your new booking...</p></div>';
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+                
+                await loadMyBookingsForUser(userEmail, userId);
+            } else {
+                console.log('No user logged in');
+                document.getElementById('myBookingsContainer').style.display = 'none';
+            }
+        }
         
-        // Make functions available globally
-        window.lookupByReference = lookupByReference;
         window.lookupByReferenceAndScroll = lookupByReferenceAndScroll;
         window.lookupByEmail = lookupByEmail;
+        window.cancelBooking = window.cancelBooking;
         
-        // Form handlers
         document.getElementById('reference-form')?.addEventListener('submit', (e) => {
             e.preventDefault();
             const reference = document.getElementById('booking-ref').value.trim();
@@ -665,16 +942,27 @@
             if (email) lookupByEmail(email);
         });
         
-        // Check URL parameter
         const refParam = new URLSearchParams(window.location.search).get('ref');
         if (refParam) {
             document.getElementById('booking-ref').value = refParam;
             lookupByReferenceAndScroll(refParam);
         }
         
-        window.addEventListener('storage', (e) => {
-            if (e.key === 'hotelCart') updateCartCount();
+        window.addEventListener('authStateChanged', async () => {
+            console.log('Auth state changed, refreshing...');
+            await initializePage();
         });
+        
+        window.addEventListener('storage', (e) => {
+            if (e.key === 'user' || e.key === 'token' || e.key === 'hotelCart') {
+                console.log('Storage changed:', e.key);
+                initializePage();
+                if (e.key === 'hotelCart') updateCartCount();
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', initializePage);
     </script>
-<script src="/js/newsletter.js"></script></body>
+    <script src="/js/newsletter.js"></script>
+</body>
 </html>

@@ -389,25 +389,56 @@ postResetPassword: async (req, res) => {
         }
     },
 
-    updateBookingStatus: async (req, res) => {
-        if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
+  updateBookingStatus: async (req, res) => {
+    if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
+    
+    const { id } = req.params;
+    const { status } = req.body;
+    
+    const validStatuses = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'];
+    
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    try {
+        // First, update the status
+        await db.Booking.update({ status }, { where: { id } });
         
-        const { id } = req.params;
-        const { status } = req.body;
-        
-        const validStatuses = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'];
-        
-        if (!validStatuses.includes(status)) {
-            return res.status(400).json({ error: 'Invalid status' });
-        }
-        
+        // Then try to send email (don't let email failure break the update)
         try {
-            await db.Booking.update({ status }, { where: { id } });
-            res.json({ success: true });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
+            // Get booking details with correct alias - use 'Guest' not 'guest'
+            const booking = await db.Booking.findByPk(id, {
+                include: [
+                    { model: db.Guest },  // Remove the 'as' alias
+                    { model: db.Room, include: [{ model: db.RoomType }] }
+                ]
+            });
+            
+            if (booking && booking.Guest && booking.Room) {
+                const EmailService = require('../services/emailService');
+                
+                if (status === 'confirmed') {
+                    await EmailService.sendBookingConfirmation(booking, booking.Guest, booking.Room, {});
+                    console.log(`📧 Confirmation email sent for booking #${id}`);
+                } else if (status === 'cancelled') {
+                    await EmailService.sendCancellationEmail(booking, booking.Guest, 'Booking cancelled by admin');
+                    console.log(`📧 Cancellation email sent for booking #${id}`);
+                } else if (status === 'checked_in') {
+                    await EmailService.sendCheckInReminder(booking, booking.Guest, booking.Room);
+                    console.log(`📧 Check-in notification sent for booking #${id}`);
+                }
+            }
+        } catch (emailError) {
+            console.error('Email error (non-blocking):', emailError.message);
         }
-    },
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Status update error:', error);
+        res.status(500).json({ error: error.message });
+    }
+},
 
     // ==================== ROOMS ====================
     getRooms: async (req, res) => {
@@ -637,16 +668,50 @@ updateUserStatus: async (req, res) => {
         }
     },
 
-    updateRequestStatus: async (req, res) => {
-        if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
+   updateRequestStatus: async (req, res) => {
+    if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
+    
+    const { id } = req.params;
+    const { status, admin_notes } = req.body;
+    
+    const validStatuses = ['pending', 'processing', 'completed', 'cancelled', 'contacted'];
+    
+    if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Invalid status' });
+    }
+    
+    try {
+        // First, update the request status
+        await db.RequestSubmission.update(
+            { status, admin_notes, updated_at: new Date() },
+            { where: { id } }
+        );
+        
+        // Then try to send email (don't let email failure break the update)
         try {
-            await db.RequestSubmission.update({ status: req.body.status }, { where: { id: req.params.id } });
-            res.json({ success: true });
-        } catch (error) {
-            res.status(500).json({ error: error.message });
+            const request = await db.RequestSubmission.findByPk(id, {
+                include: [{ model: db.Amenity, as: 'amenity' }]
+            });
+            
+            if (request && request.guest_email) {
+                const EmailService = require('../services/emailService');
+                
+                // Send status update email for completed or contacted status
+                if (status === 'completed' || status === 'contacted') {
+                    await EmailService.sendRequestStatusUpdate(request, status, admin_notes);
+                    console.log(`📧 Status update email sent for request #${id}`);
+                }
+            }
+        } catch (emailError) {
+            console.error('Email error (non-blocking):', emailError.message);
         }
-    },
-
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error('Request status update error:', error);
+        res.status(500).json({ error: error.message });
+    }
+},
     // ==================== MENU ====================
     getMenu: async (req, res) => {
         if (!req.session.admin) return res.redirect('/admin/login');

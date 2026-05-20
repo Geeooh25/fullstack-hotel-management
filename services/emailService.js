@@ -865,7 +865,132 @@ Phone: ${process.env.HOTEL_PHONE || '+1 (555) 123-4567'}
         
         await this.sendEmail(msg);
     }
+
+    /**
+ * Send request status update email to guest
+ */
+static async sendRequestStatusUpdate(request, status, adminNotes) {
+    const statusMessages = {
+        'pending': 'Your request is pending review. Our team will get back to you soon.',
+        'processing': 'Your request is being processed.',
+        'completed': 'Your request has been completed successfully.',
+        'cancelled': 'Your request has been cancelled.',
+        'contacted': 'Our team has contacted you regarding your request.'
+    };
     
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>Request Update - GEEOOH HOTEL</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #B8860B; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; background: #f9f9f9; }
+                .status { display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; }
+                .status-completed { background: #28a745; color: white; }
+                .status-processing { background: #17a2b8; color: white; }
+                .status-pending { background: #ffc107; color: #333; }
+                .status-cancelled { background: #dc3545; color: white; }
+                .footer { text-align: center; padding: 20px; font-size: 12px; color: #666; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>GEEOOH HOTEL</h2>
+                    <p>Request Status Update</p>
+                </div>
+                <div class="content">
+                    <h3>Dear ${request.guest_name},</h3>
+                    <p>Your request has been updated.</p>
+                    
+                    <p><strong>Request ID:</strong> #${request.id}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="status status-${status}">${status.toUpperCase()}</span>
+                    </p>
+                    <p><strong>Message:</strong> ${statusMessages[status] || 'Your request has been updated.'}</p>
+                    
+                    ${adminNotes ? `<p><strong>Staff Note:</strong> ${adminNotes}</p>` : ''}
+                    
+                    <p>If you have any questions, please contact us at ${process.env.HOTEL_PHONE || '+1 (555) 123-4567'}.</p>
+                    <p>Thank you for choosing GEEOOH HOTEL.</p>
+                </div>
+                <div class="footer">
+                    <p>${process.env.HOTEL_NAME || 'GEEOOH HOTEL'}<br>${process.env.HOTEL_PHONE || '+1 (555) 123-4567'}</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const msg = {
+        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: request.guest_email,
+        subject: `Request Update - #${request.id}`,
+        html: html
+    };
+    
+    await this.sendEmail(msg);
+}
+    /**
+ * Send receipt email with PDF attachment
+ */
+static async sendReceiptWithPDF(booking, guest, room, payments, services, email) {
+    const PDFService = require('./pdfService');
+    
+    // Generate PDF
+    const pdfBuffer = await PDFService.generateReceipt(booking, guest, room, payments, services);
+    
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <style>
+                body { font-family: Arial, sans-serif; }
+                .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { background: #B8860B; color: white; padding: 20px; text-align: center; }
+                .content { padding: 20px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h2>${process.env.HOTEL_NAME || 'GEEOOH HOTEL'}</h2>
+                    <p>Payment Receipt</p>
+                </div>
+                <div class="content">
+                    <h3>Dear ${guest.first_name} ${guest.last_name},</h3>
+                    <p>Thank you for your payment. Please find your receipt attached.</p>
+                    <p><strong>Booking Reference:</strong> ${booking.booking_reference}</p>
+                    <p><strong>Amount Paid:</strong> $${parseFloat(booking.total_amount).toFixed(2)}</p>
+                    <p>We hope you enjoyed your stay!</p>
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+    
+    const attachments = [
+        {
+            filename: `receipt-${booking.booking_reference}.pdf`,
+            content: pdfBuffer,
+            contentType: 'application/pdf'
+        }
+    ];
+    
+    const msg = {
+        from: process.env.EMAIL_FROM || 'onboarding@resend.dev',
+        to: email || guest.email,
+        subject: `Your Receipt - ${booking.booking_reference}`,
+        html: html,
+        attachments: attachments
+    };
+    
+    await this.sendEmail(msg);
+}
     /**
      * Generic email sender with fallback to console
      */

@@ -20,55 +20,28 @@
                 </li>
             </ul>
             
-            <!-- Today's Arrivals Tab -->
             <div id="arrivalsTab">
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Booking Ref</th>
-                                <th>Guest</th>
-                                <th>Room</th>
-                                <th>Check-in</th>
-                                <th>Check-out</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="arrivalsTable">
-                            <tr><td colspan="7" class="text-center">Loading...</td></tr>
-                        </tbody>
+                        <thead><tr><th>Booking Ref</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="arrivalsTable"><tr><td colspan="7" class="text-center">Loading...</td</tbody>
                     </table>
                 </div>
             </div>
             
-            <!-- Today's Departures Tab -->
             <div id="departuresTab" style="display:none;">
                 <div class="table-responsive">
                     <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Booking Ref</th>
-                                <th>Guest</th>
-                                <th>Room</th>
-                                <th>Check-in</th>
-                                <th>Check-out</th>
-                                <th>Status</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="departuresTable">
-                            <tr><td colspan="7" class="text-center">Loading...</td></tr>
-                        </tbody>
-                    </tr>
+                        <thead><tr><th>Booking Ref</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></td></thead>
+                        <tbody id="departuresTable"><tr><td colspan="7" class="text-center">Loading...<ne(sq</td</tbody>
+                    </table>
                 </div>
             </div>
             
-            <!-- Search Tab -->
             <div id="searchTab" style="display:none;">
                 <div class="row mb-3">
                     <div class="col-md-8">
-                        <input type="text" id="searchInput" class="form-control" placeholder="Search by Booking Reference, Guest Name, Email, or Room Number...">
+                        <input type="text" id="searchInput" class="form-control" placeholder="Enter Booking Reference (e.g., BKG-202605-e09b)">
                     </div>
                     <div class="col-md-4">
                         <button class="btn-gold" id="searchBtn">Search</button>
@@ -80,41 +53,21 @@
     </div>
 </div>
 
-<!-- Toast Container -->
 <div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
 
 <style>
-    .nav-tabs .nav-link {
-        color: #B8860B;
-        cursor: pointer;
-    }
-    .nav-tabs .nav-link.active {
-        background: #B8860B;
-        color: white;
-        border-color: #B8860B;
-    }
+    .nav-tabs .nav-link { color: #B8860B; cursor: pointer; }
+    .nav-tabs .nav-link.active { background: #B8860B; color: white; border-color: #B8860B; }
     .badge-checked_in { background: #28a745; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; }
     .badge-confirmed { background: #17a2b8; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; }
     .badge-pending { background: #ffc107; color: #333; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; }
     .btn-checkin { background: #28a745; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; }
     .btn-checkout { background: #dc3545; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; }
-    .btn-checkin:hover, .btn-checkout:hover { opacity: 0.8; }
-    .toast-notification {
-        background: white;
-        border-radius: 8px;
-        padding: 12px 16px;
-        margin-bottom: 10px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        min-width: 280px;
-        animation: slideIn 0.3s ease;
-    }
+    .toast-notification { background: white; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 280px; animation: slideIn 0.3s ease; }
     .toast-success { border-left: 4px solid #28a745; background: #d4edda; color: #155724; }
     .toast-error { border-left: 4px solid #dc3545; background: #f8d7da; color: #721c24; }
     .toast-content { display: flex; align-items: center; gap: 10px; }
-    @keyframes slideIn {
-        from { transform: translateX(100%); opacity: 0; }
-        to { transform: translateX(0); opacity: 1; }
-    }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 </style>
 
 <script>
@@ -133,29 +86,40 @@
         setTimeout(() => toast.remove(), 3000);
     }
     
-    // Tab switching
-    document.querySelectorAll('[data-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            
-            document.getElementById('arrivalsTab').style.display = 'none';
-            document.getElementById('departuresTab').style.display = 'none';
-            document.getElementById('searchTab').style.display = 'none';
-            
-            if (this.dataset.tab === 'arrivals') {
-                document.getElementById('arrivalsTab').style.display = 'block';
-                loadTodayArrivals();
-            } else if (this.dataset.tab === 'departures') {
-                document.getElementById('departuresTab').style.display = 'block';
-                loadTodayDepartures();
+    async function checkInGuest(bookingId, bookingRef) {
+        if (!confirm(`Confirm check-in for ${bookingRef}?`)) return;
+        showToast('Processing check-in...', 'success');
+        try {
+            const response = await fetch(`/api/bookings/${bookingId}/checkin`, { method: 'POST' });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                showToast(`✅ Check-in successful for ${bookingRef}`, 'success');
+                setTimeout(() => location.reload(), 1000);
             } else {
-                document.getElementById('searchTab').style.display = 'block';
+                showToast(result.error || 'Check-in failed', 'error');
             }
-        });
-    });
+        } catch (error) {
+            showToast('Error: ' + error.message, 'error');
+        }
+    }
     
-    // Load today's arrivals
+    async function checkOutGuest(bookingId, bookingRef) {
+        if (!confirm(`Confirm check-out for ${bookingRef}?`)) return;
+        showToast('Processing check-out...', 'success');
+        try {
+            const response = await fetch(`/api/bookings/${bookingId}/checkout`, { method: 'POST' });
+            const result = await response.json();
+            if (response.ok && result.success) {
+                showToast(`✅ Check-out successful for ${bookingRef}`, 'success');
+                setTimeout(() => location.reload(), 1000);
+            } else {
+                showToast(result.error || 'Check-out failed', 'error');
+            }
+        } catch (error) {
+            showToast('Error: ' + error.message, 'error');
+        }
+    }
+    
     async function loadTodayArrivals() {
         try {
             const response = await fetch('/api/bookings/today/arrivals');
@@ -169,23 +133,25 @@
             
             let html = '';
             bookings.forEach(booking => {
+                const guest = booking.Guest || booking.guest || {};
+                const room = booking.Room || booking.room || {};
                 html += `<tr>
-                    <td>${booking.booking_reference}</td>
-                    <td>${booking.Guest ? booking.Guest.first_name + ' ' + booking.Guest.last_name : 'N/A'}</td>
-                    <td>Room ${booking.Room ? booking.Room.room_number : 'N/A'}</td>
+                    <td><strong>${booking.booking_reference}</strong></td>
+                    <td>${guest.first_name || ''} ${guest.last_name || ''}</td>
+                    <td>Room ${room.room_number || 'N/A'}</td>
                     <td>${new Date(booking.check_in).toLocaleDateString()}</td>
                     <td>${new Date(booking.check_out).toLocaleDateString()}</td>
                     <td><span class="badge-${booking.status}">${booking.status.toUpperCase()}</span></td>
-                    <td><button class="btn-checkin" onclick="checkIn(${booking.id})">Check In</button></td>
+                    <td><button class="btn-checkin" onclick="checkInGuest(${booking.id}, '${booking.booking_reference}')">Check In</button></td>
                 </tr>`;
             });
             table.innerHTML = html;
         } catch (error) {
-            console.error('Error loading arrivals:', error);
+            console.error('Arrivals error:', error);
+            document.getElementById('arrivalsTable').innerHTML = '<tr><td colspan="7" class="text-center">Error loading data</td></tr>';
         }
     }
     
-    // Load today's departures
     async function loadTodayDepartures() {
         try {
             const response = await fetch('/api/bookings/today/departures');
@@ -199,95 +165,102 @@
             
             let html = '';
             bookings.forEach(booking => {
+                const guest = booking.Guest || booking.guest || {};
+                const room = booking.Room || booking.room || {};
                 const canCheckout = booking.status === 'checked_in';
                 html += `<tr>
-                    <td>${booking.booking_reference}</td>
-                    <td>${booking.Guest ? booking.Guest.first_name + ' ' + booking.Guest.last_name : 'N/A'}</td>
-                    <td>Room ${booking.Room ? booking.Room.room_number : 'N/A'}</td>
+                    <td><strong>${booking.booking_reference}</strong></td>
+                    <td>${guest.first_name || ''} ${guest.last_name || ''}</td>
+                    <td>Room ${room.room_number || 'N/A'}</td>
                     <td>${new Date(booking.check_in).toLocaleDateString()}</td>
                     <td>${new Date(booking.check_out).toLocaleDateString()}</td>
                     <td><span class="badge-${booking.status}">${booking.status.toUpperCase()}</span></td>
-                    <td>${canCheckout ? `<button class="btn-checkout" onclick="checkOut(${booking.id})">Check Out</button>` : 'Already Checked Out'}</td>
+                    <td>${canCheckout ? `<button class="btn-checkout" onclick="checkOutGuest(${booking.id}, '${booking.booking_reference}')">Check Out</button>` : '<span class="text-muted">Completed</span>'}</td>
                 </tr>`;
             });
             table.innerHTML = html;
         } catch (error) {
-            console.error('Error loading departures:', error);
+            console.error('Departures error:', error);
+            document.getElementById('departuresTable').innerHTML = '<tr><td colspan="7" class="text-center">Error loading data</td></tr>';
         }
     }
     
-    // Check-in function
-    async function checkIn(bookingId) {
-        if (confirm('Confirm check-in for this guest?')) {
-            try {
-                const response = await fetch(`/api/bookings/${bookingId}/checkin`, { method: 'POST' });
-                if (response.ok) {
-                    showToast('Guest checked in successfully', 'success');
-                    loadTodayArrivals();
-                    loadTodayDepartures();
-                } else {
-                    showToast('Check-in failed', 'error');
-                }
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-        }
-    }
-    
-    // Check-out function
-    async function checkOut(bookingId) {
-        if (confirm('Confirm check-out for this guest?')) {
-            try {
-                const response = await fetch(`/api/bookings/${bookingId}/checkout`, { method: 'POST' });
-                if (response.ok) {
-                    showToast('Guest checked out successfully', 'success');
-                    loadTodayArrivals();
-                    loadTodayDepartures();
-                } else {
-                    showToast('Check-out failed', 'error');
-                }
-            } catch (error) {
-                showToast('Error: ' + error.message, 'error');
-            }
-        }
-    }
-    
-    // Search booking
+    // FIXED SEARCH FUNCTION - Uses direct booking reference search
     document.getElementById('searchBtn').addEventListener('click', async () => {
         const query = document.getElementById('searchInput').value.trim();
         if (!query) {
-            showToast('Please enter search term', 'error');
+            showToast('Please enter a booking reference', 'error');
             return;
         }
         
+        showToast('Searching...', 'info');
+        
         try {
-            const response = await fetch(`/api/bookings/search?q=${encodeURIComponent(query)}`);
-            const bookings = await response.json();
+            // First try to find by exact booking reference
+            const response = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(query)}`);
+            const data = await response.json();
             const resultsDiv = document.getElementById('searchResults');
             
-            if (!bookings || bookings.length === 0) {
-                resultsDiv.innerHTML = '<div class="alert alert-info">No bookings found</div>';
-                return;
+            if (data.success && data.booking) {
+                const booking = data.booking;
+                const guest = booking.Guest || booking.guest || {};
+                const room = booking.Room || booking.room || {};
+                
+                const html = `
+                    <div class="alert alert-success">Booking found!</div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <tr><th>Booking Reference</th><td><strong>${booking.booking_reference}</strong></td></tr>
+                            <tr><th>Guest Name</th><td>${guest.first_name || ''} ${guest.last_name || ''}</td></tr>
+                            <tr><th>Email</th><td>${guest.email || 'N/A'}</td></tr>
+                            <tr><th>Phone</th><td>${guest.phone || 'N/A'}</td></tr>
+                            <tr><th>Room</th><td>Room ${room.room_number || 'N/A'}</td></tr>
+                            <tr><th>Check-in</th><td>${new Date(booking.check_in).toLocaleDateString()}</td></tr>
+                            <tr><th>Check-out</th><td>${new Date(booking.check_out).toLocaleDateString()}</td></tr>
+                            <tr><th>Status</th><td><span class="badge-${booking.status}">${booking.status.toUpperCase()}</span></td></tr>
+                            <tr><th>Total Amount</th><td>$${parseFloat(booking.total_amount || 0).toFixed(2)}</td></tr>
+                        </table>
+                        <div class="mt-3">
+                            ${booking.status === 'confirmed' ? `<button class="btn-checkin" onclick="checkInGuest(${booking.id}, '${booking.booking_reference}')">Check In</button>` : ''}
+                            ${booking.status === 'checked_in' ? `<button class="btn-checkout" onclick="checkOutGuest(${booking.id}, '${booking.booking_reference}')">Check Out</button>` : ''}
+                            <button onclick="window.open('/api/bookings/${booking.id}/receipt', '_blank')" class="btn-gold ms-2">Download Receipt</button>
+                        </div>
+                    </div>
+                `;
+                resultsDiv.innerHTML = html;
+            } else {
+                resultsDiv.innerHTML = `<div class="alert alert-info">No booking found with reference: ${query}</div>`;
             }
             
-            let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr><th>Ref</th><th>Guest</th><th>Room</th><th>Dates</th><th>Status</th><th>Action</th></tr></thead><tbody>';
-            bookings.forEach(booking => {
-                html += `<tr>
-                    <td>${booking.booking_reference}</td>
-                    <td>${booking.Guest ? booking.Guest.first_name + ' ' + booking.Guest.last_name : 'N/A'}</td>
-                    <td>Room ${booking.Room ? booking.Room.room_number : 'N/A'}</td>
-                    <td>${new Date(booking.check_in).toLocaleDateString()} - ${new Date(booking.check_out).toLocaleDateString()}</td>
-                    <td><span class="badge-${booking.status}">${booking.status.toUpperCase()}</span></td>
-                    <td>${booking.status === 'confirmed' ? `<button class="btn-checkin" onclick="checkIn(${booking.id})">Check In</button>` : booking.status === 'checked_in' ? `<button class="btn-checkout" onclick="checkOut(${booking.id})">Check Out</button>` : '-'}</td>
-                </tr>`;
-            });
-            html += '</tbody></table></div>';
-            resultsDiv.innerHTML = html;
+            resultsDiv.scrollIntoView({ behavior: 'smooth' });
         } catch (error) {
+            console.error('Search error:', error);
             showToast('Search failed: ' + error.message, 'error');
         }
     });
     
-    // Initial load
+    document.querySelectorAll('[data-tab]').forEach(tab => {
+        tab.addEventListener('click', function() {
+            document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            document.getElementById('arrivalsTab').style.display = 'none';
+            document.getElementById('departuresTab').style.display = 'none';
+            document.getElementById('searchTab').style.display = 'none';
+            if (this.dataset.tab === 'arrivals') {
+                document.getElementById('arrivalsTab').style.display = 'block';
+                loadTodayArrivals();
+            } else if (this.dataset.tab === 'departures') {
+                document.getElementById('departuresTab').style.display = 'block';
+                loadTodayDepartures();
+            } else {
+                document.getElementById('searchTab').style.display = 'block';
+            }
+        });
+    });
+    
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') document.getElementById('searchBtn').click();
+    });
+    
     loadTodayArrivals();
 </script>

@@ -463,5 +463,352 @@
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Socket.io Client for Real-time Notifications -->
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        // Connect to WebSocket server
+        const socket = io({
+            transports: ['websocket', 'polling']
+        });
+
+        // Connection events
+        socket.on('connect', () => {
+            console.log('🔌 Admin connected to notification system');
+        });
+
+        socket.on('disconnect', () => {
+            console.log('🔌 Admin disconnected from notification system');
+        });
+
+        socket.on('connect_error', (error) => {
+            console.log('⚠️ Socket connection error:', error.message);
+        });
+
+        // ============ NEW BOOKING NOTIFICATION ============
+        socket.on('new_booking', (notification) => {
+            console.log('🔔 New booking received:', notification);
+            showBookingNotification(notification);
+            playNotificationSound();
+        });
+
+        // ============ PAYMENT RECEIVED NOTIFICATION ============
+        socket.on('payment_received', (notification) => {
+            console.log('💰 Payment received:', notification);
+            showPaymentNotification(notification);
+            playNotificationSound();
+        });
+
+        // ============ NEW SERVICE REQUEST ============
+        socket.on('new_request', (notification) => {
+            console.log('📝 New request:', notification);
+            showRequestNotification(notification);
+            playNotificationSound();
+        });
+
+        // ============ SYSTEM NOTIFICATION ============
+        socket.on('system_notification', (notification) => {
+            console.log('📢 System notification:', notification);
+            showSystemNotification(notification);
+            if (notification.color === 'danger') {
+                playNotificationSound();
+            }
+        });
+
+        // ============ ADMIN ACTION ============
+        socket.on('admin_action', (notification) => {
+            console.log('👤 Admin action:', notification);
+            showAdminActionNotification(notification);
+        });
+
+        // ============ NOTIFICATION DISPLAY FUNCTIONS ============
+
+        function showBookingNotification(data) {
+            const notif = document.createElement('div');
+            notif.className = 'socket-notification';
+            notif.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border-left: 4px solid #28a745;
+                border-radius: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 9999;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+                cursor: pointer;
+            `;
+            notif.onclick = () => {
+                window.location.href = '/admin/bookings';
+            };
+            
+            notif.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="background: #d4edda; color: #28a745; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
+                        <i class="fas fa-calendar-check"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">New Booking Received!</strong>
+                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+                            <strong>${escapeHTML(data.guest_name || 'Guest')}</strong><br>
+                            Room ${escapeHTML(data.room_number || 'N/A')} • $${parseFloat(data.total_amount || 0).toFixed(2)}<br>
+                            <small style="color: #888;">Ref: ${escapeHTML(data.booking_reference || 'N/A')}</small>
+                        </p>
+                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
+                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
+                        &times;
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notif);
+            autoRemoveNotification(notif, 10000);
+        }
+
+        function showPaymentNotification(data) {
+            const notif = document.createElement('div');
+            notif.className = 'socket-notification';
+            notif.style.cssText = `
+                position: fixed;
+                top: 90px;
+                right: 20px;
+                background: white;
+                border-left: 4px solid #B8860B;
+                border-radius: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 9999;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+                cursor: pointer;
+            `;
+            notif.onclick = () => {
+                window.location.href = '/admin/bookings';
+            };
+            
+            const payment = data.data?.payment || {};
+            const booking = data.data?.booking || {};
+            
+            notif.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="background: #f5e6d3; color: #B8860B; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">Payment Received!</strong>
+                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+                            $${parseFloat(payment.amount || 0).toFixed(2)} for Booking #${escapeHTML(String(booking.id || ''))}<br>
+                            <small style="color: #888;">${escapeHTML(payment.payment_method || 'Card')}</small>
+                        </p>
+                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
+                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
+                        &times;
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notif);
+            autoRemoveNotification(notif, 8000);
+        }
+
+        function showRequestNotification(data) {
+            const notif = document.createElement('div');
+            notif.className = 'socket-notification';
+            notif.style.cssText = `
+                position: fixed;
+                top: 160px;
+                right: 20px;
+                background: white;
+                border-left: 4px solid #17a2b8;
+                border-radius: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 9999;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+                cursor: pointer;
+            `;
+            notif.onclick = () => {
+                window.location.href = '/admin/requests';
+            };
+            
+            notif.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="background: #d1ecf1; color: #17a2b8; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
+                        <i class="fas fa-headset"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(data.title || 'New Request')}</strong>
+                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+                            ${escapeHTML(data.message || '')}
+                        </p>
+                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
+                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
+                        &times;
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notif);
+            autoRemoveNotification(notif, 8000);
+        }
+
+        function showSystemNotification(data) {
+            const notif = document.createElement('div');
+            notif.className = 'socket-notification';
+            const borderColor = data.color === 'danger' ? '#dc3545' : 
+                               data.color === 'warning' ? '#ffc107' : '#17a2b8';
+            const bgColor = data.color === 'danger' ? '#f8d7da' : 
+                           data.color === 'warning' ? '#fff3cd' : '#d1ecf1';
+            const textColor = data.color === 'danger' ? '#dc3545' : 
+                             data.color === 'warning' ? '#856404' : '#17a2b8';
+            
+            notif.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border-left: 4px solid ${borderColor};
+                border-radius: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 9999;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+            `;
+            
+            notif.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="background: ${bgColor}; color: ${textColor}; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
+                        <i class="fas ${data.icon === 'bi-exclamation-triangle' ? 'fa-exclamation-triangle' : 'fa-bell'}"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(data.title || 'Notification')}</strong>
+                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+                            ${escapeHTML(data.message || '')}
+                        </p>
+                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
+                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
+                        &times;
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notif);
+            autoRemoveNotification(notif, 8000);
+        }
+
+        function showAdminActionNotification(data) {
+            const notif = document.createElement('div');
+            notif.className = 'socket-notification';
+            notif.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border-left: 4px solid #6c757d;
+                border-radius: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 9999;
+                max-width: 400px;
+                animation: slideInRight 0.3s ease;
+            `;
+            
+            notif.innerHTML = `
+                <div style="display: flex; align-items: flex-start; gap: 12px;">
+                    <div style="background: #e2e3e5; color: #6c757d; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
+                        <i class="fas fa-user-shield"></i>
+                    </div>
+                    <div style="flex: 1; min-width: 0;">
+                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(data.title || 'Admin Action')}</strong>
+                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
+                            ${escapeHTML(data.message || '')}
+                        </p>
+                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
+                    </div>
+                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
+                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
+                        &times;
+                    </button>
+                </div>
+            `;
+            
+            document.body.appendChild(notif);
+            autoRemoveNotification(notif, 6000);
+        }
+
+        // ============ HELPER FUNCTIONS ============
+
+        function autoRemoveNotification(element, delay) {
+            setTimeout(() => {
+                if (element && element.parentElement) {
+                    element.style.animation = 'slideOutRight 0.3s ease';
+                    setTimeout(() => {
+                        if (element.parentElement) {
+                            element.remove();
+                        }
+                    }, 300);
+                }
+            }, delay);
+        }
+
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function playNotificationSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
+                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                
+                oscillator.start(audioCtx.currentTime);
+                oscillator.stop(audioCtx.currentTime + 0.3);
+            } catch (e) {
+                // Silently fail if audio not supported
+            }
+        }
+
+        // ============ ANIMATION STYLES ============
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .socket-notification {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+            .socket-notification:hover {
+                box-shadow: 0 15px 40px rgba(0,0,0,0.25) !important;
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>

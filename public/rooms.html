@@ -18,22 +18,22 @@
     <link rel="stylesheet" href="/css/style.css">
     
     <style>
-        /* Page specific styles */
         .page-hero {
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
-                        url('https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=1600');
+                        url('https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=1600');
             background-size: cover;
-            background-position: center;
-            height: 400px;
+            background-position: center 30%;
+            min-height: 400px;
             display: flex;
             align-items: center;
             text-align: center;
             color: white;
-            margin-top: 76px;
+            margin-top: 0;
+            padding-top: 80px;
         }
         
         .page-hero h1 {
-            font-size: 3.5rem;
+            font-size: 3rem;
             margin-bottom: 1rem;
         }
         
@@ -65,6 +65,7 @@
             margin-bottom: 2rem;
             box-shadow: var(--shadow);
             transition: var(--transition);
+            position: relative;
         }
         
         .room-card:hover {
@@ -122,6 +123,27 @@
             margin-right: 0.25rem;
         }
         
+        .status-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            z-index: 10;
+        }
+        
+        .status-available {
+            background: #28a745;
+            color: white;
+        }
+        
+        .status-unavailable {
+            background: #dc3545;
+            color: white;
+        }
+        
         .btn-gold {
             background: var(--gold);
             color: white;
@@ -131,11 +153,19 @@
             transition: var(--transition);
             text-decoration: none;
             font-weight: 600;
+            border: none;
+            width: 100%;
+            cursor: pointer;
         }
         
         .btn-gold:hover {
             background: var(--gold-dark);
             color: white;
+        }
+        
+        .btn-gold:disabled {
+            background: #ccc;
+            cursor: not-allowed;
         }
         
         .btn-outline-gold {
@@ -154,7 +184,6 @@
             color: white;
         }
         
-        /* Floating cart icon */
         .floating-cart {
             position: fixed;
             bottom: 30px;
@@ -171,14 +200,17 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             transition: var(--transition);
         }
+        
         .floating-cart:hover {
             transform: scale(1.1);
             background: var(--gold-dark);
         }
+        
         .floating-cart i {
             font-size: 1.5rem;
             color: white;
         }
+        
         .floating-cart .cart-count {
             position: absolute;
             top: -8px;
@@ -189,6 +221,19 @@
             padding: 2px 6px;
             border-radius: 50%;
             font-weight: bold;
+        }
+        
+        .no-rooms-message {
+            text-align: center;
+            padding: 60px 20px;
+            background: white;
+            margin-bottom: 2rem;
+        }
+        
+        .no-rooms-message i {
+            font-size: 4rem;
+            color: var(--gold);
+            margin-bottom: 20px;
         }
         
         @media (max-width: 768px) {
@@ -216,7 +261,6 @@
 </head>
 <body>
 
-    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
             <a class="navbar-brand" href="/">GEEOOH HOTEL</a>
@@ -240,39 +284,36 @@
         </div>
     </nav>
 
-    <!-- Floating Cart Icon -->
     <div class="floating-cart" id="floatingCart">
         <i class="fas fa-shopping-cart"></i>
         <span class="cart-count" id="cartCount">0</span>
     </div>
 
-    <!-- Page Hero -->
-    <div class="page-hero" style="background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=1600'); background-size: cover; background-position: center 30%; min-height: 500px; display: flex; align-items: center; text-align: center; color: white; margin-top: 0; padding-top: 80px;">
+    <div class="page-hero">
         <div class="container">
             <h1>Room and suite collection</h1>
             <p>Discover our luxurious accommodations designed for your comfort and relaxation</p>
         </div>
     </div>
 
-    <!-- Filter Card -->
     <div class="container">
         <div class="filter-card">
             <div class="row g-3">
                 <div class="col-md-3">
                     <label class="form-label">Check-in Date</label>
-                    <input type="text" id="checkin" class="form-control" placeholder="Select date">
+                    <input type="date" id="checkin" class="form-control">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Check-out Date</label>
-                    <input type="text" id="checkout" class="form-control" placeholder="Select date">
+                    <input type="date" id="checkout" class="form-control">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Adults</label>
-                    <input type="number" id="adults" class="form-control" value="2" min="1">
+                    <input type="number" id="adults" class="form-control" value="2" min="1" max="10">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">Children</label>
-                    <input type="number" id="children" class="form-control" value="0" min="0">
+                    <input type="number" id="children" class="form-control" value="0" min="0" max="10">
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button id="search-btn" class="btn-gold w-100">Search Availability</button>
@@ -281,17 +322,15 @@
         </div>
     </div>
 
-    <!-- Rooms Grid -->
     <div class="container mt-5 mb-5">
         <div id="rooms-container" class="row">
-            <div class="text-center py-5">
+            <div class="col-12 text-center py-5">
                 <div class="loader"></div>
-                <p class="mt-2">Loading rooms...</p>
+                <p class="mt-2">Please select dates and click Search</p>
             </div>
         </div>
     </div>
 
-    <!-- Footer -->
     <footer class="footer">
         <div class="container">
             <div class="row">
@@ -329,14 +368,27 @@
     <div class="toast-container" id="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script src="/js/main.js"></script>
     <script src="/js/auth.js"></script>
     <script src="/js/cart.js"></script>
-    <script src="/js/rooms.js"></script>
     
     <script>
-        // Scroll effect for navbar
+        let currentRooms = [];
+        
+        // Set min dates
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('checkin').setAttribute('min', today);
+        document.getElementById('checkout').setAttribute('min', today);
+        
+        // Update checkout min date when checkin changes
+        document.getElementById('checkin').addEventListener('change', function() {
+            const checkinDate = this.value;
+            document.getElementById('checkout').setAttribute('min', checkinDate);
+            if (document.getElementById('checkout').value && document.getElementById('checkout').value <= checkinDate) {
+                document.getElementById('checkout').value = '';
+            }
+        });
+        
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar');
             if (window.scrollY > 50) {
@@ -355,12 +407,232 @@
             setTimeout(() => toast.remove(), 3000);
         }
         
-        // Floating cart click
+        async function searchRooms() {
+            const checkin = document.getElementById('checkin').value;
+            const checkout = document.getElementById('checkout').value;
+            const adults = document.getElementById('adults').value;
+            const children = document.getElementById('children').value;
+            
+            if (!checkin || !checkout) {
+                showToast('Please select check-in and check-out dates', 'error');
+                return;
+            }
+            
+            const container = document.getElementById('rooms-container');
+            container.innerHTML = '<div class="col-12 text-center py-5"><div class="loader"></div><p class="mt-2">Searching available rooms...</p></div>';
+            
+            try {
+                const response = await fetch('/api/availability/rooms', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ check_in: checkin, check_out: checkout, adults: parseInt(adults), children: parseInt(children) })
+                });
+                const data = await response.json();
+                
+                if (data.availableRooms && data.availableRooms.length > 0) {
+                    currentRooms = data.availableRooms;
+                    displayRooms(data.availableRooms, checkin, checkout);
+                } else {
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="no-rooms-message">
+                                <i class="fas fa-bed"></i>
+                                <h3>No rooms available</h3>
+                                <p>Sorry, no rooms are available for the selected dates. Please try different dates.</p>
+                                <button onclick="location.reload()" class="btn-outline-gold">Try Again</button>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Search error:', error);
+                container.innerHTML = '<div class="col-12 text-center py-5"><p class="text-danger">Error searching for rooms. Please try again.</p></div>';
+            }
+        }
+        
+        function displayRooms(rooms, checkin, checkout) {
+            const container = document.getElementById('rooms-container');
+            
+            // Get single image for room based on type and room number
+            function getRoomImage(roomTypeName, roomNumber) {
+                const roomNum = parseInt(roomNumber) || 1;
+                const imageIndex = (roomNum - 1) % 3; // 0, 1, or 2 based on room number
+                const name = (roomTypeName || '').toLowerCase();
+                
+                // Standard Rooms - 3 different images
+                if (name.includes('standard')) {
+                    const standardImages = [
+                        'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/164595/pexels-photo-164595.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/6585757/pexels-photo-6585757.jpeg?auto=compress&cs=tinysrgb&w=600'
+                    ];
+                    return standardImages[imageIndex];
+                }
+                
+                // Deluxe Rooms - 3 different images
+                if (name.includes('deluxe')) {
+                    const deluxeImages = [
+                        'https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/189296/pexels-photo-189296.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/261102/pexels-photo-261102.jpeg?auto=compress&cs=tinysrgb&w=600'
+                    ];
+                    return deluxeImages[imageIndex];
+                }
+                
+                // Suite/Presidential/Penthouse - 3 different images
+                if (name.includes('suite') || name.includes('presidential') || name.includes('penthouse')) {
+                    const suiteImages = [
+                        'https://images.pexels.com/photos/237371/pexels-photo-237371.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/1579253/pexels-photo-1579253.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/258154/pexels-photo-258154.jpeg?auto=compress&cs=tinysrgb&w=600'
+                    ];
+                    return suiteImages[imageIndex];
+                }
+                
+                // Family/Twin/Double - 3 different images
+                if (name.includes('family') || name.includes('twin') || name.includes('double')) {
+                    const familyImages = [
+                        'https://images.pexels.com/photos/262048/pexels-photo-262048.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/1457842/pexels-photo-1457842.jpeg?auto=compress&cs=tinysrgb&w=600',
+                        'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600'
+                    ];
+                    return familyImages[imageIndex];
+                }
+                
+                // Default fallback for unknown types - 3 different images
+                const defaultImages = [
+                    'https://images.pexels.com/photos/271624/pexels-photo-271624.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    'https://images.pexels.com/photos/338504/pexels-photo-338504.jpeg?auto=compress&cs=tinysrgb&w=600',
+                    'https://images.pexels.com/photos/237371/pexels-photo-237371.jpeg?auto=compress&cs=tinysrgb&w=600'
+                ];
+                return defaultImages[imageIndex];
+            }
+            
+            // Fallback SVG for each room type
+            function getFallbackImage(roomTypeName, roomNumber) {
+                const name = (roomTypeName || '').toLowerCase();
+                let bgColor = '#708090'; // Default gray
+                let icon = '🏨';
+                
+                if (name.includes('standard')) {
+                    bgColor = '#8B7355';
+                    icon = '🛏️';
+                } else if (name.includes('deluxe')) {
+                    bgColor = '#B8860B';
+                    icon = '✨';
+                } else if (name.includes('suite') || name.includes('presidential') || name.includes('penthouse')) {
+                    bgColor = '#2F4F4F';
+                    icon = '👑';
+                } else if (name.includes('family')) {
+                    bgColor = '#6B8E23';
+                    icon = '👨‍👩‍👧‍👦';
+                }
+                
+                return `data:image/svg+xml,${encodeURIComponent(`
+                    <svg xmlns="http://www.w3.org/2000/svg" width="600" height="400" viewBox="0 0 600 400">
+                        <defs>
+                            <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%" style="stop-color:${bgColor};stop-opacity:1" />
+                                <stop offset="100%" style="stop-color:${bgColor}dd;stop-opacity:1" />
+                            </linearGradient>
+                        </defs>
+                        <rect width="600" height="400" fill="url(#grad)"/>
+                        <text x="300" y="150" font-size="60" text-anchor="middle" fill="white">${icon}</text>
+                        <text x="300" y="220" font-family="Arial, sans-serif" font-size="26" fill="white" text-anchor="middle" font-weight="bold">
+                            ${roomTypeName || 'Room'}
+                        </text>
+                        <text x="300" y="260" font-family="Arial, sans-serif" font-size="20" fill="rgba(255,255,255,0.8)" text-anchor="middle">
+                            Room ${roomNumber || 'N/A'}
+                        </text>
+                    </svg>
+                `)}`;
+            }
+            
+            container.innerHTML = rooms.map((room, index) => {
+                const roomType = room.room_type || {};
+                const pricePerNight = parseFloat(roomType.base_price || room.base_price || 129.99);
+                const nights = room.total_nights || 1;
+                const totalPrice = pricePerNight * nights;
+                const roomName = roomType.name || 'Standard Room';
+                const roomNumber = room.room_number || 'N/A';
+                
+                // Get ONE image based on room type and room number
+                const imageUrl = getRoomImage(roomName, roomNumber);
+                const fallbackUrl = getFallbackImage(roomName, roomNumber);
+                
+                // Parse amenities
+                let amenitiesHtml = '';
+                try {
+                    const amenities = typeof roomType.amenities === 'string' ? 
+                        JSON.parse(roomType.amenities) : 
+                        (roomType.amenities || ['Free WiFi', 'Flat-screen TV', 'Air Conditioning', 'Room Service']);
+                    const displayAmenities = Array.isArray(amenities) ? amenities.slice(0, 4) : ['Free WiFi', 'Flat-screen TV', 'Air Conditioning', 'Room Service'];
+                    amenitiesHtml = displayAmenities.map(a => 
+                        `<li><i class="fas fa-check-circle"></i> ${typeof a === 'string' ? a : 'Premium Amenity'}</li>`
+                    ).join('');
+                } catch(e) {
+                    amenitiesHtml = `
+                        <li><i class="fas fa-check-circle"></i> Free WiFi</li>
+                        <li><i class="fas fa-check-circle"></i> Flat-screen TV</li>
+                        <li><i class="fas fa-check-circle"></i> Air Conditioning</li>
+                        <li><i class="fas fa-check-circle"></i> Room Service</li>
+                    `;
+                }
+                
+                return `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="room-card">
+                            <img src="${imageUrl}" 
+                                 alt="${roomName} - Room ${roomNumber}"
+                                 data-fallback="${fallbackUrl}"
+                                 onerror="if(this.src !== this.getAttribute('data-fallback')){this.src=this.getAttribute('data-fallback');}"
+                                 loading="${index < 6 ? 'eager' : 'lazy'}">
+                            <div class="room-content">
+                                <h3>${roomName}</h3>
+                                <p class="text-muted">
+                                    Room ${roomNumber} • Floor ${room.floor || '1'}
+                                    <span class="badge bg-success ms-2" style="font-size: 0.7rem;">Available</span>
+                                </p>
+                                <ul class="room-features">
+                                    ${amenitiesHtml}
+                                </ul>
+                                <div class="price">
+                                    $${pricePerNight.toFixed(2)}<span>/night</span>
+                                </div>
+                                <p class="text-muted small mt-2">Total for ${nights} night(s): <strong>$${totalPrice.toFixed(2)}</strong></p>
+                                <button class="btn-gold mt-3" onclick="bookRoom(${room.id}, '${checkin}', '${checkout}', '${roomName.replace(/'/g, "\\'")}', '${roomNumber}', ${pricePerNight}, ${nights}, ${totalPrice.toFixed(2)})">
+                                    <i class="fas fa-calendar-check me-2"></i>Book Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function bookRoom(roomId, checkin, checkout, roomType, roomNumber, pricePerNight, nights, totalPrice) {
+            const params = new URLSearchParams({
+                room: roomId,
+                roomNumber: roomNumber,
+                roomType: roomType,
+                checkIn: checkin,
+                checkOut: checkout,
+                adults: document.getElementById('adults').value,
+                children: document.getElementById('children').value,
+                pricePerNight: pricePerNight,
+                totalNights: nights,
+                totalPrice: totalPrice
+            });
+            
+            window.location.href = `/booking.html?${params.toString()}`;
+        }
+        
         document.getElementById('floatingCart').addEventListener('click', () => {
             window.location.href = '/cart.html';
         });
         
-        // Update cart count
+        document.getElementById('search-btn').addEventListener('click', searchRooms);
+        
         function updateCartCount() {
             const cartCount = document.getElementById('cartCount');
             if (cartCount && typeof hotelCart !== 'undefined') {
@@ -368,14 +640,12 @@
             }
         }
         
-        // Update auth nav
         async function updateAuthNav() {
             if (typeof Auth !== 'undefined') {
                 await Auth.updateNav();
             }
         }
         
-        // Initialize
         updateCartCount();
         updateAuthNav();
         
@@ -383,5 +653,6 @@
             if (e.key === 'hotelCart') updateCartCount();
         });
     </script>
-<script src="/js/newsletter.js"></script></body>
+    <script src="/js/newsletter.js"></script>
+</body>
 </html>

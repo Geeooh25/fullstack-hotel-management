@@ -77,5 +77,45 @@ router.put('/settings', isAdminAuthenticated, hasRole(['super_admin']), adminCon
 
 // ==================== ACTIVITY LOGS ====================
 router.get('/activity', isAdminAuthenticated, hasRole(['super_admin', 'admin']), adminController.getActivityLogs);
-
+// Download booking receipt
+router.get('/bookings/:id/receipt', isAdminAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const PDFService = require('../services/pdfService');
+        const db = require('../models');
+        
+        const booking = await db.Booking.findByPk(id, {
+            include: [
+                { model: db.Guest },
+                { model: db.Room, include: [{ model: db.RoomType }] },
+                { model: db.Payment },
+                { 
+                    model: db.BookingService,
+                    as: 'services',
+                    include: [{ model: db.MenuItem, as: 'menu_item' }]
+                }
+            ]
+        });
+        
+        if (!booking) {
+            return res.status(404).send('Booking not found');
+        }
+        
+        const pdfBuffer = await PDFService.generateReceipt(
+            booking,
+            booking.Guest,
+            booking.Room,
+            booking.Payments || [],
+            booking.services || []
+        );
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="receipt-${booking.booking_reference}.pdf"`);
+        res.send(pdfBuffer);
+        
+    } catch (error) {
+        console.error('Receipt error:', error);
+        res.status(500).send('Error generating receipt');
+    }
+});
 module.exports = router;

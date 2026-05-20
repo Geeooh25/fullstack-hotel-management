@@ -9,9 +9,7 @@ const { Op } = require('sequelize');
 const db = require('../../models');
 
 // ==================== HISTORICAL BOOKING (Super Admin Only) ====================
-// POST /api/bookings/historical - Record past stays (Super Admin only)
 router.post('/historical', async (req, res) => {
-    // Check if user is super admin
     if (!req.session.admin || req.session.admin.role !== 'super_admin') {
         return res.status(403).json({ 
             success: false, 
@@ -29,7 +27,6 @@ router.post('/historical', async (req, res) => {
         
         console.log('📜 Historical booking request:', { guest_name, guest_email, room_id, check_in, check_out });
         
-        // Validate dates
         const checkInDate = new Date(check_in);
         const checkOutDate = new Date(check_out);
         const today = new Date();
@@ -43,15 +40,12 @@ router.post('/historical', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Check-out must be after check-in' });
         }
         
-        // Check if historical (past date)
         const isHistorical = checkInDate < today;
         
-        // Split name
         const nameParts = guest_name.split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
         
-        // Create or get guest
         let guest = await db.Guest.findOne({ where: { email: guest_email } });
         if (!guest) {
             guest = await db.Guest.create({
@@ -64,7 +58,6 @@ router.post('/historical', async (req, res) => {
             });
         }
         
-        // Create booking with historical flag
         const booking = await db.Booking.create({
             booking_reference: 'HIST-' + Date.now(),
             guest_id: guest.id,
@@ -74,7 +67,7 @@ router.post('/historical', async (req, res) => {
             adults: adults || 2,
             children: children || 0,
             total_amount: total_amount,
-            status: 'checked_out', // Past stays are checked out
+            status: 'checked_out',
             payment_status: 'paid',
             source: 'historical',
             special_requests: special_requests || null,
@@ -82,7 +75,6 @@ router.post('/historical', async (req, res) => {
             created_by_admin_id: req.session.admin.id
         });
         
-        // Create payment record
         await db.Payment.create({
             booking_id: booking.id,
             amount: total_amount,
@@ -91,7 +83,6 @@ router.post('/historical', async (req, res) => {
             transaction_id: 'HIST-' + Date.now()
         });
         
-        // Log the action
         await db.ActivityLog.create({
             admin_id: req.session.admin.id,
             admin_username: req.session.admin.email,
@@ -127,12 +118,10 @@ router.post('/counter', async (req, res) => {
         
         console.log('📝 Counter booking request:', { guest_name, guest_email, room_id, check_in, check_out });
         
-        // Split name
         const nameParts = guest_name.split(' ');
         const firstName = nameParts[0] || '';
         const lastName = nameParts.slice(1).join(' ') || '';
         
-        // Create or get guest
         let guest = await db.Guest.findOne({ where: { email: guest_email } });
         if (!guest) {
             guest = await db.Guest.create({
@@ -145,39 +134,75 @@ router.post('/counter', async (req, res) => {
             });
         }
         
-        // Create booking
+        const checkInDate = new Date(check_in);
+        const checkOutDate = new Date(check_out);
+        const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+        
+        const room = await db.Room.findByPk(room_id, { include: [{ model: db.RoomType }] });
+        const roomPrice = room.RoomType ? room.RoomType.base_price : 129.99;
+        const subtotal = roomPrice * nights;
+        const finalAmount = subtotal;
+        
         const booking = await db.Booking.create({
-            booking_reference: 'WALK-' + Date.now(),
+            booking_reference: 'BKG-' + Date.now(),
             guest_id: guest.id,
             room_id: parseInt(room_id),
             check_in: check_in,
             check_out: check_out,
             adults: adults || 2,
             children: children || 0,
-            total_amount: total_amount,
+            total_nights: nights,
+            subtotal: subtotal,
+            tax: 0,
+            total_amount: finalAmount,
             status: 'confirmed',
             payment_status: 'completed',
             source: 'walk_in',
             special_requests: special_requests
         });
         
-        // Create payment record
-        await db.Payment.create({
+        const payment = await db.Payment.create({
             booking_id: booking.id,
-            amount: total_amount,
-            payment_method: payment_method,
+            amount: finalAmount,
+            payment_method: payment_method || 'cash',
             status: 'completed',
             transaction_id: 'WALK-' + Date.now()
         });
         
-        res.json({ success: true, booking });
+        const fullBooking = await db.Booking.findByPk(booking.id, {
+            include: [
+                { model: db.Guest },
+                { model: db.Room, include: [{ model: db.RoomType }] },
+                { model: db.Payment }
+            ]
+        });
+        
+        res.json({ success: true, booking: fullBooking });
+        
+                // Notify admins
+        try {
+            const { sendNewBookingNotification } = require('../../socket');
+            sendNewBookingNotification({
+                id: booking.id,
+                booking_reference: booking.booking_reference,
+                guest_name: guest_name,
+                room_number: room.room_number,
+                check_in: check_in,
+                check_out: check_out,
+                total_amount: finalAmount,
+                status: 'confirmed',
+                source: 'walk_in'
+            });
+        } catch (socketError) {
+            console.error('WebSocket notification error:', socketError.message);
+        }
     } catch (error) {
         console.error('Counter booking error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// POST /api/bookings - Create a new booking (with optional cart)
+// POST /api/bookings - Create a new booking
 router.post('/', bookingLimiter, validateBooking, async (req, res, next) => {
     try {
         console.log('📝 Booking request received');
@@ -242,7 +267,26 @@ router.post('/', bookingLimiter, validateBooking, async (req, res, next) => {
                 error: paymentResult.error
             });
         }
-
+              
+        // Notify admins via WebSocket
+        try {
+            const { sendNewBookingNotification } = require('../../socket');
+            sendNewBookingNotification({
+                id: booking.id,
+                booking_reference: booking.booking_reference,
+                guest_name: `${guest.first_name} ${guest.last_name}`,
+                room_number: room.room_number,
+                check_in: bookingData.checkIn,
+                check_out: bookingData.checkOut,
+                total_amount: booking.total_amount,
+                status: booking.status,
+                source: bookingData.source || 'online'
+            });
+            console.log('📡 Admin notified via WebSocket');
+        } catch (socketError) {
+            console.error('WebSocket notification error:', socketError.message);
+        }
+        
         console.log('✅ Sending response with checkout URL');
 
         res.json({
@@ -261,7 +305,7 @@ router.post('/', bookingLimiter, validateBooking, async (req, res, next) => {
     }
 });
 
-// POST /api/bookings/add-services-pending - RESTRICTED to confirmed/future bookings only
+// POST /api/bookings/add-services-pending
 router.post('/add-services-pending', async (req, res) => {
     try {
         const { booking_reference, guest_email, services } = req.body;
@@ -402,7 +446,7 @@ router.post('/create-service-payment', async (req, res) => {
     }
 });
 
-// POST /api/bookings/add-services (testing only)
+// POST /api/bookings/add-services
 router.post('/add-services', async (req, res) => {
     try {
         const { booking_reference, guest_email, services } = req.body;
@@ -468,15 +512,16 @@ router.post('/add-services', async (req, res) => {
 // GET /api/bookings/lookup
 router.get('/lookup', async (req, res) => {
     try {
-        const { reference, email } = req.query;
+        const { reference, email, user_id } = req.query;
 
-        if (!reference && !email) {
+        if (!reference && !email && !user_id) {
             return res.status(400).json({
                 success: false,
-                error: 'Booking reference or email is required'
+                error: 'Booking reference, email, or user_id is required'
             });
         }
 
+        // Search by reference
         if (reference) {
             const booking = await Booking.findOne({
                 where: { booking_reference: reference },
@@ -498,14 +543,32 @@ router.get('/lookup', async (req, res) => {
             return res.json({ success: true, booking });
         }
 
+        // Search by email OR user_id
+        let bookings = [];
+        const whereConditions = [];
+        
+        // Method 1: Search by guest email (via guest_id)
         if (email) {
             const guest = await Guest.findOne({ where: { email } });
-            if (!guest) {
-                return res.json({ success: true, bookings: [] });
+            if (guest) {
+                whereConditions.push({ guest_id: guest.id });
             }
-
-            const bookings = await Booking.findAll({
-                where: { guest_id: guest.id },
+        }
+        
+        // Method 2: Search by user_id directly on booking
+        if (user_id) {
+            const userId = parseInt(user_id);
+            if (!isNaN(userId) && userId > 0) {
+                whereConditions.push({ user_id: userId });
+            }
+        }
+        
+        // If we have conditions, search
+        if (whereConditions.length > 0) {
+            bookings = await Booking.findAll({
+                where: {
+                    [Op.or]: whereConditions
+                },
                 include: [
                     { model: Guest },
                     { model: Room, include: [{ model: RoomType }] },
@@ -517,9 +580,10 @@ router.get('/lookup', async (req, res) => {
                 ],
                 order: [['created_at', 'DESC']]
             });
-
-            return res.json({ success: true, bookings });
         }
+        
+        return res.json({ success: true, bookings });
+        
     } catch (error) {
         console.error('❌ Lookup error:', error);
         res.status(500).json({ success: false, error: error.message });
@@ -554,6 +618,62 @@ router.get('/reference/:ref', async (req, res) => {
     }
 });
 
+// GET /api/bookings/reference/:ref/receipt - Download receipt by reference
+router.get('/reference/:ref/receipt', async (req, res) => {
+    try {
+        const reference = req.params.ref;
+        const PDFService = require('../../services/pdfService');
+        
+        const booking = await db.Booking.findOne({
+            where: { booking_reference: reference },
+            include: [
+                { model: db.Guest },
+                { model: db.Room, include: [{ model: db.RoomType }] },
+                { 
+                    model: db.BookingService,
+                    as: 'services',
+                    include: [{ model: db.MenuItem, as: 'menu_item' }]
+                }
+            ]
+        });
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, error: 'Booking not found' });
+        }
+        
+        // Fetch payments directly with raw query
+        const payments = await db.sequelize.query(
+            `SELECT * FROM payments WHERE booking_id = :bookingId ORDER BY created_at DESC`,
+            {
+                replacements: { bookingId: booking.id },
+                type: db.sequelize.QueryTypes.SELECT
+            }
+        );
+        
+        console.log(`📄 Generating receipt for ${booking.booking_reference}`);
+        console.log(`   Payments found: ${payments.length}`);
+        payments.forEach((p, i) => {
+            console.log(`   Payment ${i+1}: ${p.payment_method} - ${p.status} - $${p.amount}`);
+        });
+        
+        const pdfBuffer = await PDFService.generateReceipt(
+            booking,
+            booking.Guest,
+            booking.Room,
+            payments || [],
+            booking.services || []
+        );
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="receipt-${booking.booking_reference}.pdf"`);
+        res.send(pdfBuffer);
+        
+    } catch (error) {
+        console.error('Receipt generation error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // GET /api/bookings/:id
 router.get('/:id', async (req, res) => {
     try {
@@ -581,6 +701,103 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// GET /api/bookings/:id/receipt - Download receipt PDF
+router.get('/:id/receipt', async (req, res) => {
+    try {
+        const bookingId = parseInt(req.params.id);
+        if (isNaN(bookingId)) {
+            return res.status(400).json({ error: 'Invalid booking ID' });
+        }
+        
+        const PDFService = require('../../services/pdfService');
+        
+        const booking = await db.Booking.findByPk(bookingId, {
+            include: [
+                { model: db.Guest },
+                { model: db.Room, include: [{ model: db.RoomType }] },
+                { 
+                    model: db.BookingService,
+                    as: 'services',
+                    include: [{ model: db.MenuItem, as: 'menu_item' }]
+                }
+            ]
+        });
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, error: 'Booking not found' });
+        }
+        
+        // Fetch payments directly with raw query
+        const payments = await db.sequelize.query(
+            `SELECT * FROM payments WHERE booking_id = :bookingId ORDER BY created_at DESC`,
+            {
+                replacements: { bookingId: bookingId },
+                type: db.sequelize.QueryTypes.SELECT
+            }
+        );
+        
+        console.log(`📄 Generating receipt for ${booking.booking_reference}`);
+        console.log(`   Payments found: ${payments.length}`);
+        payments.forEach((p, i) => {
+            console.log(`   Payment ${i+1}: ${p.payment_method} - ${p.status} - $${p.amount}`);
+        });
+        
+        const pdfBuffer = await PDFService.generateReceipt(
+            booking,
+            booking.Guest,
+            booking.Room,
+            payments,
+            booking.services || []
+        );
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="receipt-${booking.booking_reference}.pdf"`);
+        res.send(pdfBuffer);
+        
+    } catch (error) {
+        console.error('Receipt generation error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// SIMPLE SEARCH - Only by booking reference
+router.get('/find-booking', async (req, res) => {
+    try {
+        const { ref } = req.query;
+        
+        console.log('🔍 Looking for booking:', ref);
+        
+        if (!ref || ref.trim() === '') {
+            return res.json({ success: false, message: 'No reference provided' });
+        }
+        
+        const booking = await db.sequelize.query(
+            `SELECT b.*, 
+                    g.first_name, g.last_name, g.email, g.phone,
+                    r.room_number, rt.name as room_type
+             FROM bookings b
+             LEFT JOIN guests g ON b.guest_id = g.id
+             LEFT JOIN rooms r ON b.room_id = r.id
+             LEFT JOIN room_types rt ON r.room_type_id = rt.id
+             WHERE b.booking_reference = :ref
+             LIMIT 1`,
+            {
+                replacements: { ref: ref },
+                type: db.sequelize.QueryTypes.SELECT
+            }
+        );
+        
+        if (booking && booking.length > 0) {
+            res.json({ success: true, booking: booking[0] });
+        } else {
+            res.json({ success: false, message: 'Booking not found' });
+        }
+    } catch (error) {
+        console.error('Find booking error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // DELETE /api/bookings/:id/cancel
 router.delete('/:id/cancel', async (req, res) => {
     try {
@@ -601,10 +818,41 @@ router.delete('/:id/cancel', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Cannot cancel a completed booking' });
         }
         
+        if (booking.status === 'checked_in') {
+            return res.status(400).json({ success: false, error: 'Cannot cancel after check-in. Please contact reception.' });
+        }
+        
+        // Check 3-day cancellation policy
+        const checkIn = new Date(booking.check_in);
+        const now = new Date();
+        now.setHours(0, 0, 0, 0);
+        checkIn.setHours(0, 0, 0, 0);
+        const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
+        
+        if (daysUntilCheckIn < 3) {
+            const dayText = daysUntilCheckIn === 0 ? 'today' : 
+                           daysUntilCheckIn === 1 ? 'tomorrow' : 
+                           `in ${daysUntilCheckIn} days`;
+            return res.status(400).json({ 
+                success: false, 
+                error: `Cancellation is only allowed 3 or more days before check-in. Your check-in is ${dayText}.`
+            });
+        }
+        
         booking.status = 'cancelled';
         booking.cancelled_at = new Date();
         booking.cancellation_reason = reason || 'Cancelled by guest';
         await booking.save();
+        
+        // Send cancellation email
+        try {
+            const guest = await Guest.findByPk(booking.guest_id);
+            const room = await Room.findByPk(booking.room_id);
+            await EmailService.sendCancellationEmail(booking, guest, reason);
+            console.log(`📧 Cancellation email sent to ${guest.email}`);
+        } catch (emailError) {
+            console.error('Email error:', emailError.message);
+        }
         
         res.json({ success: true, message: 'Booking cancelled successfully', booking });
     } catch (error) {
@@ -647,20 +895,58 @@ router.post('/:id/checkout', async (req, res) => {
 
 // Search bookings
 router.get('/search', async (req, res) => {
-    const { q } = req.query;
-    const bookings = await db.Booking.findAll({
-        where: {
-            [Op.or]: [
-                { booking_reference: { [Op.like]: `%${q}%` } },
-                { '$guest.first_name$': { [Op.like]: `%${q}%` } },
-                { '$guest.last_name$': { [Op.like]: `%${q}%` } },
-                { '$guest.email$': { [Op.like]: `%${q}%` } },
-                { '$room.room_number$': { [Op.like]: `%${q}%` } }
-            ]
-        },
-        include: [{ model: db.Guest }, { model: db.Room }]
-    });
-    res.json(bookings);
+    try {
+        const { q } = req.query;
+        
+        console.log('🔍 Searching for:', q);
+        
+        if (!q || q.trim() === '') {
+            return res.json([]);
+        }
+        
+        const searchTerm = `%${q}%`;
+        
+        const bookings = await db.sequelize.query(
+            `SELECT 
+                b.id, 
+                b.booking_reference, 
+                b.check_in, 
+                b.check_out, 
+                b.status, 
+                b.total_amount,
+                b.created_at,
+                g.id as guest_id,
+                g.first_name, 
+                g.last_name, 
+                g.email, 
+                g.phone,
+                r.id as room_id,
+                r.room_number,
+                rt.name as room_type
+            FROM bookings b
+            LEFT JOIN guests g ON b.guest_id = g.id
+            LEFT JOIN rooms r ON b.room_id = r.id
+            LEFT JOIN room_types rt ON r.room_type_id = rt.id
+            WHERE b.booking_reference LIKE :searchTerm
+               OR g.first_name LIKE :searchTerm
+               OR g.last_name LIKE :searchTerm
+               OR g.email LIKE :searchTerm
+               OR r.room_number LIKE :searchTerm
+            ORDER BY b.created_at DESC
+            LIMIT 50`,
+            {
+                replacements: { searchTerm: searchTerm },
+                type: db.sequelize.QueryTypes.SELECT
+            }
+        );
+        
+        console.log(`✅ Found ${bookings.length} results for "${q}"`);
+        res.json(bookings);
+        
+    } catch (error) {
+        console.error('❌ Search error:', error);
+        res.status(500).json({ error: error.message });
+    }
 });
 
 module.exports = router;

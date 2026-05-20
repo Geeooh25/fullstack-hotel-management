@@ -17,7 +17,12 @@
                     <p><strong>Status:</strong> <span class="badge bg-warning"><%= booking.status %></span></p>
                 </div>
             </div>
-            <a href="/admin/bookings" class="btn btn-secondary mt-3">Back to Bookings</a>
+            <div class="mt-3">
+    <a href="/admin/bookings/<%= booking.id %>/receipt" class="btn-gold" target="_blank">
+        <i class="fas fa-download"></i> Download Receipt (PDF)
+    </a>
+    <a href="/admin/bookings" class="btn btn-secondary">Back to Bookings</a>
+</div>
         </div>
     </div>
 </div>

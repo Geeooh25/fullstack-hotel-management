@@ -5,7 +5,7 @@ const { validateAvailability } = require('../../middleware/validation');
 const db = require('../../models');
 const { Op } = require('sequelize');
 
-// Check room availability
+// Check room availability (POST)
 router.post('/check', async (req, res) => {
     try {
         const { check_in, check_out, room_id } = req.body;
@@ -35,12 +35,84 @@ router.post('/check', async (req, res) => {
             include: [{ model: db.RoomType }]
         });
         
+        // Check if specific room is available
+        if (room_id) {
+            const isAvailable = availableRooms.some(r => r.id === parseInt(room_id));
+            return res.json({ 
+                success: true, 
+                available: isAvailable,
+                message: isAvailable ? 'Room is available' : 'Room is not available for selected dates'
+            });
+        }
+        
         res.json({ success: true, availableRooms });
     } catch (error) {
+        console.error('Availability check error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
-// Get room availability status for a specific date
+
+// Get rooms available for date range
+router.post('/rooms', async (req, res) => {
+    try {
+        const { check_in, check_out, adults = 1, children = 0 } = req.body;
+        
+        if (!check_in || !check_out) {
+            return res.status(400).json({ error: 'Check-in and check-out dates are required' });
+        }
+        
+        const totalGuests = parseInt(adults) + parseInt(children);
+        
+        // Get all rooms that are booked for the period
+        const bookedRooms = await db.Booking.findAll({
+            where: {
+                status: { [Op.notIn]: ['cancelled', 'checked_out'] },
+                [Op.or]: [
+                    { check_in: { [Op.lt]: check_out } },
+                    { check_out: { [Op.gt]: check_in } }
+                ]
+            },
+            attributes: ['room_id'],
+            raw: true
+        });
+        
+        const bookedRoomIds = [...new Set(bookedRooms.map(b => b.room_id))];
+        
+        const roomWhere = { status: 'available' };
+        if (bookedRoomIds.length > 0) {
+            roomWhere.id = { [Op.notIn]: bookedRoomIds };
+        }
+        
+        const availableRooms = await db.Room.findAll({
+            where: roomWhere,
+            include: [{ 
+                model: db.RoomType,
+                where: { capacity: { [Op.gte]: totalGuests } }
+            }],
+            order: [['room_number', 'ASC']]
+        });
+        
+        // Calculate nights
+        const checkInDate = new Date(check_in);
+        const checkOutDate = new Date(check_out);
+        const nights = Math.ceil((checkOutDate - checkInDate) / (1000 * 60 * 60 * 24));
+        
+        const availableRoomsWithDetails = availableRooms.map(room => ({
+            id: room.id,
+            room_number: room.room_number,
+            floor: room.floor,
+            room_type: room.RoomType,
+            total_nights: nights
+        }));
+        
+        res.json({ availableRooms: availableRoomsWithDetails });
+    } catch (error) {
+        console.error('Availability rooms error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// Get room availability status for a specific room
 router.get('/room/:id', async (req, res) => {
     try {
         const room = await db.Room.findByPk(req.params.id, {
@@ -63,41 +135,12 @@ router.get('/room/:id', async (req, res) => {
             }
         });
     } catch (error) {
+        console.error('Room status error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
-// POST /api/availability/check - Check room availability
-router.post('/check', validateAvailability, async (req, res, next) => {
-    try {
-        const { checkIn, checkOut, adults, children, roomTypeId } = req.body;
-        
-        let availableRooms;
-        
-        if (roomTypeId) {
-            // Check specific room type
-            availableRooms = await AvailabilityService.getAvailableRoomsByType(
-                roomTypeId, checkIn, checkOut
-            );
-        } else {
-            // Check all rooms
-            availableRooms = await AvailabilityService.getAvailableRooms(
-                checkIn, checkOut, adults || 1, children || 0
-            );
-        }
-        
-        res.json({
-            success: true,
-            available: availableRooms.length > 0,
-            count: availableRooms.length,
-            rooms: availableRooms
-        });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// POST /api/availability/calculate - Calculate price
+// POST /api/availability/calculate - Calculate price (with validateAvailability middleware)
 router.post('/calculate', validateAvailability, async (req, res, next) => {
     try {
         const { roomTypeId, checkIn, checkOut } = req.body;
