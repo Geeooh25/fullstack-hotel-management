@@ -6,7 +6,8 @@
     "npm": "10.5.0"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "backup:render": "node scripts/backup-render.js"
   },
   "keywords": [],
   "author": "",

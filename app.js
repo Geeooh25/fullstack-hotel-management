@@ -62,6 +62,58 @@ app.use(session({
         maxAge: 30 * 24 * 60 * 60 * 1000
     }
 }));
+// TEMPORARY ROUTE - Import data to Render PostgreSQL
+app.get('/import-data', async (req, res) => {
+    try {
+        const { sequelize } = require('./config/database');
+        const fs = require('fs');
+        
+        // Read backup file
+        const backup = JSON.parse(fs.readFileSync('backup-data.json'));
+        const results = [];
+        
+        // Sync tables
+        await sequelize.sync({ alter: false });
+        results.push('✅ Tables synced');
+        
+        // Import each table
+        const models = {
+            users: require('./models/User'),
+            amenities: require('./models/amenity'),
+            room_types: require('./models/RoomType'),
+            rooms: require('./models/Room'),
+            guests: require('./models/Guest'),
+            bookings: require('./models/Booking'),
+            payments: require('./models/Payment'),
+            menu_categories: require('./models/menuCategory'),
+            menu_items: require('./models/menuItem'),
+            request_submissions: require('./models/requestSubmission')
+        };
+        
+        for (const [table, rows] of Object.entries(backup)) {
+            if (rows.length === 0 || !models[table]) continue;
+            
+            // Clear existing
+            await models[table].destroy({ where: {}, truncate: true });
+            results.push(`🗑️ Cleared ${table}`);
+            
+            // Insert
+            await models[table].bulkCreate(rows);
+            results.push(`✅ Imported ${rows.length} rows to ${table}`);
+        }
+        
+        res.send(`
+            <html><body style="padding:20px;font-family:monospace;">
+            <h1>📥 Import Results</h1>
+            <pre>${results.join('\n')}</pre>
+            <hr>
+            <p><a href="/admin/login">Go to Admin Login →</a></p>
+            </body></html>
+        `);
+    } catch (error) {
+        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
+    }
+});
 
 app.use(passport.initialize());
 app.use(passport.session());
