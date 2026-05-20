@@ -24,7 +24,7 @@ const { optionalAuthForGuests } = require('./middleware/auth');
 const app = express();
 const server = http.createServer(app);
 
-// Initialize Socket.io for real-time updates
+// Initialize Socket.io
 const { initSocket } = require('./socket');
 const io = initSocket(server);
 app.set('io', io);
@@ -32,13 +32,7 @@ app.set('io', io);
 app.set('trust proxy', 1);
 
 // ==================== MIDDLEWARE ====================
-
-// Security headers
-app.use(helmet({
-    contentSecurityPolicy: false,
-}));
-
-// CORS
+app.use(helmet({ contentSecurityPolicy: false }));
 app.use(cors({
     origin: process.env.APP_URL || 'http://localhost:3000',
     credentials: true,
@@ -46,25 +40,18 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'Cookie']
 }));
 
-// Stripe Webhook
 app.post('/webhooks/stripe', express.raw({ type: 'application/json' }), async (req, res) => {
     const { handleWebhook } = require('./webhooks/stripe');
     await handleWebhook(req, res);
 });
 
-// Body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use(methodOverride('_method'));
-
-// Flash messages
 app.use(flash());
-
-// Static files
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Session configuration
 app.use(session({
     secret: process.env.SESSION_SECRET || 'mansion-hotel-secret-key',
     resave: false,
@@ -76,11 +63,9 @@ app.use(session({
     }
 }));
 
-// Passport initialization
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Make user and flash messages available to all views
 app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
     res.locals.hotelName = process.env.HOTEL_NAME || 'Mansion Hotel';
@@ -91,7 +76,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Apply optional auth for guests on API routes
 app.use('/api', optionalAuthForGuests);
 app.use('/api', apiLimiter);
 
@@ -102,9 +86,7 @@ app.use(expressLayouts);
 app.set('layout', 'layouts/admin');
 
 // ==================== PUBLIC ROUTES ====================
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'public', 'index.html')));
 app.get('/rooms', (req, res) => res.sendFile(path.join(__dirname, 'public', 'rooms.html')));
 app.get('/room-detail', (req, res) => res.sendFile(path.join(__dirname, 'public', 'room-detail.html')));
 app.get('/booking', (req, res) => res.sendFile(path.join(__dirname, 'public', 'booking.html')));
@@ -114,125 +96,22 @@ app.get('/contact', (req, res) => res.sendFile(path.join(__dirname, 'public', 'c
 app.get('/about', (req, res) => res.sendFile(path.join(__dirname, 'public', 'about.html')));
 app.get('/amenities', (req, res) => res.sendFile(path.join(__dirname, 'public', 'amenities.html')));
 app.get('/gallery', (req, res) => res.sendFile(path.join(__dirname, 'public', 'gallery.html')));
-
-// Auth pages
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'public', 'login.html')));
 app.get('/signup', (req, res) => res.sendFile(path.join(__dirname, 'public', 'signup.html')));
 app.get('/profile', (req, res) => res.sendFile(path.join(__dirname, 'public', 'profile.html')));
 app.get('/payment-success', (req, res) => res.sendFile(path.join(__dirname, 'public', 'payment-success.html')));
 app.get('/payment-failed', (req, res) => res.sendFile(path.join(__dirname, 'public', 'payment-failed.html')));
 app.get('/test-layout', (req, res) => res.render('test'));
-app.get('/simple-rooms', async (req, res) => {
-    try {
-        const rooms = await Room.findAll();
-        res.json({ success: true, count: rooms.length, rooms });
-    } catch (error) {
-        res.json({ success: false, error: error.message });
-    }
-});
 
-// ==================== FIX DATABASE ROUTES ====================
+// ==================== FIX ROUTES (KEEP THESE FOR NOW) ====================
 
-// Complete database fix - add all missing columns
-app.get('/fix-all-columns', async (req, res) => {
-    try {
-        const { sequelize } = require('./config/database');
-        const results = [];
-        
-        // List of all columns that might be missing
-        const columnsToAdd = [
-            { name: 'failed_login_attempts', type: 'INTEGER DEFAULT 0' },
-            { name: 'locked_until', type: 'TIMESTAMP' },
-            { name: 'last_login_ip', type: 'VARCHAR(45)' },
-            { name: 'last_login_device', type: 'TEXT' },
-            { name: 'password_reset_token', type: 'VARCHAR(255)' },
-            { name: 'password_reset_expires', type: 'TIMESTAMP' },
-            { name: 'permissions', type: 'TEXT' }
-        ];
-        
-        for (const col of columnsToAdd) {
-            try {
-                await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col.name} ${col.type}`);
-                results.push(`✅ Added column: ${col.name}`);
-            } catch (err) {
-                if (err.message.includes('duplicate column')) {
-                    results.push(`⚠️ Column ${col.name} already exists`);
-                } else {
-                    results.push(`❌ Could not add ${col.name}: ${err.message}`);
-                }
-            }
-        }
-        
-        // Also update the role enum if needed
-        try {
-            await sequelize.query(`ALTER TABLE users ALTER COLUMN role SET DEFAULT 'guest'`);
-            results.push(`✅ Set role default to guest`);
-        } catch (err) {
-            results.push(`⚠️ Could not set role default: ${err.message}`);
-        }
-        
-        // Verify final columns
-        const [columns] = await sequelize.query(`
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'users' 
-            ORDER BY ordinal_position
-        `);
-        
-        const columnNames = columns.map(c => c.column_name);
-        
-        res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head><title>Complete Database Fix</title></head>
-            <body style="font-family: monospace; padding: 20px;">
-                <h1>🔧 Complete Database Fix Results</h1>
-                <h3>Actions taken:</h3>
-                <pre>${results.join('\n')}</pre>
-                <h3>All columns in users table (${columnNames.length} columns):</h3>
-                <pre>${columnNames.join('\n')}</pre>
-                <hr>
-                <p><a href="/check-admin">Check Admin User →</a></p>
-                <p><a href="/create-admin">Create Admin User →</a></p>
-                <p><a href="/admin/login">Go to Admin Login →</a></p>
-            </body>
-            </html>
-        `);
-    } catch (error) {
-        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
-    }
-});
-
-// Reset admin password using raw SQL
-app.get('/reset-admin-password', async (req, res) => {
-    try {
-        const bcrypt = require('bcrypt');
-        const { sequelize } = require('./config/database');
-        
-        const hashedPassword = await bcrypt.hash('Admin123!', 10);
-        
-        await sequelize.query(
-            `UPDATE users SET password = :password, role = 'super_admin' WHERE email = 'admin@mansionhotel.com'`,
-            { replacements: { password: hashedPassword } }
-        );
-        
-        res.json({ 
-            success: true, 
-            message: 'Admin password reset successfully',
-            email: 'admin@mansionhotel.com',
-            password: 'Admin123!'
-        });
-    } catch (error) {
-        res.json({ error: error.message });
-    }
-});
-// Fix all missing columns in all tables
+// Fix all tables - add missing columns
 app.get('/fix-all-tables', async (req, res) => {
     try {
         const { sequelize } = require('./config/database');
         const results = [];
         
-        // Fix users table - add missing columns
+        // Fix users table
         const userColumns = [
             'failed_login_attempts INTEGER DEFAULT 0',
             'locked_until TIMESTAMP',
@@ -252,7 +131,7 @@ app.get('/fix-all-tables', async (req, res) => {
             }
         }
         
-        // Fix bookings table - add missing columns
+        // Fix bookings table
         const bookingColumns = [
             'is_historical BOOLEAN DEFAULT FALSE',
             'created_by_admin_id INTEGER'
@@ -267,15 +146,15 @@ app.get('/fix-all-tables', async (req, res) => {
             }
         }
         
-        // Also add any missing columns to rooms table
+        // Fix rooms table
         try {
             await sequelize.query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS notes TEXT`);
-            results.push(`✅ Rooms: Added notes column`);
+            results.push(`✅ Rooms: Added notes`);
         } catch (err) {
             results.push(`⚠️ Rooms: ${err.message}`);
         }
         
-        // Add missing columns to guests table
+        // Fix guests table
         try {
             await sequelize.query(`ALTER TABLE guests ADD COLUMN IF NOT EXISTS total_stays INTEGER DEFAULT 0`);
             results.push(`✅ Guests: Added total_stays`);
@@ -298,94 +177,83 @@ app.get('/fix-all-tables', async (req, res) => {
         }
         
         res.send(`
-            <!DOCTYPE html>
-            <html>
-            <head><title>Fix All Tables</title></head>
-            <body style="font-family: monospace; padding: 20px;">
-                <h1>🔧 Fix All Tables Results</h1>
-                <pre>${results.join('\n')}</pre>
-                <hr>
-                <p><a href="/debug-amenities">Check Amenities</a></p>
-                <p><a href="/create-amenities">Create Amenities</a></p>
-                <p><a href="/admin/login">Go to Admin Login →</a></p>
-            </body>
-            </html>
+            <html><body style="padding:20px;font-family:monospace;">
+            <h1>🔧 Fix All Tables Results</h1>
+            <pre>${results.join('\n')}</pre>
+            <hr>
+            <p><a href="/create-amenities">Create Amenities</a></p>
+            <p><a href="/admin/login">Go to Admin Login</a></p>
+            </body></html>
         `);
     } catch (error) {
-        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
+        res.send(`Error: ${error.message}`);
     }
 });
 
-// Check admin user
-app.get('/check-admin', async (req, res) => {
+// Create amenities
+app.get('/create-amenities', async (req, res) => {
     try {
-        const admin = await User.findOne({ where: { email: 'admin@mansionhotel.com' } });
+        const { Amenity } = require('./models');
+        const count = await Amenity.count();
         
-        if (admin) {
-            res.json({
-                exists: true,
-                email: admin.email,
-                role: admin.role,
-                is_active: admin.is_active,
-                has_password: !!admin.password
-            });
-        } else {
-            res.json({ exists: false, message: 'Admin user not found' });
+        if (count > 0) {
+            return res.json({ message: `Amenities already exist (${count} amenities)` });
         }
+        
+        const amenities = await Amenity.bulkCreate([
+            { name: 'High Speed WiFi', slug: 'wifi', category: 'free', description: 'Free high-speed WiFi throughout the hotel', short_description: 'Free WiFi', icon: 'fas fa-wifi', is_active: true, display_order: 1 },
+            { name: 'Fitness Center', slug: 'fitness', category: 'free', description: 'Modern gym with premium equipment', short_description: 'Fitness Center', icon: 'fas fa-dumbbell', is_active: true, display_order: 2 },
+            { name: 'Swimming Pool', slug: 'pool', category: 'free', description: 'Outdoor pool with cabanas', short_description: 'Swimming Pool', icon: 'fas fa-swimming-pool', is_active: true, display_order: 3 },
+            { name: 'Restaurant & Bar', slug: 'restaurant', category: 'paid', description: 'Fine dining with international cuisine', short_description: 'Restaurant', icon: 'fas fa-utensils', is_active: true, display_order: 4 },
+            { name: 'Spa & Wellness', slug: 'spa', category: 'paid', description: 'Luxury spa treatments', short_description: 'Spa', icon: 'fas fa-spa', is_active: true, display_order: 5 },
+            { name: 'Parking', slug: 'parking', category: 'paid', description: 'Secure parking with valet', short_description: 'Parking', icon: 'fas fa-parking', is_active: true, display_order: 6 },
+            { name: 'Business Center', slug: 'business-center', category: 'paid', description: 'Meeting rooms and business services', short_description: 'Business Center', icon: 'fas fa-business-time', is_active: true, display_order: 7 },
+            { name: 'Concierge Service', slug: 'concierge', category: 'request', description: '24/7 personalized concierge service', short_description: 'Concierge', icon: 'fas fa-concierge-bell', is_active: true, display_order: 8 }
+        ]);
+        
+        res.json({ success: true, message: `${amenities.length} amenities created` });
     } catch (error) {
         res.json({ error: error.message });
     }
 });
 
-// Create admin user
-app.get('/create-admin', async (req, res) => {
+// Debug amenities
+app.get('/debug-amenities', async (req, res) => {
+    try {
+        const { Amenity } = require('./models');
+        const amenities = await Amenity.findAll();
+        res.json({ count: amenities.length, amenities });
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
+
+// Fix admin password
+app.get('/fix-admin-password', async (req, res) => {
     try {
         const bcrypt = require('bcrypt');
-        
-        const existing = await User.findOne({ where: { email: 'admin@mansionhotel.com' } });
-        if (existing) {
-            return res.json({ message: 'Admin already exists', email: existing.email });
-        }
-        
+        const { sequelize } = require('./config/database');
         const hashedPassword = await bcrypt.hash('Admin123!', 10);
-        const admin = await User.create({
-            email: 'admin@mansionhotel.com',
-            password: hashedPassword,
-            first_name: 'Admin',
-            last_name: 'User',
-            role: 'super_admin',
-            is_active: true,
-            status: 'active'
-        });
         
-        res.json({ success: true, message: 'Admin created', email: admin.email });
+        await sequelize.query(
+            `UPDATE users SET password = :password, role = 'super_admin' WHERE email = 'admin@mansionhotel.com'`,
+            { replacements: { password: hashedPassword } }
+        );
+        
+        res.json({ success: true, message: 'Admin password reset', password: 'Admin123!' });
     } catch (error) {
         res.json({ error: error.message });
     }
 });
 
-// Debug login test
-app.post('/debug-login', async (req, res) => {
-    const { email, password } = req.body;
-    const bcrypt = require('bcrypt');
-    
+// Check admin
+app.get('/check-admin', async (req, res) => {
     try {
-        const user = await User.findOne({ where: { email } });
-        if (!user) {
-            return res.json({ success: false, error: 'User not found', email });
-        }
-        
-        const isValid = await bcrypt.compare(password, user.password);
-        res.json({
-            success: true,
-            user_exists: true,
-            password_valid: isValid,
-            user_role: user.role,
-            user_active: user.is_active,
-            email: user.email
-        });
+        const { User } = require('./models');
+        const admin = await User.findOne({ where: { email: 'admin@mansionhotel.com' } });
+        res.json({ exists: !!admin, email: admin?.email, has_password: !!admin?.password });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.json({ error: error.message });
     }
 });
 
@@ -406,6 +274,16 @@ app.use('/admin', require('./routes/admin'));
 // Google OAuth
 app.use('/auth', require('./routes/auth'));
 
+// Simple rooms test endpoint
+app.get('/simple-rooms', async (req, res) => {
+    try {
+        const rooms = await Room.findAll();
+        res.json({ success: true, count: rooms.length, rooms });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 // ==================== ERROR HANDLING ====================
 app.use(notFound);
 app.use(errorHandler);
@@ -418,17 +296,13 @@ const startServer = async () => {
         await sequelize.authenticate();
         console.log('✅ Database connected');
         
-        // Don't sync tables - just verify
-        console.log('✅ Database ready');
-        
         server.listen(PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${PORT}`);
             console.log(`👨‍💼 Admin Login: http://localhost:${PORT}/admin/login`);
-            console.log(`🔑 Admin: admin@mansionhotel.com / Admin123!\n`);
-            console.log(`🔧 Debug URLs:`);
-            console.log(`   Check Admin: http://localhost:${PORT}/check-admin`);
-            console.log(`   Create Admin: http://localhost:${PORT}/create-admin`);
-            console.log(`   Fix Columns: http://localhost:${PORT}/fix-columns`);
+            console.log(`🔧 Fix URLs:`);
+            console.log(`   http://localhost:${PORT}/fix-all-tables`);
+            console.log(`   http://localhost:${PORT}/create-amenities`);
+            console.log(`   http://localhost:${PORT}/fix-admin-password`);
         });
     } catch (error) {
         console.error('Failed to start:', error);
