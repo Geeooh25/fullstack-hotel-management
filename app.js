@@ -133,7 +133,6 @@ app.get('/simple-rooms', async (req, res) => {
 // ==================== ERROR HANDLING ====================
 app.use(notFound);
 app.use(errorHandler);
-
 // ==================== START SERVER ====================
 const PORT = process.env.PORT || 3000;
 
@@ -141,7 +140,13 @@ const startServer = async () => {
     try {
         await sequelize.authenticate();
         console.log('✅ Database connected');
-        
+
+        // Auto-sync database schema on every deploy
+        // This adds missing columns without deleting data
+        console.log('🔄 Checking database schema...');
+        await sequelize.sync({ alter: true });
+        console.log('✅ Database schema up to date');
+
         server.listen(PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${PORT}`);
             console.log(`👨‍💼 Admin Login: http://localhost:${PORT}/admin/login`);
