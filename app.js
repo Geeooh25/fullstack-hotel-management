@@ -216,6 +216,102 @@ app.get('/create-amenities', async (req, res) => {
         res.json({ error: error.message });
     }
 });
+// Create menu categories and items
+app.get('/create-menu', async (req, res) => {
+    try {
+        const { MenuCategory, MenuItem, Amenity } = require('./models');
+        const results = [];
+        
+        // Get restaurant amenity
+        const restaurant = await Amenity.findOne({ where: { slug: 'restaurant' } });
+        const spa = await Amenity.findOne({ where: { slug: 'spa' } });
+        
+        if (!restaurant) {
+            return res.json({ error: 'Restaurant amenity not found. Run /create-amenities first.' });
+        }
+        
+        // Check if menu categories already exist
+        const categoryCount = await MenuCategory.count();
+        if (categoryCount > 0) {
+            return res.json({ message: `Menu categories already exist (${categoryCount} categories)` });
+        }
+        
+        // Create Menu Categories for Restaurant
+        const categories = await MenuCategory.bulkCreate([
+            { amenity_id: restaurant.id, name: 'Breakfast', display_order: 1, is_active: true },
+            { amenity_id: restaurant.id, name: 'Lunch', display_order: 2, is_active: true },
+            { amenity_id: restaurant.id, name: 'Dinner', display_order: 3, is_active: true },
+            { amenity_id: restaurant.id, name: 'Beverages', display_order: 4, is_active: true },
+            { amenity_id: restaurant.id, name: 'Desserts', display_order: 5, is_active: true }
+        ]);
+        results.push(`✅ Created ${categories.length} menu categories`);
+        
+        // Get category IDs
+        const breakfast = categories.find(c => c.name === 'Breakfast');
+        const lunch = categories.find(c => c.name === 'Lunch');
+        const dinner = categories.find(c => c.name === 'Dinner');
+        const beverages = categories.find(c => c.name === 'Beverages');
+        const desserts = categories.find(c => c.name === 'Desserts');
+        
+        // Create Menu Items
+        const menuItems = [];
+        
+        // Breakfast items
+        menuItems.push({ category_id: breakfast.id, name: 'Continental Breakfast', description: 'Fresh pastries, fruits, yogurt, and coffee', price: 15.99, is_available: true, display_order: 1 });
+        menuItems.push({ category_id: breakfast.id, name: 'American Breakfast', description: 'Eggs, bacon, sausage, toast, and hash browns', price: 22.99, is_available: true, display_order: 2 });
+        menuItems.push({ category_id: breakfast.id, name: 'Eggs Benedict', description: 'Poached eggs, ham, hollandaise on English muffin', price: 19.99, is_available: true, display_order: 3 });
+        
+        // Lunch items
+        menuItems.push({ category_id: lunch.id, name: 'Caesar Salad', description: 'Romaine lettuce, parmesan, croutons, Caesar dressing', price: 14.99, is_available: true, display_order: 1 });
+        menuItems.push({ category_id: lunch.id, name: 'Club Sandwich', description: 'Triple-decker with turkey, bacon, lettuce, tomato', price: 16.99, is_available: true, display_order: 2 });
+        menuItems.push({ category_id: lunch.id, name: 'Grilled Salmon', description: 'Fresh salmon with seasonal vegetables', price: 28.99, is_available: true, display_order: 3 });
+        
+        // Dinner items
+        menuItems.push({ category_id: dinner.id, name: 'Ribeye Steak', description: '12oz ribeye with mashed potatoes and vegetables', price: 42.99, is_available: true, display_order: 1 });
+        menuItems.push({ category_id: dinner.id, name: 'Lobster Tail', description: 'Grilled lobster tail with drawn butter', price: 49.99, is_available: true, display_order: 2 });
+        menuItems.push({ category_id: dinner.id, name: 'Lamb Chops', description: 'Grilled lamb chops with rosemary sauce', price: 38.99, is_available: true, display_order: 3 });
+        
+        // Beverages
+        menuItems.push({ category_id: beverages.id, name: 'Fresh Orange Juice', description: 'Freshly squeezed', price: 5.99, is_available: true, display_order: 1 });
+        menuItems.push({ category_id: beverages.id, name: 'Soft Drinks', description: 'Coke, Sprite, Fanta', price: 3.99, is_available: true, display_order: 2 });
+        menuItems.push({ category_id: beverages.id, name: 'Cappuccino', description: 'Rich espresso with steamed milk', price: 4.99, is_available: true, display_order: 3 });
+        menuItems.push({ category_id: beverages.id, name: 'House Wine', description: 'Red or white', price: 8.99, is_available: true, display_order: 4 });
+        
+        // Desserts
+        menuItems.push({ category_id: desserts.id, name: 'New York Cheesecake', description: 'Classic cheesecake with berry sauce', price: 9.99, is_available: true, display_order: 1 });
+        menuItems.push({ category_id: desserts.id, name: 'Chocolate Lava Cake', description: 'Warm chocolate cake with molten center', price: 10.99, is_available: true, display_order: 2 });
+        menuItems.push({ category_id: desserts.id, name: 'Tiramisu', description: 'Italian coffee-flavored dessert', price: 8.99, is_available: true, display_order: 3 });
+        
+        await MenuItem.bulkCreate(menuItems);
+        results.push(`✅ Created ${menuItems.length} menu items`);
+        
+        // Create Spa category if spa exists
+        if (spa) {
+            const spaCategory = await MenuCategory.create({
+                amenity_id: spa.id,
+                name: 'Spa Treatments',
+                display_order: 10,
+                is_active: true
+            });
+            results.push(`✅ Created Spa category`);
+            
+            const spaItems = [
+                { category_id: spaCategory.id, name: 'Swedish Massage', description: 'Relaxing full-body massage', price: 89.99, duration_minutes: 60, requires_appointment: true, is_available: true, display_order: 1 },
+                { category_id: spaCategory.id, name: 'Deep Tissue Massage', description: 'Intense muscle relief', price: 109.99, duration_minutes: 60, requires_appointment: true, is_available: true, display_order: 2 },
+                { category_id: spaCategory.id, name: 'Hot Stone Massage', description: 'Warm stones for deep relaxation', price: 129.99, duration_minutes: 75, requires_appointment: true, is_available: true, display_order: 3 },
+                { category_id: spaCategory.id, name: 'Facial Treatment', description: 'Deep cleansing and hydration', price: 79.99, duration_minutes: 45, requires_appointment: true, is_available: true, display_order: 4 },
+                { category_id: spaCategory.id, name: 'Couples Massage', description: 'Massage for two in a private room', price: 199.99, duration_minutes: 60, requires_appointment: true, is_available: true, display_order: 5 }
+            ];
+            
+            await MenuItem.bulkCreate(spaItems);
+            results.push(`✅ Created ${spaItems.length} spa menu items`);
+        }
+        
+        res.json({ success: true, results });
+    } catch (error) {
+        res.json({ error: error.message });
+    }
+});
 
 // Debug amenities
 app.get('/debug-amenities', async (req, res) => {
