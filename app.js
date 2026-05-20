@@ -226,23 +226,93 @@ app.get('/reset-admin-password', async (req, res) => {
         res.json({ error: error.message });
     }
 });
-// Debug amenities - TEMPORARY
-app.get('/debug-amenities', async (req, res) => {
+// Fix all missing columns in all tables
+app.get('/fix-all-tables', async (req, res) => {
     try {
-        const { Amenity } = require('./models');
-        const amenities = await Amenity.findAll();
+        const { sequelize } = require('./config/database');
+        const results = [];
         
-        res.json({
-            count: amenities.length,
-            amenities: amenities.map(a => ({
-                id: a.id,
-                name: a.name,
-                category: a.category,
-                is_active: a.is_active
-            }))
-        });
+        // Fix users table - add missing columns
+        const userColumns = [
+            'failed_login_attempts INTEGER DEFAULT 0',
+            'locked_until TIMESTAMP',
+            'last_login_ip VARCHAR(45)',
+            'last_login_device TEXT',
+            'password_reset_token VARCHAR(255)',
+            'password_reset_expires TIMESTAMP',
+            'permissions TEXT'
+        ];
+        
+        for (const col of userColumns) {
+            try {
+                await sequelize.query(`ALTER TABLE users ADD COLUMN IF NOT EXISTS ${col}`);
+                results.push(`✅ Users: Added ${col.split(' ')[0]}`);
+            } catch (err) {
+                results.push(`⚠️ Users: ${err.message}`);
+            }
+        }
+        
+        // Fix bookings table - add missing columns
+        const bookingColumns = [
+            'is_historical BOOLEAN DEFAULT FALSE',
+            'created_by_admin_id INTEGER'
+        ];
+        
+        for (const col of bookingColumns) {
+            try {
+                await sequelize.query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ${col}`);
+                results.push(`✅ Bookings: Added ${col.split(' ')[0]}`);
+            } catch (err) {
+                results.push(`⚠️ Bookings: ${err.message}`);
+            }
+        }
+        
+        // Also add any missing columns to rooms table
+        try {
+            await sequelize.query(`ALTER TABLE rooms ADD COLUMN IF NOT EXISTS notes TEXT`);
+            results.push(`✅ Rooms: Added notes column`);
+        } catch (err) {
+            results.push(`⚠️ Rooms: ${err.message}`);
+        }
+        
+        // Add missing columns to guests table
+        try {
+            await sequelize.query(`ALTER TABLE guests ADD COLUMN IF NOT EXISTS total_stays INTEGER DEFAULT 0`);
+            results.push(`✅ Guests: Added total_stays`);
+        } catch (err) {
+            results.push(`⚠️ Guests: ${err.message}`);
+        }
+        
+        try {
+            await sequelize.query(`ALTER TABLE guests ADD COLUMN IF NOT EXISTS total_spent DECIMAL(10,2) DEFAULT 0`);
+            results.push(`✅ Guests: Added total_spent`);
+        } catch (err) {
+            results.push(`⚠️ Guests: ${err.message}`);
+        }
+        
+        try {
+            await sequelize.query(`ALTER TABLE guests ADD COLUMN IF NOT EXISTS is_blacklisted BOOLEAN DEFAULT FALSE`);
+            results.push(`✅ Guests: Added is_blacklisted`);
+        } catch (err) {
+            results.push(`⚠️ Guests: ${err.message}`);
+        }
+        
+        res.send(`
+            <!DOCTYPE html>
+            <html>
+            <head><title>Fix All Tables</title></head>
+            <body style="font-family: monospace; padding: 20px;">
+                <h1>🔧 Fix All Tables Results</h1>
+                <pre>${results.join('\n')}</pre>
+                <hr>
+                <p><a href="/debug-amenities">Check Amenities</a></p>
+                <p><a href="/create-amenities">Create Amenities</a></p>
+                <p><a href="/admin/login">Go to Admin Login →</a></p>
+            </body>
+            </html>
+        `);
     } catch (error) {
-        res.json({ error: error.message });
+        res.send(`<h1>Error</h1><pre>${error.message}</pre>`);
     }
 });
 
