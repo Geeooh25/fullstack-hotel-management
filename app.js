@@ -161,6 +161,39 @@ app.get('/import-data', async (req, res) => {
     }
 });
 
+// Fix enum types in PostgreSQL
+app.get('/fix-enums', async (req, res) => {
+    try {
+        const { sequelize } = require('./config/database');
+        const results = [];
+        
+        // Fix booking payment_status enum
+        await sequelize.query(`ALTER TYPE enum_bookings_payment_status ADD VALUE IF NOT EXISTS 'completed'`);
+        results.push('✅ Added completed to payment_status enum');
+        
+        await sequelize.query(`ALTER TYPE enum_bookings_payment_status ADD VALUE IF NOT EXISTS 'paid'`);
+        results.push('✅ Added paid to payment_status enum');
+        
+        // Fix request_submissions status enum
+        await sequelize.query(`ALTER TYPE enum_request_submissions_status ADD VALUE IF NOT EXISTS 'processing'`);
+        results.push('✅ Added processing to request_submissions status enum');
+        
+        await sequelize.query(`ALTER TYPE enum_request_submissions_status ADD VALUE IF NOT EXISTS 'contacted'`);
+        results.push('✅ Added contacted to request_submissions status enum');
+        
+        res.send(`
+            <html><body style="padding:20px;font-family:monospace;">
+            <h1>🔧 Enum Fix Results</h1>
+            <pre>${results.join('\n')}</pre>
+            <hr>
+            <p><a href="/import-data">Run Import Again →</a></p>
+            </body></html>
+        `);
+    } catch (error) {
+        res.send(`Error: ${error.message}`);
+    }
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
 
