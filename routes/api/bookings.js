@@ -518,8 +518,43 @@ router.post('/fix-sequence', async (req, res) => {
         );
         const maxId = result[0].max_id || 0;
         const nextId = maxId + 1;
-        await db.sequelize.query(`SELECT setval('bookings_id_seq', ${nextId}, false)`);
-        res.json({ success: true, message: `Sequence reset to ${nextId}`, maxId: maxId });
+        
+        // Try all possible sequence names
+        const sequenceNames = [
+            'bookings_id_seq',
+            '"bookings_id_seq"',
+            'Bookings_id_seq',
+            '"Bookings_id_seq"',
+            'public.bookings_id_seq',
+            '"public"."bookings_id_seq"'
+        ];
+        
+        let fixed = false;
+        let errors = [];
+        
+        for (const seq of sequenceNames) {
+            try {
+                await db.sequelize.query(`SELECT setval('${seq}', ${nextId}, false)`);
+                fixed = true;
+                res.json({ success: true, message: `Sequence ${seq} reset to ${nextId}`, maxId: maxId, nextId: nextId });
+                return;
+            } catch (e) {
+                errors.push(`${seq}: ${e.message}`);
+            }
+        }
+        
+        // If all failed, list available sequences
+        const sequences = await db.sequelize.query(
+            `SELECT sequence_name FROM information_schema.sequences WHERE sequence_name ILIKE '%book%'`,
+            { type: db.sequelize.QueryTypes.SELECT }
+        );
+        
+        res.json({ 
+            success: false, 
+            errors: errors,
+            availableSequences: sequences
+        });
+        
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
