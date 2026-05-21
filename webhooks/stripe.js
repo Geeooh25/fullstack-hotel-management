@@ -16,6 +16,7 @@ try {
 
 const { Booking, Guest, Room, Payment, RoomType, BookingService, MenuItem } = require('../models');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../utils/constants');
+const db = require('../models');
 const EmailService = require('../services/emailService');
 
 function notifyAdmins(event, data) {
@@ -59,7 +60,7 @@ async function handleWebhook(req, res) {
             const paymentType = session.metadata.payment_type || 'deposit';
             console.log('💰 Payment type:', paymentType);
             
-            if (paymentType === 'services') {
+            if (paymentType === 'services' || paymentType === 'services-only') {
                 await handleServicePaymentComplete(session);
             } else if (paymentType === 'full') {
                 await handleFullPaymentComplete(session);
@@ -218,6 +219,196 @@ async function handleServicePaymentComplete(session) {
     }
 }
 
+
+/**
+ * Handle standalone service payment (no room booking)
+ */
+async function handleStandaloneServicePayment(session) {
+    console.log('?? Standalone service payment completed!');
+    
+    const ref = session.metadata.booking_reference;
+    const pendingServices = global.pendingServices?.[ref];
+    
+    if (pendingServices) {
+        console.log('? Found pending services:', pendingServices);
+        // Save to a service_orders table or log
+        try {
+            const { getIO } = require('../socket');
+            const io = getIO();
+            if (io) {
+                io.to('admin_room').emit('new_request', {
+                    type: 'request',
+                    title: 'Service Order Paid ???',
+                    message: `${pendingServices.guest_name || 'Guest'} paid ${pendingServices.total.toFixed(2)} for ${pendingServices.services.length} service(s)`,
+                    data: pendingServices,
+                    timestamp: new Date()
+                });
+            }
+        } catch (e) {}
+        
+        // Clean up
+        delete global.pendingServices[ref];
+    }
+}
+
+
+async function handleStandaloneServicePayment(session) {
+    console.log(' Service standalone payment completed!');
+    const ref = session.metadata.booking_reference;
+    const pending = global.pendingServices?.[ref];
+    if (!pending) return;
+    
+    try {
+        for (const service of pending.services) {
+            await db.RequestSubmission.create({
+                amenity_id: service.menu_item_id || 1,
+                guest_name: pending.guest_name || 'Guest',
+                guest_email: pending.guest_email,
+                guest_phone: 'Not provided',
+                request_type: 'service_order',
+                request_details: service.name + ' x' + service.quantity + ' - (session) {
+    console.log('🎉 Deposit payment completed!');
+    
+    const bookingId = session.metadata.booking_id;
+    if (!bookingId) return;
+    
+    try {
+        const booking = await Booking.findByPk(parseInt(bookingId), {
+            include: [{ model: Guest }, { model: Room, include: [{ model: RoomType }] }]
+        });
+        if (!booking) return;
+        
+        booking.status = BOOKING_STATUS.CONFIRMED;
+        booking.payment_status = PAYMENT_STATUS.DEPOSIT;
+        booking.deposit_paid = session.amount_total / 100;
+        booking.remaining_balance = booking.total_amount - booking.deposit_paid;
+        booking.confirmed_at = new Date();
+        await booking.save();
+        
+        await Payment.create({
+            booking_id: booking.id,
+            stripe_payment_intent_id: session.payment_intent,
+            amount: session.amount_total / 100,
+            payment_method: 'card',
+            status: 'succeeded',
+            transaction_id: session.id,
+            notes: 'Deposit payment'
+        });
+        
+        // This one uses new_booking because it's a deposit (partial payment)
+        notifyAdmins('payment_received', {
+            type: 'payment',
+            title: 'Deposit Paid 📝',
+            message: `${booking.Guest?.first_name || 'Guest'} - Room ${booking.Room?.room_number || 'N/A'} - Deposit: $${(session.amount_total / 100).toFixed(2)}`,
+            data: {
+                payment: { amount: session.amount_total / 100, payment_method: 'card' },
+                booking: { id: booking.id, booking_reference: booking.booking_reference }
+            },
+            timestamp: new Date()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error:', error.message);
+    }
+}
+
+async function handlePaymentSuccess(paymentIntent) {
+    const metadata = paymentIntent.metadata;
+    if (metadata?.booking_id) {
+        try {
+            const booking = await Booking.findByPk(parseInt(metadata.booking_id));
+            if (booking && booking.payment_status !== PAYMENT_STATUS.PAID) {
+                booking.payment_status = PAYMENT_STATUS.PAID;
+                booking.remaining_balance = 0;
+                await booking.save();
+            }
+        } catch (error) {
+            console.error('❌ Error:', error.message);
+        }
+    }
+}
+
+module.exports = { handleWebhook };
+ + (service.price * service.quantity).toFixed(2),
+                status: 'pending'
+            });
+        }
+        console.log(' Service orders saved for admin');
+    } catch (e) { console.error('Save error:', e.message); }
+    
+    try {
+        const { getIO } = require('../socket');
+        const io = getIO();
+        if (io) { io.to('admin_room').emit('new_request', { type: 'request', title: 'Service Order Paid ', message: (pending.guest_name||'Guest') + ' paid (session) {
+    console.log('🎉 Deposit payment completed!');
+    
+    const bookingId = session.metadata.booking_id;
+    if (!bookingId) return;
+    
+    try {
+        const booking = await Booking.findByPk(parseInt(bookingId), {
+            include: [{ model: Guest }, { model: Room, include: [{ model: RoomType }] }]
+        });
+        if (!booking) return;
+        
+        booking.status = BOOKING_STATUS.CONFIRMED;
+        booking.payment_status = PAYMENT_STATUS.DEPOSIT;
+        booking.deposit_paid = session.amount_total / 100;
+        booking.remaining_balance = booking.total_amount - booking.deposit_paid;
+        booking.confirmed_at = new Date();
+        await booking.save();
+        
+        await Payment.create({
+            booking_id: booking.id,
+            stripe_payment_intent_id: session.payment_intent,
+            amount: session.amount_total / 100,
+            payment_method: 'card',
+            status: 'succeeded',
+            transaction_id: session.id,
+            notes: 'Deposit payment'
+        });
+        
+        // This one uses new_booking because it's a deposit (partial payment)
+        notifyAdmins('payment_received', {
+            type: 'payment',
+            title: 'Deposit Paid 📝',
+            message: `${booking.Guest?.first_name || 'Guest'} - Room ${booking.Room?.room_number || 'N/A'} - Deposit: $${(session.amount_total / 100).toFixed(2)}`,
+            data: {
+                payment: { amount: session.amount_total / 100, payment_method: 'card' },
+                booking: { id: booking.id, booking_reference: booking.booking_reference }
+            },
+            timestamp: new Date()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error:', error.message);
+    }
+}
+
+async function handlePaymentSuccess(paymentIntent) {
+    const metadata = paymentIntent.metadata;
+    if (metadata?.booking_id) {
+        try {
+            const booking = await Booking.findByPk(parseInt(metadata.booking_id));
+            if (booking && booking.payment_status !== PAYMENT_STATUS.PAID) {
+                booking.payment_status = PAYMENT_STATUS.PAID;
+                booking.remaining_balance = 0;
+                await booking.save();
+            }
+        } catch (error) {
+            console.error('❌ Error:', error.message);
+        }
+    }
+}
+
+module.exports = { handleWebhook };
+ + pending.total.toFixed(2) + ' for ' + pending.services.length + ' service(s)', data: pending, timestamp: new Date() }); }
+    } catch (e) {}
+    
+    delete global.pendingServices[ref];
+}
+
+
 async function handleDepositPaymentComplete(session) {
     console.log('🎉 Deposit payment completed!');
     
@@ -281,3 +472,4 @@ async function handlePaymentSuccess(paymentIntent) {
 }
 
 module.exports = { handleWebhook };
+

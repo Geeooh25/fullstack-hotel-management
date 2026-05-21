@@ -8,8 +8,11 @@ router.post('/', async (req, res) => {
     try {
         const requestData = req.body;
 
-        // FIRST: Save the request to database (always succeeds)
-        const request = await RequestSubmission.create(requestData);
+        // FIRST: Save the request to database
+        const request = await RequestSubmission.create({
+    ...requestData,
+    guest_phone: requestData.guest_phone || 'Not provided'
+});
         
         // SECOND: Try to send email notification (don't block if fails)
         try {
@@ -112,3 +115,4 @@ router.put('/:id', async (req, res) => {
 });
 
 module.exports = router;
+
