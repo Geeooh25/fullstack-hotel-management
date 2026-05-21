@@ -511,16 +511,16 @@ router.post('/add-services', async (req, res) => {
 // TEMP: Fix booking ID sequence
 router.all('/fix-sequence', async (req, res) => {
     try {
-        // Simple raw query
-        const [results] = await db.sequelize.query(
+        const { sequelize } = require('../../config/database');
+        
+        const [results] = await sequelize.query(
             `SELECT MAX(id) as max_id FROM bookings`
         );
         
         const maxId = results[0] ? results[0].max_id : 0;
         const nextId = (maxId || 0) + 1;
         
-        // Reset sequence
-        await db.sequelize.query(
+        await sequelize.query(
             `SELECT setval(pg_get_serial_sequence('bookings', 'id'), ${nextId}, false)`
         );
         
