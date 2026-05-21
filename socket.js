@@ -42,11 +42,10 @@ const sendNewBookingNotification = (booking) => {
             data: booking,
             timestamp: new Date(),
             icon: 'bi-calendar-check',
-            color: 'success'
+            color: booking.color || (booking.status === 'pending' ? 'warning' : 'success')
         });
     }
 };
-
 const sendNewRequestNotification = (request) => {
     if (io) {
         io.to('admin_room').emit('new_request', {
