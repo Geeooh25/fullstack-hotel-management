@@ -508,34 +508,33 @@ router.post('/add-services', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
-// TEMP: Fix booking ID sequence (also works as GET for browser)
+// TEMP: Fix booking ID sequence
 router.all('/fix-sequence', async (req, res) => {
     try {
-        // Get current max ID
-        const result = await db.sequelize.query(
-            `SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM bookings`,
-            { type: db.sequelize.QueryTypes.SELECT }
+        // Simple raw query
+        const [results] = await db.sequelize.query(
+            `SELECT MAX(id) as max_id FROM bookings`
         );
-        const nextId = parseInt(result[0].next_id);
         
-        // Try to fix sequence
-        await db.sequelize.query(`ALTER SEQUENCE IF EXISTS bookings_id_seq RESTART WITH ${nextId}`);
+        const maxId = results[0] ? results[0].max_id : 0;
+        const nextId = (maxId || 0) + 1;
         
-        res.json({ success: true, message: `Sequence should restart at ${nextId}`, nextId: nextId });
+        // Reset sequence
+        await db.sequelize.query(
+            `SELECT setval(pg_get_serial_sequence('bookings', 'id'), ${nextId}, false)`
+        );
+        
+        res.json({ 
+            success: true, 
+            message: `Sequence reset to ${nextId}`, 
+            maxId: maxId,
+            nextId: nextId
+        });
     } catch (error) {
-        // Try alternative
-        try {
-            const result = await db.sequelize.query(
-                `SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM bookings`,
-                { type: db.sequelize.QueryTypes.SELECT }
-            );
-            const nextId = parseInt(result[0].next_id);
-            await db.sequelize.query(`SELECT setval(pg_get_serial_sequence('bookings', 'id'), ${nextId}, false)`);
-            res.json({ success: true, message: `Fixed via pg_get_serial_sequence to ${nextId}` });
-        } catch (e2) {
-            res.json({ success: false, error: error.message, error2: e2.message });
-        }
+        res.json({ 
+            success: false, 
+            error: error.message
+        });
     }
 });
 // GET /api/bookings/lookup
