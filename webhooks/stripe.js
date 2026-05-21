@@ -18,6 +18,20 @@ const { Booking, Guest, Room, Payment, RoomType, BookingService, MenuItem } = re
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../utils/constants');
 const EmailService = require('../services/emailService');
 
+// Helper: Notify admins via Socket.io
+function notifyAdmins(event, data) {
+    try {
+        const { getIO } = require('../socket');
+        const io = getIO();
+        if (io) {
+            io.to('admin_room').emit(event, data);
+            console.log(`📡 Admin notified: ${event}`);
+        }
+    } catch (e) {
+        console.log('Socket notification skipped:', e.message);
+    }
+}
+
 async function handleWebhook(req, res) {
     if (!stripeWebhookInstance) {
         console.log('⚠️ Stripe not configured, webhook simulated');
@@ -69,109 +83,10 @@ async function handleWebhook(req, res) {
 }
 
 /**
- * Handle service payment (existing booking + services)
- */
-async function handleServicePaymentComplete(session) {
-    console.log('🎉 Service payment completed! Session ID:', session.id);
-    console.log('Metadata:', session.metadata);
-    
-    const bookingId = session.metadata.booking_id;
-    const servicesTotal = parseFloat(session.metadata.services_total);
-    
-    if (!bookingId) {
-        console.log('❌ No booking_id in metadata');
-        return;
-    }
-    
-    console.log('Looking for booking ID:', bookingId);
-    console.log('Services total paid:', servicesTotal);
-    
-    try {
-        const booking = await Booking.findByPk(parseInt(bookingId), {
-            include: [
-                { model: Guest },
-                { model: BookingService, as: 'services', where: { status: 'pending' }, required: false }
-            ]
-        });
-        
-        if (!booking) {
-            console.log('❌ Booking not found for ID:', bookingId);
-            return;
-        }
-        
-        console.log('✅ Found booking:', booking.booking_reference);
-        console.log('Current deposit_paid:', booking.deposit_paid);
-        console.log('Current total_amount:', booking.total_amount);
-        console.log('Pending services:', booking.services ? booking.services.length : 0);
-        
-        // Update all pending services to 'confirmed'
-        if (booking.services && booking.services.length > 0) {
-            for (const service of booking.services) {
-                service.status = 'confirmed';
-                await service.save();
-            }
-            console.log(`✅ Updated ${booking.services.length} services to confirmed`);
-        }
-        
-        // Calculate total paid (deposit + services)
-        const totalPaid = parseFloat(booking.deposit_paid || 0) + servicesTotal;
-        console.log('Total paid (deposit + services):', totalPaid);
-        console.log('Booking total amount:', booking.total_amount);
-        
-        // Update booking payment status
-        if (totalPaid >= booking.total_amount) {
-            booking.payment_status = PAYMENT_STATUS.PAID;
-            booking.remaining_balance = 0;
-            booking.deposit_paid = booking.total_amount; // Mark as fully paid
-            console.log('✅ Booking marked as fully paid');
-        } else {
-            booking.remaining_balance = booking.total_amount - totalPaid;
-            console.log('✅ Booking remaining balance updated:', booking.remaining_balance);
-        }
-        
-        await booking.save();
-        
-        // Create payment record for services
-        await Payment.create({
-            booking_id: booking.id,
-            stripe_payment_intent_id: session.payment_intent,
-            amount: servicesTotal,
-            payment_method: 'card',
-            status: 'succeeded',
-            transaction_id: session.id,
-            notes: 'Services payment'
-        });
-        
-        console.log('✅ Service payment record created');
-        
-        // Send service payment receipt email
-        try {
-            const guest = await Guest.findByPk(booking.guest_id);
-            const services = await BookingService.findAll({
-                where: { booking_id: booking.id, status: 'confirmed' },
-                include: [{ model: MenuItem, as: 'menu_item' }]
-            });
-            
-            if (guest && EmailService) {
-                await EmailService.sendServicePaymentReceipt(booking, guest, services, servicesTotal);
-                console.log('✅ Service payment receipt email sent');
-            }
-        } catch (emailError) {
-            console.error('❌ Email error:', emailError.message);
-        }
-        
-    } catch (error) {
-        console.error('❌ Error in handleServicePaymentComplete:', error.message);
-        console.error('Stack:', error.stack);
-    }
-}
-
-/**
  * Handle FULL payment (room + services combined)
  */
 async function handleFullPaymentComplete(session) {
     console.log('🎉 FULL payment completed! Session ID:', session.id);
-    console.log('Metadata:', session.metadata);
     
     const bookingId = session.metadata.booking_id;
     
@@ -180,12 +95,11 @@ async function handleFullPaymentComplete(session) {
         return;
     }
     
-    console.log('Looking for booking ID:', bookingId);
-    
     try {
         const booking = await Booking.findByPk(parseInt(bookingId), {
             include: [
                 { model: Guest },
+                { model: Room, include: [{ model: RoomType }] },
                 { model: BookingService, as: 'services', where: { status: 'pending' }, required: false }
             ]
         });
@@ -196,7 +110,6 @@ async function handleFullPaymentComplete(session) {
         }
         
         console.log('✅ Found booking:', booking.booking_reference);
-        console.log('Pending services:', booking.services ? booking.services.length : 0);
         
         // Update all pending services to 'confirmed'
         if (booking.services && booking.services.length > 0) {
@@ -210,14 +123,14 @@ async function handleFullPaymentComplete(session) {
         // Mark booking as fully paid
         booking.status = BOOKING_STATUS.CONFIRMED;
         booking.payment_status = PAYMENT_STATUS.PAID;
-        booking.deposit_paid = booking.total_amount; // Full amount paid
+        booking.deposit_paid = booking.total_amount;
         booking.remaining_balance = 0;
         booking.confirmed_at = new Date();
         await booking.save();
         
         console.log('✅ Booking updated to fully paid!');
         
-        // Create payment record for full amount
+        // Create payment record
         await Payment.create({
             booking_id: booking.id,
             stripe_payment_intent_id: session.payment_intent,
@@ -230,12 +143,39 @@ async function handleFullPaymentComplete(session) {
         
         console.log('✅ Payment record created');
         
-        // Send combined receipt email
+        // 🔔 NOTIFY ADMINS VIA SOCKET.IO
+        notifyAdmins('payment_received', {
+            type: 'payment',
+            title: 'Payment Confirmed! 💰',
+            message: `${booking.Guest?.first_name || 'Guest'} paid $${booking.total_amount} for Room ${booking.Room?.room_number || 'N/A'}`,
+            data: {
+                payment: { amount: booking.total_amount, payment_method: 'card', status: 'succeeded' },
+                booking: { id: booking.id, booking_reference: booking.booking_reference }
+            },
+            timestamp: new Date()
+        });
+        
+        // Also send booking notification for admin refresh
+        notifyAdmins('new_booking', {
+            type: 'booking',
+            title: 'Booking Confirmed ✅',
+            message: `${booking.Guest?.first_name || 'Guest'} - Room ${booking.Room?.room_number || 'N/A'} - $${booking.total_amount}`,
+            data: {
+                id: booking.id,
+                booking_reference: booking.booking_reference,
+                guest_name: booking.Guest ? `${booking.Guest.first_name} ${booking.Guest.last_name}` : 'Guest',
+                room_number: booking.Room?.room_number || 'N/A',
+                total_amount: booking.total_amount,
+                status: 'confirmed',
+                source: booking.source
+            },
+            timestamp: new Date()
+        });
+        
+        // Send email receipt
         try {
-            const guest = await Guest.findByPk(booking.guest_id);
-            const room = await Room.findByPk(booking.room_id, {
-                include: [{ model: RoomType }]
-            });
+            const guest = booking.Guest;
+            const room = booking.Room;
             const services = await BookingService.findAll({
                 where: { booking_id: booking.id, status: 'confirmed' },
                 include: [{ model: MenuItem, as: 'menu_item' }]
@@ -251,27 +191,22 @@ async function handleFullPaymentComplete(session) {
         
     } catch (error) {
         console.error('❌ Error in handleFullPaymentComplete:', error.message);
-        console.error('Stack:', error.stack);
     }
 }
 
 /**
- * Handle service payment (existing booking + services)
+ * Handle service payment
  */
 async function handleServicePaymentComplete(session) {
     console.log('🎉 Service payment completed! Session ID:', session.id);
-    console.log('Metadata:', session.metadata);
     
     const bookingId = session.metadata.booking_id;
-    const servicesTotal = parseFloat(session.metadata.services_total);
+    const servicesTotal = parseFloat(session.metadata.services_total || 0);
     
     if (!bookingId) {
         console.log('❌ No booking_id in metadata');
         return;
     }
-    
-    console.log('Looking for booking ID:', bookingId);
-    console.log('Services total paid:', servicesTotal);
     
     try {
         const booking = await Booking.findByPk(parseInt(bookingId), {
@@ -286,33 +221,26 @@ async function handleServicePaymentComplete(session) {
             return;
         }
         
-        console.log('✅ Found booking:', booking.booking_reference);
-        console.log('Pending services:', booking.services ? booking.services.length : 0);
-        
-        // Update all pending services to 'confirmed'
+        // Update pending services
         if (booking.services && booking.services.length > 0) {
             for (const service of booking.services) {
                 service.status = 'confirmed';
                 await service.save();
             }
-            console.log(`✅ Updated ${booking.services.length} services to confirmed`);
         }
         
-        // Update booking payment status if fully paid
-        // Check if deposit + services = total
-        const totalPaid = parseFloat(booking.deposit_paid) + servicesTotal;
+        // Update payment status
+        const totalPaid = parseFloat(booking.deposit_paid || 0) + servicesTotal;
         if (totalPaid >= booking.total_amount) {
             booking.payment_status = PAYMENT_STATUS.PAID;
             booking.remaining_balance = 0;
-            await booking.save();
-            console.log('✅ Booking marked as fully paid');
+            booking.deposit_paid = booking.total_amount;
         } else {
             booking.remaining_balance = booking.total_amount - totalPaid;
-            await booking.save();
-            console.log('✅ Booking remaining balance updated:', booking.remaining_balance);
         }
+        await booking.save();
         
-        // Create payment record for services
+        // Create payment record
         await Payment.create({
             booking_id: booking.id,
             stripe_payment_intent_id: session.payment_intent,
@@ -320,22 +248,30 @@ async function handleServicePaymentComplete(session) {
             payment_method: 'card',
             status: 'succeeded',
             transaction_id: session.id,
-            notes: 'Services payment (full amount)'
+            notes: 'Services payment'
         });
         
-        console.log('✅ Service payment record created');
+        // 🔔 NOTIFY ADMINS
+        notifyAdmins('payment_received', {
+            type: 'payment',
+            title: 'Service Payment Received 💰',
+            message: `$${servicesTotal} service payment for Booking #${booking.id}`,
+            data: {
+                payment: { amount: servicesTotal, payment_method: 'card' },
+                booking: { id: booking.id, booking_reference: booking.booking_reference }
+            },
+            timestamp: new Date()
+        });
         
-        // Send service payment receipt email
+        // Send email
         try {
-            const guest = await Guest.findByPk(booking.guest_id);
+            const guest = booking.Guest;
             const services = await BookingService.findAll({
                 where: { booking_id: booking.id, status: 'confirmed' },
                 include: [{ model: MenuItem, as: 'menu_item' }]
             });
-            
             if (guest && EmailService) {
                 await EmailService.sendServicePaymentReceipt(booking, guest, services, servicesTotal);
-                console.log('✅ Service payment receipt email sent');
             }
         } catch (emailError) {
             console.error('❌ Email error:', emailError.message);
@@ -343,7 +279,62 @@ async function handleServicePaymentComplete(session) {
         
     } catch (error) {
         console.error('❌ Error in handleServicePaymentComplete:', error.message);
-        console.error('Stack:', error.stack);
+    }
+}
+
+/**
+ * Handle deposit payment
+ */
+async function handleDepositPaymentComplete(session) {
+    console.log('🎉 Deposit payment completed! Session ID:', session.id);
+    
+    const bookingId = session.metadata.booking_id;
+    
+    if (!bookingId) return;
+    
+    try {
+        const booking = await Booking.findByPk(parseInt(bookingId), {
+            include: [{ model: Guest }, { model: Room, include: [{ model: RoomType }] }]
+        });
+        
+        if (!booking) return;
+        
+        booking.status = BOOKING_STATUS.CONFIRMED;
+        booking.payment_status = PAYMENT_STATUS.DEPOSIT;
+        booking.deposit_paid = session.amount_total / 100;
+        booking.remaining_balance = booking.total_amount - booking.deposit_paid;
+        booking.confirmed_at = new Date();
+        await booking.save();
+        
+        await Payment.create({
+            booking_id: booking.id,
+            stripe_payment_intent_id: session.payment_intent,
+            amount: session.amount_total / 100,
+            payment_method: 'card',
+            status: 'succeeded',
+            transaction_id: session.id,
+            notes: 'Deposit payment'
+        });
+        
+        // 🔔 NOTIFY ADMINS
+        notifyAdmins('new_booking', {
+            type: 'booking',
+            title: 'New Booking (Deposit Paid) 📝',
+            message: `${booking.Guest?.first_name || 'Guest'} - Room ${booking.Room?.room_number || 'N/A'} - Deposit: $${(session.amount_total / 100).toFixed(2)}`,
+            data: {
+                id: booking.id,
+                booking_reference: booking.booking_reference,
+                guest_name: booking.Guest ? `${booking.Guest.first_name} ${booking.Guest.last_name}` : 'Guest',
+                room_number: booking.Room?.room_number || 'N/A',
+                total_amount: booking.total_amount,
+                status: 'confirmed',
+                source: booking.source
+            },
+            timestamp: new Date()
+        });
+        
+    } catch (error) {
+        console.error('❌ Error in handleDepositPaymentComplete:', error.message);
     }
 }
 

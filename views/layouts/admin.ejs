@@ -467,8 +467,9 @@
     <script src="/socket.io/socket.io.js"></script>
     <script>
         // Connect to WebSocket server
-        const socket = io({
-            transports: ['websocket', 'polling']
+               const socket = io({
+            transports: ['polling'],  // Force polling for Render compatibility
+            upgrade: false
         });
 
         // Connection events
@@ -519,6 +520,31 @@
             console.log('👤 Admin action:', notification);
             showAdminActionNotification(notification);
         });
+                // Auto-refresh dashboard data every 30 seconds
+        setInterval(() => {
+            // Reload stats silently
+            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    // Update stats cards
+                    const newStats = doc.querySelectorAll('.stats-card');
+                    const oldStats = document.querySelectorAll('.stats-card');
+                    newStats.forEach((card, i) => {
+                        if (oldStats[i]) {
+                            oldStats[i].innerHTML = card.innerHTML;
+                        }
+                    });
+                    // Update recent bookings table
+                    const newTable = doc.querySelector('.table-responsive');
+                    const oldTable = document.querySelector('.table-responsive');
+                    if (newTable && oldTable) {
+                        oldTable.innerHTML = newTable.innerHTML;
+                    }
+                })
+                .catch(() => {});
+        }, 30000);
 
         // ============ NOTIFICATION DISPLAY FUNCTIONS ============
 
