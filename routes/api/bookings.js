@@ -509,54 +509,33 @@ router.post('/add-services', async (req, res) => {
     }
 });
 
-// TEMP: Fix booking ID sequence
-router.post('/fix-sequence', async (req, res) => {
+// TEMP: Fix booking ID sequence (also works as GET for browser)
+router.all('/fix-sequence', async (req, res) => {
     try {
+        // Get current max ID
         const result = await db.sequelize.query(
-            `SELECT MAX(id) as max_id FROM bookings`,
+            `SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM bookings`,
             { type: db.sequelize.QueryTypes.SELECT }
         );
-        const maxId = result[0].max_id || 0;
-        const nextId = maxId + 1;
+        const nextId = parseInt(result[0].next_id);
         
-        // Try all possible sequence names
-        const sequenceNames = [
-            'bookings_id_seq',
-            '"bookings_id_seq"',
-            'Bookings_id_seq',
-            '"Bookings_id_seq"',
-            'public.bookings_id_seq',
-            '"public"."bookings_id_seq"'
-        ];
+        // Try to fix sequence
+        await db.sequelize.query(`ALTER SEQUENCE IF EXISTS bookings_id_seq RESTART WITH ${nextId}`);
         
-        let fixed = false;
-        let errors = [];
-        
-        for (const seq of sequenceNames) {
-            try {
-                await db.sequelize.query(`SELECT setval('${seq}', ${nextId}, false)`);
-                fixed = true;
-                res.json({ success: true, message: `Sequence ${seq} reset to ${nextId}`, maxId: maxId, nextId: nextId });
-                return;
-            } catch (e) {
-                errors.push(`${seq}: ${e.message}`);
-            }
-        }
-        
-        // If all failed, list available sequences
-        const sequences = await db.sequelize.query(
-            `SELECT sequence_name FROM information_schema.sequences WHERE sequence_name ILIKE '%book%'`,
-            { type: db.sequelize.QueryTypes.SELECT }
-        );
-        
-        res.json({ 
-            success: false, 
-            errors: errors,
-            availableSequences: sequences
-        });
-        
+        res.json({ success: true, message: `Sequence should restart at ${nextId}`, nextId: nextId });
     } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        // Try alternative
+        try {
+            const result = await db.sequelize.query(
+                `SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM bookings`,
+                { type: db.sequelize.QueryTypes.SELECT }
+            );
+            const nextId = parseInt(result[0].next_id);
+            await db.sequelize.query(`SELECT setval(pg_get_serial_sequence('bookings', 'id'), ${nextId}, false)`);
+            res.json({ success: true, message: `Fixed via pg_get_serial_sequence to ${nextId}` });
+        } catch (e2) {
+            res.json({ success: false, error: error.message, error2: e2.message });
+        }
     }
 });
 // GET /api/bookings/lookup

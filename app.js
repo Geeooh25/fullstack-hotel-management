@@ -141,15 +141,7 @@ const startServer = async () => {
         await sequelize.authenticate();
         console.log('✅ Database connected');
 
-        // Auto-sync database schema (skip errors for incompatible column types)
-        console.log('🔄 Checking database schema...');
-        try {
-            await sequelize.sync({ alter: true });
-            console.log('✅ Database schema up to date');
-        } catch (syncError) {
-            console.error('⚠️ Sync warning (non-critical):', syncError.message);
-            console.log('✅ Server continuing despite schema sync warning');
-        }
+        // REMOVED auto-sync - it causes sequence issues
 
         server.listen(PORT, () => {
             console.log(`\n🚀 Server running on http://localhost:${PORT}`);
