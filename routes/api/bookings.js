@@ -509,6 +509,21 @@ router.post('/add-services', async (req, res) => {
     }
 });
 
+// TEMP: Fix booking ID sequence
+router.post('/fix-sequence', async (req, res) => {
+    try {
+        const result = await db.sequelize.query(
+            `SELECT MAX(id) as max_id FROM bookings`,
+            { type: db.sequelize.QueryTypes.SELECT }
+        );
+        const maxId = result[0].max_id || 0;
+        const nextId = maxId + 1;
+        await db.sequelize.query(`SELECT setval('bookings_id_seq', ${nextId}, false)`);
+        res.json({ success: true, message: `Sequence reset to ${nextId}`, maxId: maxId });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 // GET /api/bookings/lookup
 router.get('/lookup', async (req, res) => {
     try {
@@ -670,28 +685,6 @@ router.get('/reference/:ref/receipt', async (req, res) => {
         
     } catch (error) {
         console.error('Receipt generation error:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-// TEMP: Fix booking ID sequence
-router.post('/fix-sequence', async (req, res) => {
-    try {
-        // Get max ID from bookings
-        const result = await db.sequelize.query(
-            `SELECT MAX(id) as max_id FROM bookings`,
-            { type: db.sequelize.QueryTypes.SELECT }
-        );
-        
-        const maxId = result[0].max_id || 0;
-        const nextId = maxId + 1;
-        
-        // Reset sequence
-        await db.sequelize.query(
-            `SELECT setval('bookings_id_seq', ${nextId}, false)`
-        );
-        
-        res.json({ success: true, message: `Sequence reset to ${nextId}`, maxId: maxId });
-    } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
 });
