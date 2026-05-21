@@ -121,17 +121,17 @@ async function handleFullPaymentComplete(session) {
         });
         
         // 🔔 ONLY ONE notification - Payment Confirmed (Green)
-        notifyAdmins('payment_received', {
-            type: 'payment',
-            title: 'Payment Confirmed ✅',
-            message: `Room ${booking.Room?.room_number || 'N/A'} - $${booking.total_amount} paid by ${booking.Guest?.first_name || 'Guest'}`,
-            data: {
-                payment: { amount: booking.total_amount, payment_method: 'card', status: 'succeeded' },
-                booking: { id: booking.id, booking_reference: booking.booking_reference }
-            },
-            timestamp: new Date(),
-            color: 'success'
-        });
+       notifyAdmins('payment_received', {
+    type: 'payment',
+    title: 'Payment Confirmed ✅',
+    message: `Room ${booking.Room?.room_number || 'N/A'} - $${booking.total_amount} paid`,
+    data: {
+        payment: { amount: booking.total_amount, payment_method: 'card', service_type: 'full' },
+        booking: { id: booking.id, booking_reference: booking.booking_reference }
+    },
+    timestamp: new Date(),
+    color: 'success'
+});
         
         // Send email
         try {
@@ -193,15 +193,15 @@ async function handleServicePaymentComplete(session) {
         });
         
         notifyAdmins('payment_received', {
-            type: 'payment',
-            title: 'Service Payment Received 💰',
-            message: `$${servicesTotal} service payment for Booking #${booking.id}`,
-            data: {
-                payment: { amount: servicesTotal, payment_method: 'card' },
-                booking: { id: booking.id, booking_reference: booking.booking_reference }
-            },
-            timestamp: new Date()
-        });
+    type: 'payment',
+    title: 'Additional Services Paid 🛎️',
+    message: `$${servicesTotal} in services added to Booking ${booking.booking_reference}`,
+    data: {
+        payment: { amount: servicesTotal, payment_method: 'card' },
+        booking: { id: booking.id, booking_reference: booking.booking_reference }
+    },
+    timestamp: new Date()
+});
         
         try {
             const services = await BookingService.findAll({

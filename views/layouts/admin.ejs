@@ -406,21 +406,25 @@
 
         // ============ NEW BOOKING (YELLOW - Pending) ============
         socket.on('new_booking', (notification) => {
-            console.log('🔔 Booking:', notification);
-            const isPending = notification.color === 'warning' || notification.status === 'pending';
-            showNotification({
-                title: isPending ? 'New Booking (Pending Payment) ⏳' : 'Booking Confirmed! ✅',
-                message: `${notification.data?.guest_name || notification.guest_name || 'Guest'} - Room ${notification.data?.room_number || notification.room_number || 'N/A'} - $${parseFloat(notification.data?.total_amount || notification.total_amount || 0).toFixed(2)}`,
-                ref: notification.data?.booking_reference || notification.booking_reference || '',
-                borderColor: isPending ? '#ffc107' : '#28a745',
-                bgColor: isPending ? '#fff3cd' : '#d4edda',
-                textColor: isPending ? '#856404' : '#28a745',
-                icon: isPending ? 'fa-clock' : 'fa-calendar-check',
-                link: '/admin/bookings',
-                duration: isPending ? 15000 : 10000
-            });
-            playNotificationSound();
-        });
+    console.log('🔔 Booking:', notification);
+    const isPending = notification.color === 'warning' || notification.status === 'pending';
+    const isCancelled = notification.color === 'danger' || notification.data?.status === 'cancelled';
+    
+    showNotification({
+        title: isCancelled ? 'Booking Cancelled ❌' : 
+               isPending ? 'New Booking (Pending Payment) ⏳' : 
+               'Booking Confirmed! ✅',
+        message: `${notification.data?.guest_name || notification.guest_name || 'Guest'} - Room ${notification.data?.room_number || notification.room_number || 'N/A'} - $${parseFloat(notification.data?.total_amount || notification.total_amount || 0).toFixed(2)}`,
+        ref: notification.data?.booking_reference || notification.booking_reference || '',
+        borderColor: isCancelled ? '#dc3545' : isPending ? '#ffc107' : '#28a745',
+        bgColor: isCancelled ? '#f8d7da' : isPending ? '#fff3cd' : '#d4edda',
+        textColor: isCancelled ? '#dc3545' : isPending ? '#856404' : '#28a745',
+        icon: isCancelled ? 'fa-ban' : isPending ? 'fa-clock' : 'fa-calendar-check',
+        link: '/admin/bookings',
+        duration: 10000
+    });
+    playNotificationSound();
+});
 
         // ============ PAYMENT RECEIVED (GREEN - Success) ============
         socket.on('payment_received', (notification) => {

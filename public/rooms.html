@@ -611,21 +611,35 @@
         }
         
         function bookRoom(roomId, checkin, checkout, roomType, roomNumber, pricePerNight, nights, totalPrice) {
-            const params = new URLSearchParams({
-                room: roomId,
-                roomNumber: roomNumber,
-                roomType: roomType,
-                checkIn: checkin,
-                checkOut: checkout,
-                adults: document.getElementById('adults').value,
-                children: document.getElementById('children').value,
-                pricePerNight: pricePerNight,
-                totalNights: nights,
-                totalPrice: totalPrice
-            });
-            
-            window.location.href = `/booking.html?${params.toString()}`;
-        }
+    // Check if there are pending cart items
+    const pendingCart = localStorage.getItem('pendingCart');
+    let cartParam = '';
+    
+    if (pendingCart) {
+        try {
+            const cartData = JSON.parse(pendingCart);
+            if (cartData.items && cartData.items.length > 0) {
+                cartParam = '&hasCart=true';
+                // Keep cart in localStorage for booking.html to read
+            }
+        } catch (e) {}
+    }
+    
+    const params = new URLSearchParams({
+        room: roomId,
+        roomNumber: roomNumber,
+        roomType: roomType,
+        checkIn: checkin,
+        checkOut: checkout,
+        adults: document.getElementById('adults').value,
+        children: document.getElementById('children').value,
+        pricePerNight: pricePerNight,
+        totalNights: nights,
+        totalPrice: totalPrice
+    });
+
+    window.location.href = `/booking.html?${params.toString()}${cartParam}`;
+}
         
         document.getElementById('floatingCart').addEventListener('click', () => {
             window.location.href = '/cart.html';

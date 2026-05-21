@@ -70,7 +70,6 @@
             margin-bottom: 1rem;
         }
         
-        /* Floating cart icon - outside navbar */
         .floating-cart {
             position: fixed;
             bottom: 30px;
@@ -117,7 +116,6 @@
                 width: 50px;
                 height: 50px;
             }
-            
             .cart-item .row > div {
                 margin-bottom: 10px;
             }
@@ -149,7 +147,6 @@
         </div>
     </nav>
 
-    <!-- Floating Cart Icon (outside navbar) -->
     <div class="floating-cart" id="floatingCart">
         <i class="fas fa-shopping-cart"></i>
         <span class="cart-count" id="cartCount">0</span>
@@ -165,7 +162,6 @@
     <div class="container my-5">
         <div class="row">
             <div class="col-lg-8" id="cartItemsContainer">
-                <!-- Cart items will load here -->
             </div>
             
             <div class="col-lg-4">
@@ -185,6 +181,7 @@
                             <label class="form-label">Do you have a booking?</label>
                             <select class="form-control" id="bookingOption">
                                 <option value="none">No, I will book room separately</option>
+                                <option value="standalone">Pay for services only (no room)</option>
                                 <option value="existing">Yes, add to my existing booking</option>
                             </select>
                         </div>
@@ -323,7 +320,6 @@
         
         function updateSummary() {
             const subtotal = hotelCart.getTotal();
-            // NO TAX
             const total = subtotal;
             
             document.getElementById('subtotal').innerText = `$${subtotal.toFixed(2)}`;
@@ -336,7 +332,7 @@
             lookupDiv.style.display = e.target.value === 'existing' ? 'block' : 'none';
         });
         
-        // Updated checkout button - creates Stripe payment session (NO TAX)
+        // Checkout button
         document.getElementById('checkoutBtn').addEventListener('click', async () => {
             const cart = hotelCart.getCart();
             if (cart.length === 0) {
@@ -347,11 +343,10 @@
             const bookingOption = document.getElementById('bookingOption').value;
             const btn = document.getElementById('checkoutBtn');
             const originalText = btn.innerText;
-            
-            // Calculate subtotal only (NO TAX)
             const subtotal = hotelCart.getTotal();
             
             if (bookingOption === 'existing') {
+                // Add to existing booking
                 const bookingRef = document.getElementById('bookingReference').value;
                 const email = document.getElementById('bookingEmail').value;
                 
@@ -373,8 +368,6 @@
                         appointment_time: item.appointment_time || null
                     }));
                     
-                    console.log('Saving services to booking:', { booking_reference: bookingRef, guest_email: email, services });
-                    
                     const saveResponse = await fetch('/api/bookings/add-services-pending', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -394,7 +387,6 @@
                         return;
                     }
                     
-                    // Use subtotal (no tax) for payment
                     const paymentResponse = await fetch('/api/bookings/create-service-payment', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -426,8 +418,61 @@
                     btn.innerText = originalText;
                     btn.disabled = false;
                 }
+                
+            } else if (bookingOption === 'standalone') {
+                // Pay for services only - no room needed
+                btn.innerText = 'Processing...';
+                btn.disabled = true;
+                
+                try {
+                    const services = cart.map(item => ({
+                        menu_item_id: item.menu_item_id,
+                        name: item.name,
+                        price: item.price,
+                        quantity: item.quantity,
+                        special_instructions: item.special_instructions || '',
+                        appointment_time: item.appointment_time || null
+                    }));
+                    
+                    const guestEmail = prompt('Please enter your email for the receipt:');
+                    if (!guestEmail || !guestEmail.includes('@')) {
+                        showToast('Please enter a valid email address', 'warning');
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                        return;
+                    }
+                    
+                    const guestName = prompt('Please enter your name:') || 'Guest';
+                    
+                    const response = await fetch('/api/bookings/service-only-payment', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            services: services,
+                            guest_email: guestEmail,
+                            guest_name: guestName
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success && result.checkoutUrl) {
+                        hotelCart.clearCart();
+                        window.location.href = result.checkoutUrl;
+                    } else {
+                        showToast(result.error || 'Payment failed', 'error');
+                        btn.innerText = originalText;
+                        btn.disabled = false;
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showToast('Error processing payment', 'error');
+                    btn.innerText = originalText;
+                    btn.disabled = false;
+                }
+                
             } else {
-                // No booking yet - save cart WITHOUT tax (subtotal only)
+                // Book room separately - save cart for later
                 localStorage.setItem('pendingCart', JSON.stringify({
                     items: cart,
                     subtotal: subtotal
@@ -436,12 +481,10 @@
             }
         });
         
-        // Floating cart click
         document.getElementById('floatingCart').addEventListener('click', () => {
             window.location.href = '/cart.html';
         });
         
-        // Update auth nav
         async function updateAuthNav() {
             if (typeof Auth !== 'undefined') {
                 await Auth.updateNav();
@@ -469,5 +512,6 @@
         renderCart();
         updateAuthNav();
     </script>
-<script src="/js/newsletter.js"></script></body>
+    <script src="/js/newsletter.js"></script>
+</body>
 </html>

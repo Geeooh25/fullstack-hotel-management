@@ -702,3 +702,42 @@ h1, h2, h3, h4, h5, h6 {
         border-bottom: none;
     }
 }
+
+
+
+
+/* Toast notifications */
+.cart-toast {
+    position: fixed;
+    bottom: 80px;
+    right: 20px;
+    background: #28a745;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    z-index: 9999;
+    animation: slideUp 0.3s ease;
+    font-size: 14px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+.cart-toast i { margin-right: 8px; }
+.toast-error { background: #dc3545; }
+.toast-warning { background: #ffc107; color: #333; }
+
+@keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Mobile date labels always visible */
+@media (max-width: 576px) {
+    .filter-card .form-label {
+        display: block !important;
+        font-size: 12px;
+        margin-bottom: 2px;
+    }
+    .filter-card .col-md-2,
+    .filter-card .col-md-3 {
+        margin-bottom: 8px;
+    }
+}

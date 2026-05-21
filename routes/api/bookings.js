@@ -399,6 +399,134 @@ router.post('/add-services-pending', async (req, res) => {
     }
 });
 
+// POST /api/bookings/:id/refund
+router.post('/:id/refund', async (req, res) => {
+    try {
+        const bookingId = parseInt(req.params.id);
+        const { amount, reason } = req.body;
+        
+        const booking = await Booking.findByPk(bookingId, {
+            include: [
+                { model: Guest },
+                { model: Room, include: [{ model: RoomType }] },
+                { model: Payment }
+            ]
+        });
+        
+        if (!booking) {
+            return res.status(404).json({ success: false, error: 'Booking not found' });
+        }
+        
+        if (booking.status !== 'cancelled') {
+            return res.status(400).json({ success: false, error: 'Only cancelled bookings can be refunded' });
+        }
+        
+        // Find Stripe payment
+        const stripePayment = booking.Payments?.find(p => 
+            p.payment_method === 'stripe' || p.payment_method === 'card'
+        );
+        
+        if (!stripePayment || !stripePayment.stripe_payment_intent_id) {
+            return res.status(400).json({ success: false, error: 'No Stripe payment found for refund' });
+        }
+        
+        const refundAmount = amount || stripePayment.amount;
+        
+        const refundResult = await PaymentService.refundPayment(
+            stripePayment.stripe_payment_intent_id,
+            refundAmount
+        );
+        
+        if (refundResult.success) {
+            // Create refund record
+            await Payment.create({
+                booking_id: booking.id,
+                amount: -refundAmount,
+                payment_method: 'refund',
+                status: 'completed',
+                transaction_id: refundResult.refund.id,
+                notes: reason || 'Refund for cancelled booking'
+            });
+            
+            booking.payment_status = 'refunded';
+            booking.remaining_balance = 0;
+            await booking.save();
+            
+            // Notify admin
+            try {
+                const { getIO } = require('../../socket');
+                const io = getIO();
+                if (io) {
+                    io.to('admin_room').emit('payment_received', {
+                        type: 'payment',
+                        title: 'Refund Processed 💸',
+                        message: `$${refundAmount} refunded for Booking ${booking.booking_reference} - ${booking.Guest?.first_name || 'Guest'}`,
+                        data: { payment: { amount: refundAmount, payment_method: 'refund' }, booking: { id: booking.id, booking_reference: booking.booking_reference } },
+                        timestamp: new Date(),
+                        color: 'danger'
+                    });
+                }
+            } catch (e) {}
+            
+            res.json({ success: true, message: 'Refund processed', refund: refundResult.refund });
+        } else {
+            res.status(400).json({ success: false, error: refundResult.error || 'Refund failed' });
+        }
+    } catch (error) {
+        console.error('Refund error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// POST /api/bookings/service-only-payment - Standalone service payment (no room)
+router.post('/service-only-payment', async (req, res) => {
+    try {
+        const { services, guest_email, guest_name } = req.body;
+        
+        if (!services || !services.length || !guest_email) {
+            return res.status(400).json({ success: false, error: 'Services and guest email required' });
+        }
+        
+        const servicesTotal = services.reduce((sum, s) => sum + (parseFloat(s.price) * parseInt(s.quantity)), 0);
+        const tempRef = 'SRV-' + Date.now();
+        
+        const successUrl = `${process.env.APP_URL || 'http://localhost:3000'}/payment-success.html?ref=${tempRef}&type=services-only`;
+        const cancelUrl = `${process.env.APP_URL || 'http://localhost:3000'}/payment-failed.html?ref=${tempRef}&type=services-only`;
+        
+        const paymentResult = await PaymentService.createServicePaymentSession(
+            servicesTotal, tempRef, guest_email, 0, successUrl, cancelUrl
+        );
+        
+        if (!paymentResult.success) {
+            return res.status(400).json({ success: false, error: paymentResult.error });
+        }
+        
+        // Store pending services for webhook
+        global.pendingServices = global.pendingServices || {};
+        global.pendingServices[tempRef] = { services, guest_email, guest_name, total: servicesTotal };
+        
+        // Notify admin
+        try {
+            const { getIO } = require('../../socket');
+            const io = getIO();
+            if (io) {
+                io.to('admin_room').emit('new_request', {
+                    type: 'request',
+                    title: 'New Service Order 🛎️',
+                    message: `${guest_name || 'Guest'} ordered ${services.length} service(s) - $${servicesTotal.toFixed(2)}`,
+                    data: { services, guest_email, guest_name, total: servicesTotal },
+                    timestamp: new Date()
+                });
+            }
+        } catch (e) {}
+        
+        res.json({ success: true, checkoutUrl: paymentResult.url });
+    } catch (error) {
+        console.error('Service payment error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 // POST /api/bookings/create-service-payment
 router.post('/create-service-payment', async (req, res) => {
     try {
@@ -826,70 +954,102 @@ router.get('/find-booking', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
 // DELETE /api/bookings/:id/cancel
 router.delete('/:id/cancel', async (req, res) => {
     try {
         const bookingId = parseInt(req.params.id);
         const { reason } = req.body;
-        
-        const booking = await Booking.findByPk(bookingId);
-        
+
+        const booking = await Booking.findByPk(bookingId, {
+            include: [
+                { model: Guest },
+                { model: Room, include: [{ model: RoomType }] }
+            ]
+        });
+
         if (!booking) {
             return res.status(404).json({ success: false, error: 'Booking not found' });
         }
-        
+
         if (booking.status === 'cancelled') {
             return res.status(400).json({ success: false, error: 'Booking is already cancelled' });
         }
-        
+
         if (booking.status === 'checked_out') {
             return res.status(400).json({ success: false, error: 'Cannot cancel a completed booking' });
         }
-        
+
         if (booking.status === 'checked_in') {
             return res.status(400).json({ success: false, error: 'Cannot cancel after check-in. Please contact reception.' });
         }
-        
+
         // Check 3-day cancellation policy
         const checkIn = new Date(booking.check_in);
         const now = new Date();
         now.setHours(0, 0, 0, 0);
         checkIn.setHours(0, 0, 0, 0);
         const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
-        
+
         if (daysUntilCheckIn < 3) {
-            const dayText = daysUntilCheckIn === 0 ? 'today' : 
-                           daysUntilCheckIn === 1 ? 'tomorrow' : 
+            const dayText = daysUntilCheckIn === 0 ? 'today' :
+                           daysUntilCheckIn === 1 ? 'tomorrow' :
                            `in ${daysUntilCheckIn} days`;
-            return res.status(400).json({ 
-                success: false, 
+            return res.status(400).json({
+                success: false,
                 error: `Cancellation is only allowed 3 or more days before check-in. Your check-in is ${dayText}.`
             });
         }
-        
+
         booking.status = 'cancelled';
         booking.cancelled_at = new Date();
         booking.cancellation_reason = reason || 'Cancelled by guest';
         await booking.save();
-        
+
+        // 🔔 NOTIFY ADMINS VIA SOCKET.IO
+        try {
+            const { getIO } = require('../../socket');
+            const io = getIO();
+            if (io) {
+                io.to('admin_room').emit('new_booking', {
+                    type: 'booking',
+                    title: 'Booking Cancelled ❌',
+                    message: `${booking.Guest?.first_name || 'Guest'} ${booking.Guest?.last_name || ''} cancelled Room ${booking.Room?.room_number || 'N/A'} - $${booking.total_amount}`,
+                    data: {
+                        id: booking.id,
+                        booking_reference: booking.booking_reference,
+                        guest_name: booking.Guest ? `${booking.Guest.first_name} ${booking.Guest.last_name}` : 'Guest',
+                        room_number: booking.Room?.room_number || 'N/A',
+                        total_amount: booking.total_amount,
+                        status: 'cancelled',
+                        source: booking.source
+                    },
+                    timestamp: new Date(),
+                    color: 'danger'
+                });
+                console.log('📡 Admin notified of cancellation');
+            }
+        } catch (socketError) {
+            console.error('Socket notification error:', socketError.message);
+        }
+
         // Send cancellation email
         try {
-            const guest = await Guest.findByPk(booking.guest_id);
-            const room = await Room.findByPk(booking.room_id);
-            await EmailService.sendCancellationEmail(booking, guest, reason);
-            console.log(`📧 Cancellation email sent to ${guest.email}`);
+            const guest = booking.Guest;
+            const room = booking.Room;
+            if (guest && EmailService) {
+                await EmailService.sendCancellationEmail(booking, guest, reason);
+                console.log(`📧 Cancellation email sent to ${guest.email}`);
+            }
         } catch (emailError) {
             console.error('Email error:', emailError.message);
         }
-        
+
         res.json({ success: true, message: 'Booking cancelled successfully', booking });
     } catch (error) {
         console.error('❌ Cancel error:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
-
 // Get today's arrivals
 router.get('/today/arrivals', async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
