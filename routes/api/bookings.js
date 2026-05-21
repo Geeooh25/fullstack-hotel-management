@@ -779,7 +779,7 @@ router.get('/reference/:ref', async (req, res) => {
 router.get('/reference/:ref/receipt', async (req, res) => {
     try {
         const reference = req.params.ref;
-        const PDFService = require('../../services/pdfService');
+        const PDFService = require('../../services/pdfservice');
         
         const booking = await db.Booking.findOne({
             where: { booking_reference: reference },
@@ -866,7 +866,7 @@ router.get('/:id/receipt', async (req, res) => {
             return res.status(400).json({ error: 'Invalid booking ID' });
         }
         
-        const PDFService = require('../../services/pdfService');
+        const PDFService = require('../../services/pdfservice');
         
         const booking = await db.Booking.findByPk(bookingId, {
             include: [
@@ -1139,4 +1139,28 @@ router.get('/search', async (req, res) => {
     }
 });
 
+
+// TEMP: Fix ALL sequences
+router.all('/fix-all-sequences', async (req, res) => {
+    try {
+        const { sequelize } = require('../../config/database');
+        const tables = ['bookings', 'request_submissions', 'users', 'guests', 'payments'];
+        const results = [];
+        for (const table of tables) {
+            try {
+                const [rows] = await sequelize.query(`SELECT COALESCE(MAX(id), 0) + 1 as next_id FROM "${table}"`);
+                const nextId = parseInt(rows[0]?.next_id || 1);
+                await sequelize.query(`SELECT setval(pg_get_serial_sequence('${table}', 'id'), ${nextId}, false)`);
+                results.push(`${table}: reset to ${nextId}`);
+            } catch (e) {
+                results.push(`${table}: ${e.message}`);
+            }
+        }
+        res.json({ success: true, results });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
+
 module.exports = router;
+
