@@ -143,17 +143,18 @@ async function handleFullPaymentComplete(session) {
         
         console.log('✅ Payment record created');
         
-        // 🔔 NOTIFY ADMINS VIA SOCKET.IO
-        notifyAdmins('payment_received', {
-            type: 'payment',
-            title: 'Payment Confirmed! 💰',
-            message: `${booking.Guest?.first_name || 'Guest'} paid $${booking.total_amount} for Room ${booking.Room?.room_number || 'N/A'}`,
-            data: {
-                payment: { amount: booking.total_amount, payment_method: 'card', status: 'succeeded' },
-                booking: { id: booking.id, booking_reference: booking.booking_reference }
-            },
-            timestamp: new Date()
-        });
+// 🔔 NOTIFY ADMINS - Payment Confirmed 
+notifyAdmins('payment_received', {
+    type: 'payment',
+    title: 'Payment Confirmed ✅',
+    message: `Room ${booking.Room?.room_number || 'N/A'} - $${booking.total_amount} paid by ${booking.Guest?.first_name || 'Guest'}`,
+    data: {
+        payment: { amount: booking.total_amount, payment_method: 'card', status: 'succeeded' },
+        booking: { id: booking.id, booking_reference: booking.booking_reference }
+    },
+    timestamp: new Date(),
+    color: 'success'
+});
         
         // Also send booking notification for admin refresh
         notifyAdmins('new_booking', {

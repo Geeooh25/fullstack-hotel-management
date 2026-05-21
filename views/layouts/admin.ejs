@@ -26,7 +26,6 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--gray-bg); overflow-x: hidden; }
         
-        /* Sidebar - Mobile First Approach */
         .sidebar {
             position: fixed;
             top: 0;
@@ -41,9 +40,7 @@
             box-shadow: 2px 0 10px rgba(0,0,0,0.1);
         }
         
-        .sidebar.open {
-            left: 0;
-        }
+        .sidebar.open { left: 0; }
         
         .sidebar-header {
             padding: 25px 20px;
@@ -81,11 +78,7 @@
             margin-top: 20px;
         }
         
-        .user-name {
-            margin-bottom: 10px;
-            font-size: 0.85rem;
-            word-break: break-word;
-        }
+        .user-name { margin-bottom: 10px; font-size: 0.85rem; word-break: break-word; }
         
         .logout-btn {
             width: 100%;
@@ -121,7 +114,6 @@
         
         .login-btn:hover { background: #28a745; color: white; }
         
-        /* Main Content */
         .main-content {
             margin-left: 0;
             padding: 15px;
@@ -129,25 +121,13 @@
             min-height: 100vh;
         }
         
-        /* When sidebar is open on desktop */
         @media (min-width: 992px) {
-            .sidebar {
-                left: 0;
-                width: 260px;
-            }
-            .sidebar.open {
-                left: 0;
-            }
-            .main-content {
-                margin-left: 260px;
-                padding: 20px;
-            }
-            .mobile-toggle {
-                display: none !important;
-            }
+            .sidebar { left: 0; width: 260px; }
+            .sidebar.open { left: 0; }
+            .main-content { margin-left: 260px; padding: 20px; }
+            .mobile-toggle { display: none !important; }
         }
         
-        /* Mobile Toggle Button */
         .mobile-toggle {
             position: fixed;
             top: 15px;
@@ -164,11 +144,8 @@
             transition: var(--transition);
         }
         
-        .mobile-toggle:hover {
-            background: var(--gold-dark);
-        }
+        .mobile-toggle:hover { background: var(--gold-dark); }
         
-        /* Overlay for mobile */
         .sidebar-overlay {
             position: fixed;
             top: 0;
@@ -180,11 +157,8 @@
             display: none;
         }
         
-        .sidebar-overlay.active {
-            display: block;
-        }
+        .sidebar-overlay.active { display: block; }
         
-        /* Welcome Section - Mobile Friendly */
         .welcome-section {
             background: white;
             border-radius: 12px;
@@ -193,15 +167,10 @@
             box-shadow: var(--shadow);
         }
         
-        .welcome-text h2 { 
-            font-size: 1.2rem; 
-            color: var(--text-dark); 
-            margin: 0;
-        }
+        .welcome-text h2 { font-size: 1.2rem; color: var(--text-dark); margin: 0; }
         .welcome-text h2 span { color: var(--gold); }
         .welcome-text p { color: var(--text-light); margin: 5px 0 0; font-size: 0.8rem; }
         
-        /* Stats Cards - Mobile Responsive */
         .stats-card {
             background: white;
             border-radius: 12px;
@@ -214,15 +183,8 @@
         .stats-number { font-size: 1.8rem; font-weight: bold; color: var(--gold); margin-top: 8px; }
         .stats-card h5 { color: var(--text-light); margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
         
-        /* Tables - Horizontal Scroll on Mobile */
-        .table-responsive {
-            overflow-x: auto;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        .table {
-            min-width: 600px;
-        }
+        .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .table { min-width: 600px; }
         
         .table thead th { 
             border-bottom: 2px solid var(--gold); 
@@ -232,24 +194,14 @@
             padding: 10px 8px;
         }
         
-        .table td {
-            padding: 10px 8px;
-            font-size: 0.8rem;
-            vertical-align: middle;
-        }
+        .table td { padding: 10px 8px; font-size: 0.8rem; vertical-align: middle; }
         
-        /* Badges */
-        .badge {
-            padding: 4px 8px;
-            border-radius: 20px;
-            font-size: 0.7rem;
-        }
+        .badge { padding: 4px 8px; border-radius: 20px; font-size: 0.7rem; }
         .badge-success { background: #28a745; color: white; }
         .badge-warning { background: #ffc107; color: #333; }
         .badge-danger { background: #dc3545; color: white; }
         .badge-info { background: #17a2b8; color: white; }
         
-        /* Buttons - Mobile Friendly */
         .btn-gold {
             background: var(--gold);
             color: white;
@@ -261,13 +213,8 @@
         }
         
         .btn-gold:hover { background: var(--gold-dark); }
+        .btn-sm { padding: 5px 10px; font-size: 0.7rem; }
         
-        .btn-sm {
-            padding: 5px 10px;
-            font-size: 0.7rem;
-        }
-        
-        /* Form Controls - Mobile Friendly */
         .form-control, .form-select {
             border-radius: 8px;
             padding: 8px 12px;
@@ -275,31 +222,14 @@
             border: 1px solid #e0e0e0;
         }
         
-        /* Grid spacing on mobile */
         @media (max-width: 768px) {
-            .row {
-                margin-left: -8px;
-                margin-right: -8px;
-            }
-            .col-md-4, .col-md-6, .col-md-12 {
-                padding-left: 8px;
-                padding-right: 8px;
-            }
-            .stats-card {
-                margin-bottom: 12px;
-            }
+            .row { margin-left: -8px; margin-right: -8px; }
+            .col-md-4, .col-md-6, .col-md-12 { padding-left: 8px; padding-right: 8px; }
+            .stats-card { margin-bottom: 12px; }
         }
         
-        /* Modal - Mobile Friendly */
-        .modal-dialog {
-            margin: 10px;
-        }
-        
-        @media (min-width: 576px) {
-            .modal-dialog {
-                margin: 1.75rem auto;
-            }
-        }
+        .modal-dialog { margin: 10px; }
+        @media (min-width: 576px) { .modal-dialog { margin: 1.75rem auto; } }
     </style>
 </head>
 <body>
@@ -359,7 +289,6 @@
                 <i class="fas fa-tachometer-alt"></i> Counter Booking
             </a>
             
-            <!-- Historical Booking - Super Admin Only -->
             <% if (session.admin && session.admin.role === 'super_admin') { %>
                 <a href="/admin/historical-booking" class="nav-item">
                     <i class="fas fa-history"></i> Historical Booking
@@ -434,26 +363,16 @@
         if (mobileToggle) {
             mobileToggle.addEventListener('click', (e) => {
                 e.stopPropagation();
-                if (sidebar.classList.contains('open')) {
-                    closeSidebar();
-                } else {
-                    openSidebar();
-                }
+                sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
             });
         }
         
-        if (overlay) {
-            overlay.addEventListener('click', closeSidebar);
-        }
+        if (overlay) overlay.addEventListener('click', closeSidebar);
         
-        // Close sidebar on window resize if desktop
-        window.addEventListener('resize', function() {
-            if (window.innerWidth >= 992) {
-                closeSidebar();
-            }
+        window.addEventListener('resize', () => {
+            if (window.innerWidth >= 992) closeSidebar();
         });
         
-        // Highlight current page
         const currentPath = window.location.pathname;
         document.querySelectorAll('.nav-item').forEach(link => {
             const href = link.getAttribute('href');
@@ -463,239 +382,102 @@
         });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-        <!-- Socket.io Client for Real-time Notifications -->
+    
+    <!-- Socket.io Client for Real-time Notifications -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Connect to WebSocket server
-               const socket = io({
-            transports: ['polling'],  // Force polling for Render compatibility
+        // Connect to WebSocket server (polling for Render compatibility)
+        const socket = io({
+            transports: ['polling'],
             upgrade: false
         });
 
-        // Connection events
         socket.on('connect', () => {
             console.log('🔌 Admin connected to notification system');
         });
 
         socket.on('disconnect', () => {
-            console.log('🔌 Admin disconnected from notification system');
+            console.log('🔌 Admin disconnected');
         });
 
         socket.on('connect_error', (error) => {
-            console.log('⚠️ Socket connection error:', error.message);
+            console.log('⚠️ Socket error:', error.message);
         });
 
-        // ============ NEW BOOKING NOTIFICATION ============
+        // ============ NEW BOOKING (YELLOW - Pending) ============
         socket.on('new_booking', (notification) => {
-            console.log('🔔 New booking received:', notification);
-            showBookingNotification(notification);
+            console.log('🔔 Booking:', notification);
+            const isPending = notification.color === 'warning' || notification.status === 'pending';
+            showNotification({
+                title: isPending ? 'New Booking (Pending Payment) ⏳' : 'Booking Confirmed! ✅',
+                message: `${notification.data?.guest_name || notification.guest_name || 'Guest'} - Room ${notification.data?.room_number || notification.room_number || 'N/A'} - $${parseFloat(notification.data?.total_amount || notification.total_amount || 0).toFixed(2)}`,
+                ref: notification.data?.booking_reference || notification.booking_reference || '',
+                borderColor: isPending ? '#ffc107' : '#28a745',
+                bgColor: isPending ? '#fff3cd' : '#d4edda',
+                textColor: isPending ? '#856404' : '#28a745',
+                icon: isPending ? 'fa-clock' : 'fa-calendar-check',
+                link: '/admin/bookings',
+                duration: isPending ? 15000 : 10000
+            });
             playNotificationSound();
         });
 
-        // ============ PAYMENT RECEIVED NOTIFICATION ============
+        // ============ PAYMENT RECEIVED (GREEN - Success) ============
         socket.on('payment_received', (notification) => {
-            console.log('💰 Payment received:', notification);
-            showPaymentNotification(notification);
+            console.log('💰 Payment:', notification);
+            const payment = notification.data?.payment || {};
+            const booking = notification.data?.booking || {};
+            showNotification({
+                title: 'Payment Confirmed! 💰',
+                message: `Room ${notification.message || ''} - $${parseFloat(payment.amount || 0).toFixed(2)} paid`,
+                ref: booking.booking_reference || '',
+                borderColor: '#28a745',
+                bgColor: '#d4edda',
+                textColor: '#28a745',
+                icon: 'fa-credit-card',
+                link: '/admin/bookings',
+                duration: 10000
+            });
             playNotificationSound();
         });
 
-        // ============ NEW SERVICE REQUEST ============
+        // ============ NEW SERVICE REQUEST (BLUE) ============
         socket.on('new_request', (notification) => {
-            console.log('📝 New request:', notification);
-            showRequestNotification(notification);
+            showNotification({
+                title: notification.title || 'New Request',
+                message: notification.message || '',
+                ref: '',
+                borderColor: '#17a2b8',
+                bgColor: '#d1ecf1',
+                textColor: '#17a2b8',
+                icon: 'fa-headset',
+                link: '/admin/requests',
+                duration: 8000
+            });
             playNotificationSound();
         });
 
         // ============ SYSTEM NOTIFICATION ============
         socket.on('system_notification', (notification) => {
-            console.log('📢 System notification:', notification);
-            showSystemNotification(notification);
-            if (notification.color === 'danger') {
-                playNotificationSound();
-            }
+            const isError = notification.color === 'danger';
+            showNotification({
+                title: notification.title || 'System',
+                message: notification.message || '',
+                ref: '',
+                borderColor: isError ? '#dc3545' : '#17a2b8',
+                bgColor: isError ? '#f8d7da' : '#d1ecf1',
+                textColor: isError ? '#dc3545' : '#17a2b8',
+                icon: isError ? 'fa-exclamation-triangle' : 'fa-bell',
+                link: null,
+                duration: 8000
+            });
+            if (isError) playNotificationSound();
         });
 
-        // ============ ADMIN ACTION ============
-        socket.on('admin_action', (notification) => {
-            console.log('👤 Admin action:', notification);
-            showAdminActionNotification(notification);
-        });
-                // Auto-refresh dashboard data every 30 seconds
-        setInterval(() => {
-            // Reload stats silently
-            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(r => r.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    // Update stats cards
-                    const newStats = doc.querySelectorAll('.stats-card');
-                    const oldStats = document.querySelectorAll('.stats-card');
-                    newStats.forEach((card, i) => {
-                        if (oldStats[i]) {
-                            oldStats[i].innerHTML = card.innerHTML;
-                        }
-                    });
-                    // Update recent bookings table
-                    const newTable = doc.querySelector('.table-responsive');
-                    const oldTable = document.querySelector('.table-responsive');
-                    if (newTable && oldTable) {
-                        oldTable.innerHTML = newTable.innerHTML;
-                    }
-                })
-                .catch(() => {});
-        }, 30000);
-
-        // ============ NOTIFICATION DISPLAY FUNCTIONS ============
-
-        function showBookingNotification(data) {
+        // ============ UNIFIED NOTIFICATION DISPLAY ============
+        function showNotification({ title, message, ref, borderColor, bgColor, textColor, icon, link, duration }) {
             const notif = document.createElement('div');
             notif.className = 'socket-notification';
-            notif.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: white;
-                border-left: 4px solid #28a745;
-                border-radius: 12px;
-                padding: 16px 20px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                z-index: 9999;
-                max-width: 400px;
-                animation: slideInRight 0.3s ease;
-                cursor: pointer;
-            `;
-            notif.onclick = () => {
-                window.location.href = '/admin/bookings';
-            };
-            
-            notif.innerHTML = `
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="background: #d4edda; color: #28a745; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
-                        <i class="fas fa-calendar-check"></i>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">New Booking Received!</strong>
-                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-                            <strong>${escapeHTML(data.guest_name || 'Guest')}</strong><br>
-                            Room ${escapeHTML(data.room_number || 'N/A')} • $${parseFloat(data.total_amount || 0).toFixed(2)}<br>
-                            <small style="color: #888;">Ref: ${escapeHTML(data.booking_reference || 'N/A')}</small>
-                        </p>
-                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
-                    </div>
-                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
-                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
-                        &times;
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(notif);
-            autoRemoveNotification(notif, 10000);
-        }
-
-        function showPaymentNotification(data) {
-            const notif = document.createElement('div');
-            notif.className = 'socket-notification';
-            notif.style.cssText = `
-                position: fixed;
-                top: 90px;
-                right: 20px;
-                background: white;
-                border-left: 4px solid #B8860B;
-                border-radius: 12px;
-                padding: 16px 20px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                z-index: 9999;
-                max-width: 400px;
-                animation: slideInRight 0.3s ease;
-                cursor: pointer;
-            `;
-            notif.onclick = () => {
-                window.location.href = '/admin/bookings';
-            };
-            
-            const payment = data.data?.payment || {};
-            const booking = data.data?.booking || {};
-            
-            notif.innerHTML = `
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="background: #f5e6d3; color: #B8860B; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
-                        <i class="fas fa-credit-card"></i>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">Payment Received!</strong>
-                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-                            $${parseFloat(payment.amount || 0).toFixed(2)} for Booking #${escapeHTML(String(booking.id || ''))}<br>
-                            <small style="color: #888;">${escapeHTML(payment.payment_method || 'Card')}</small>
-                        </p>
-                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
-                    </div>
-                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
-                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
-                        &times;
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(notif);
-            autoRemoveNotification(notif, 8000);
-        }
-
-        function showRequestNotification(data) {
-            const notif = document.createElement('div');
-            notif.className = 'socket-notification';
-            notif.style.cssText = `
-                position: fixed;
-                top: 160px;
-                right: 20px;
-                background: white;
-                border-left: 4px solid #17a2b8;
-                border-radius: 12px;
-                padding: 16px 20px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                z-index: 9999;
-                max-width: 400px;
-                animation: slideInRight 0.3s ease;
-                cursor: pointer;
-            `;
-            notif.onclick = () => {
-                window.location.href = '/admin/requests';
-            };
-            
-            notif.innerHTML = `
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="background: #d1ecf1; color: #17a2b8; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
-                        <i class="fas fa-headset"></i>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(data.title || 'New Request')}</strong>
-                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-                            ${escapeHTML(data.message || '')}
-                        </p>
-                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
-                    </div>
-                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
-                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
-                        &times;
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(notif);
-            autoRemoveNotification(notif, 8000);
-        }
-
-        function showSystemNotification(data) {
-            const notif = document.createElement('div');
-            notif.className = 'socket-notification';
-            const borderColor = data.color === 'danger' ? '#dc3545' : 
-                               data.color === 'warning' ? '#ffc107' : '#17a2b8';
-            const bgColor = data.color === 'danger' ? '#f8d7da' : 
-                           data.color === 'warning' ? '#fff3cd' : '#d1ecf1';
-            const textColor = data.color === 'danger' ? '#dc3545' : 
-                             data.color === 'warning' ? '#856404' : '#17a2b8';
-            
             notif.style.cssText = `
                 position: fixed;
                 top: 20px;
@@ -708,17 +490,23 @@
                 z-index: 9999;
                 max-width: 400px;
                 animation: slideInRight 0.3s ease;
+                cursor: ${link ? 'pointer' : 'default'};
             `;
+            
+            if (link) {
+                notif.onclick = () => window.location.href = link;
+            }
             
             notif.innerHTML = `
                 <div style="display: flex; align-items: flex-start; gap: 12px;">
                     <div style="background: ${bgColor}; color: ${textColor}; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
-                        <i class="fas ${data.icon === 'bi-exclamation-triangle' ? 'fa-exclamation-triangle' : 'fa-bell'}"></i>
+                        <i class="fas ${icon}"></i>
                     </div>
                     <div style="flex: 1; min-width: 0;">
-                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(data.title || 'Notification')}</strong>
+                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(title)}</strong>
                         <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-                            ${escapeHTML(data.message || '')}
+                            ${escapeHTML(message)}
+                            ${ref ? `<br><small style="color: #888;">Ref: ${escapeHTML(ref)}</small>` : ''}
                         </p>
                         <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
                     </div>
@@ -730,64 +518,17 @@
             `;
             
             document.body.appendChild(notif);
-            autoRemoveNotification(notif, 8000);
-        }
-
-        function showAdminActionNotification(data) {
-            const notif = document.createElement('div');
-            notif.className = 'socket-notification';
-            notif.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: white;
-                border-left: 4px solid #6c757d;
-                border-radius: 12px;
-                padding: 16px 20px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                z-index: 9999;
-                max-width: 400px;
-                animation: slideInRight 0.3s ease;
-            `;
             
-            notif.innerHTML = `
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="background: #e2e3e5; color: #6c757d; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
-                        <i class="fas fa-user-shield"></i>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(data.title || 'Admin Action')}</strong>
-                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-                            ${escapeHTML(data.message || '')}
-                        </p>
-                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
-                    </div>
-                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
-                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
-                        &times;
-                    </button>
-                </div>
-            `;
-            
-            document.body.appendChild(notif);
-            autoRemoveNotification(notif, 6000);
-        }
-
-        // ============ HELPER FUNCTIONS ============
-
-        function autoRemoveNotification(element, delay) {
+            // Auto-remove
             setTimeout(() => {
-                if (element && element.parentElement) {
-                    element.style.animation = 'slideOutRight 0.3s ease';
-                    setTimeout(() => {
-                        if (element.parentElement) {
-                            element.remove();
-                        }
-                    }, 300);
+                if (notif.parentElement) {
+                    notif.style.animation = 'slideOutRight 0.3s ease';
+                    setTimeout(() => { if (notif.parentElement) notif.remove(); }, 300);
                 }
-            }, delay);
+            }, duration);
         }
 
+        // ============ HELPERS ============
         function escapeHTML(str) {
             if (!str) return '';
             const div = document.createElement('div');
@@ -797,28 +538,42 @@
 
         function playNotificationSound() {
             try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-                gainNode.gain.setValueAtTime(0.3, audioCtx.currentTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-                
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + 0.3);
-            } catch (e) {
-                // Silently fail if audio not supported
-            }
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                osc.start(ctx.currentTime);
+                osc.stop(ctx.currentTime + 0.3);
+            } catch (e) {}
         }
 
-        // ============ ANIMATION STYLES ============
-        const style = document.createElement('style');
-        style.textContent = `
+        // Auto-refresh dashboard every 30 seconds
+        setInterval(() => {
+            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const newStats = doc.querySelectorAll('.stats-card');
+                    const oldStats = document.querySelectorAll('.stats-card');
+                    newStats.forEach((card, i) => {
+                        if (oldStats[i]) oldStats[i].innerHTML = card.innerHTML;
+                    });
+                    const newTable = doc.querySelector('.table-responsive');
+                    const oldTable = document.querySelector('.table-responsive');
+                    if (newTable && oldTable) oldTable.innerHTML = newTable.innerHTML;
+                })
+                .catch(() => {});
+        }, 30000);
+
+        // Animation styles
+        const animStyle = document.createElement('style');
+        animStyle.textContent = `
             @keyframes slideInRight {
                 from { transform: translateX(100%); opacity: 0; }
                 to { transform: translateX(0); opacity: 1; }
@@ -834,7 +589,7 @@
                 box-shadow: 0 15px 40px rgba(0,0,0,0.25) !important;
             }
         `;
-        document.head.appendChild(style);
+        document.head.appendChild(animStyle);
     </script>
 </body>
 </html>

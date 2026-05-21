@@ -280,7 +280,8 @@ router.post('/', bookingLimiter, validateBooking, async (req, res, next) => {
                 check_out: bookingData.checkOut,
                 total_amount: booking.total_amount,
                 status: booking.status,
-                source: bookingData.source || 'online'
+                source: bookingData.source || 'online',
+                 color: 'warning'
             });
             console.log('📡 Admin notified via WebSocket');
         } catch (socketError) {
