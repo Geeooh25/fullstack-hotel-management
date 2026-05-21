@@ -896,21 +896,52 @@ router.post('/:id/checkout', async (req, res) => {
 // TEMP: Fix booking ID sequence
 router.post('/fix-sequence', async (req, res) => {
     try {
-        // Get max ID from bookings
-        const result = await db.sequelize.query(
-            `SELECT MAX(id) as max_id FROM "bookings"`,
-            { type: db.sequelize.QueryTypes.SELECT }
-        );
+        // Try different sequence names
+        const sequenceNames = [
+            '"bookings_id_seq"',
+            'bookings_id_seq',
+            '"Bookings_id_seq"',
+            'bookings_id_seq'
+        ];
         
-        const maxId = result[0].max_id || 0;
-        const nextId = maxId + 1;
+        let result = { success: false, errors: [] };
         
-        // Reset sequence
-        await db.sequelize.query(
-            `ALTER SEQUENCE "bookings_id_seq" RESTART WITH ${nextId}`
-        );
+        for (const seqName of sequenceNames) {
+            try {
+                // Get max ID
+                const maxResult = await db.sequelize.query(
+                    `SELECT MAX(id) as max_id FROM bookings`,
+                    { type: db.sequelize.QueryTypes.SELECT }
+                );
+                const maxId = maxResult[0].max_id || 0;
+                const nextId = maxId + 1;
+                
+                await db.sequelize.query(
+                    `SELECT setval('${seqName}', ${nextId}, false)`
+                );
+                
+                result = { 
+                    success: true, 
+                    message: `Sequence ${seqName} reset to ${nextId}`,
+                    maxId: maxId,
+                    nextId: nextId
+                };
+                break;
+            } catch (e) {
+                result.errors.push(`${seqName}: ${e.message}`);
+            }
+        }
         
-        res.json({ success: true, message: `Sequence reset to ${nextId}`, maxId: maxId });
+        if (!result.success) {
+            // Last resort: find all sequences
+            const sequences = await db.sequelize.query(
+                `SELECT sequence_name FROM information_schema.sequences WHERE sequence_name LIKE '%book%'`,
+                { type: db.sequelize.QueryTypes.SELECT }
+            );
+            result.sequences = sequences;
+        }
+        
+        res.json(result);
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
