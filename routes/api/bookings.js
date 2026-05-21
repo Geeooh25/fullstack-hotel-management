@@ -673,6 +673,28 @@ router.get('/reference/:ref/receipt', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+// TEMP: Fix booking ID sequence
+router.post('/fix-sequence', async (req, res) => {
+    try {
+        // Get max ID from bookings
+        const result = await db.sequelize.query(
+            `SELECT MAX(id) as max_id FROM bookings`,
+            { type: db.sequelize.QueryTypes.SELECT }
+        );
+        
+        const maxId = result[0].max_id || 0;
+        const nextId = maxId + 1;
+        
+        // Reset sequence
+        await db.sequelize.query(
+            `SELECT setval('bookings_id_seq', ${nextId}, false)`
+        );
+        
+        res.json({ success: true, message: `Sequence reset to ${nextId}`, maxId: maxId });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 // GET /api/bookings/:id
 router.get('/:id', async (req, res) => {
@@ -893,59 +915,6 @@ router.post('/:id/checkout', async (req, res) => {
     res.json({ success: true });
 });
 
-// TEMP: Fix booking ID sequence
-router.post('/fix-sequence', async (req, res) => {
-    try {
-        // Try different sequence names
-        const sequenceNames = [
-            '"bookings_id_seq"',
-            'bookings_id_seq',
-            '"Bookings_id_seq"',
-            'bookings_id_seq'
-        ];
-        
-        let result = { success: false, errors: [] };
-        
-        for (const seqName of sequenceNames) {
-            try {
-                // Get max ID
-                const maxResult = await db.sequelize.query(
-                    `SELECT MAX(id) as max_id FROM bookings`,
-                    { type: db.sequelize.QueryTypes.SELECT }
-                );
-                const maxId = maxResult[0].max_id || 0;
-                const nextId = maxId + 1;
-                
-                await db.sequelize.query(
-                    `SELECT setval('${seqName}', ${nextId}, false)`
-                );
-                
-                result = { 
-                    success: true, 
-                    message: `Sequence ${seqName} reset to ${nextId}`,
-                    maxId: maxId,
-                    nextId: nextId
-                };
-                break;
-            } catch (e) {
-                result.errors.push(`${seqName}: ${e.message}`);
-            }
-        }
-        
-        if (!result.success) {
-            // Last resort: find all sequences
-            const sequences = await db.sequelize.query(
-                `SELECT sequence_name FROM information_schema.sequences WHERE sequence_name LIKE '%book%'`,
-                { type: db.sequelize.QueryTypes.SELECT }
-            );
-            result.sequences = sequences;
-        }
-        
-        res.json(result);
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
 
 // Search bookings
 router.get('/search', async (req, res) => {
