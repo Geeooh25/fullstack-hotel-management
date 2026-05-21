@@ -896,10 +896,21 @@ router.post('/:id/checkout', async (req, res) => {
 // TEMP: Fix booking ID sequence
 router.post('/fix-sequence', async (req, res) => {
     try {
-        await db.sequelize.query(`
-            SELECT setval('"bookings_id_seq"', (SELECT MAX(id) FROM "bookings"))
-        `);
-        res.json({ success: true, message: 'Sequence fixed' });
+        // Get max ID from bookings
+        const result = await db.sequelize.query(
+            `SELECT MAX(id) as max_id FROM "bookings"`,
+            { type: db.sequelize.QueryTypes.SELECT }
+        );
+        
+        const maxId = result[0].max_id || 0;
+        const nextId = maxId + 1;
+        
+        // Reset sequence
+        await db.sequelize.query(
+            `ALTER SEQUENCE "bookings_id_seq" RESTART WITH ${nextId}`
+        );
+        
+        res.json({ success: true, message: `Sequence reset to ${nextId}`, maxId: maxId });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
     }
