@@ -1162,5 +1162,53 @@ router.all('/fix-all-sequences', async (req, res) => {
     }
 });
 
+
+// GET /api/bookings/service-receipt/:ref - Download service receipt
+router.get('/service-receipt/:ref', async (req, res) => {
+    try {
+        const PDFService = require('../../services/pdfservice');
+        const ref = req.params.ref;
+        const pending = global.pendingServices?.[ref];
+        
+        if (!pending) {
+            return res.status(404).json({ success: false, error: 'Service order not found' });
+        }
+        
+        // Generate simple receipt for services
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => {
+            const pdfBuffer = Buffer.concat(chunks);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="service-receipt-${ref}.pdf"`);
+            res.send(pdfBuffer);
+        });
+        
+        doc.fontSize(20).font('Helvetica-Bold').fillColor('#B8860B').text('GEEOOH HOTEL', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).fillColor('#1a2a3a').text('SERVICE RECEIPT', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(10).fillColor('#333').text(`Reference: ${ref}`).text(`Date: ${new Date().toLocaleDateString()}`).text(`Guest: ${pending.guest_name}`).text(`Email: ${pending.guest_email}`);
+        doc.moveDown();
+        doc.text('Services:');
+        pending.services.forEach(s => {
+            doc.text(`  ${s.name} x${s.quantity} - ${(s.price * s.quantity).toFixed(2)}`);
+        });
+        doc.moveDown();
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#B8860B').text(`Total: ${pending.total.toFixed(2)}`, { align: 'right' });
+        doc.moveDown(2);
+        doc.fontSize(10).fillColor('#666').text('Thank you for choosing GEEOOH HOTEL!', { align: 'center' });
+        doc.end();
+        
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 module.exports = router;
+
+
 
