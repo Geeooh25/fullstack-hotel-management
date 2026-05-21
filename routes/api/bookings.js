@@ -1207,6 +1207,37 @@ router.get('/service-receipt/:ref', async (req, res) => {
     }
 });
 
+// GET /api/bookings/receipt/:ref - Download receipt by reference
+router.get('/receipt/:ref', async (req, res) => {
+    try {
+        const { sequelize } = require('../../config/database');
+        const PDFService = require('../../services/pdfservice');
+        
+        const booking = await Booking.findOne({
+            where: { booking_reference: req.params.ref },
+            include: [
+                { model: Guest },
+                { model: Room, include: [{ model: RoomType }] }
+            ]
+        });
+        
+        if (!booking) return res.status(404).json({ error: 'Booking not found' });
+        
+        const [payments] = await sequelize.query(
+            'SELECT * FROM payments WHERE booking_id = :bid ORDER BY created_at DESC',
+            { replacements: { bid: booking.id } }
+        );
+        
+        const pdfBuffer = await PDFService.generateReceipt(booking, booking.Guest, booking.Room, payments || [], []);
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="receipt-' + booking.booking_reference + '.pdf"');
+        res.send(pdfBuffer);
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 
 module.exports = router;
 

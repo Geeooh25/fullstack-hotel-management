@@ -14,10 +14,9 @@ try {
     console.error('❌ Stripe webhook initialization failed:', error.message);
 }
 
-const { Booking, Guest, Room, Payment, RoomType, BookingService, MenuItem } = require('../models');
+const { Booking, Guest, Room, Payment, RoomType, BookingService, MenuItem, RequestSubmission } = require('../models');
 const { BOOKING_STATUS, PAYMENT_STATUS } = require('../utils/constants');
 const EmailService = require('../services/emailService');
-const db = require('../models');
 
 function notifyAdmins(event, data) {
     try {
@@ -25,16 +24,15 @@ function notifyAdmins(event, data) {
         const io = getIO();
         if (io) {
             io.to('admin_room').emit(event, data);
-            console.log(`📡 Admin notified: ${event}`);
+            console.log('📡 Admin notified: ' + event);
         }
     } catch (e) {
-        console.log('Socket notification skipped:', e.message);
+        console.log('Socket skipped:', e.message);
     }
 }
 
 async function handleWebhook(req, res) {
     if (!stripeWebhookInstance) {
-        console.log('⚠️ Stripe not configured, webhook simulated');
         return res.json({ received: true, simulated: true });
     }
     
@@ -42,15 +40,12 @@ async function handleWebhook(req, res) {
     let event;
 
     try {
-        event = stripeWebhookInstance.webhooks.constructEvent(
-            req.body, sig, process.env.STRIPE_WEBHOOK_SECRET
-        );
+        event = stripeWebhookInstance.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
     } catch (err) {
-        console.error(`Webhook Error: ${err.message}`);
-        return res.status(400).send(`Webhook Error: ${err.message}`);
+        return res.status(400).send('Webhook Error: ' + err.message);
     }
 
-    console.log('📨 Webhook event received:', event.type);
+    console.log('📨 Webhook:', event.type);
 
     switch (event.type) {
         case 'checkout.session.completed':
@@ -68,33 +63,30 @@ async function handleWebhook(req, res) {
                 await handleDepositPaymentComplete(session);
             }
             break;
-        
         case 'payment_intent.succeeded':
             await handlePaymentSuccess(event.data.object);
             break;
-        
-        default:
-            console.log(`Unhandled event type ${event.type}`);
     }
 
     res.json({ received: true });
 }
 
+// Standalone service payment (no room)
 async function handleStandaloneServicePayment(session) {
-    console.log('🎉 Standalone service payment completed!');
+    console.log('🎉 Standalone service payment!');
     const ref = session.metadata.booking_reference;
-    const pending = global.pendingServices?.[ref];
+    const pending = global.pendingServices && global.pendingServices[ref];
     if (!pending) return;
     
     try {
         for (const service of pending.services) {
-            await db.RequestSubmission.create({
+            await RequestSubmission.create({
                 amenity_id: service.menu_item_id || 1,
                 guest_name: pending.guest_name || 'Guest',
                 guest_email: pending.guest_email,
                 guest_phone: 'Not provided',
                 request_type: 'service_order',
-                request_details: `${service.name} x${service.quantity} - $${(service.price * service.quantity).toFixed(2)}`,
+                request_details: service.name + ' x' + service.quantity + ' - $' + (service.price * service.quantity).toFixed(2),
                 status: 'pending'
             });
         }
@@ -104,7 +96,7 @@ async function handleStandaloneServicePayment(session) {
     notifyAdmins('new_request', {
         type: 'request',
         title: 'Service Order Paid 🛎️',
-        message: `${pending.guest_name || 'Guest'} paid $${pending.total.toFixed(2)} for ${pending.services.length} service(s)`,
+        message: (pending.guest_name || 'Guest') + ' paid $' + pending.total.toFixed(2),
         data: pending,
         timestamp: new Date()
     });
@@ -112,8 +104,8 @@ async function handleStandaloneServicePayment(session) {
     delete global.pendingServices[ref];
 }
 
+// Full payment (room + services)
 async function handleFullPaymentComplete(session) {
-    console.log('🎉 FULL payment completed!');
     const bookingId = session.metadata.booking_id;
     if (!bookingId) return;
     
@@ -143,19 +135,18 @@ async function handleFullPaymentComplete(session) {
         notifyAdmins('payment_received', {
             type: 'payment',
             title: 'Payment Confirmed ✅',
-            message: `Room ${booking.Room?.room_number || 'N/A'} - $${booking.total_amount} paid by ${booking.Guest?.first_name || 'Guest'}`,
+            message: 'Room ' + (booking.Room?.room_number || 'N/A') + ' - $' + booking.total_amount,
             data: { payment: { amount: booking.total_amount }, booking: { id: booking.id, booking_reference: booking.booking_reference } },
-            timestamp: new Date(),
-            color: 'success'
+            timestamp: new Date()
         });
         
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error('Error:', error.message);
     }
 }
 
+// Service payment (added to existing booking)
 async function handleServicePaymentComplete(session) {
-    console.log('🎉 Service payment completed!');
     const bookingId = session.metadata.booking_id;
     const servicesTotal = parseFloat(session.metadata.services_total || 0);
     if (!bookingId) return;
@@ -168,7 +159,6 @@ async function handleServicePaymentComplete(session) {
         if (totalPaid >= booking.total_amount) {
             booking.payment_status = PAYMENT_STATUS.PAID;
             booking.remaining_balance = 0;
-            booking.deposit_paid = booking.total_amount;
         } else {
             booking.remaining_balance = booking.total_amount - totalPaid;
         }
@@ -187,18 +177,18 @@ async function handleServicePaymentComplete(session) {
         notifyAdmins('payment_received', {
             type: 'payment',
             title: 'Additional Services Paid 🛎️',
-            message: `$${servicesTotal} in services added to Booking ${booking.booking_reference}`,
+            message: '$' + servicesTotal + ' services for Booking ' + booking.booking_reference,
             data: { payment: { amount: servicesTotal }, booking: { id: booking.id, booking_reference: booking.booking_reference } },
             timestamp: new Date()
         });
         
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error('Error:', error.message);
     }
 }
 
+// Deposit payment
 async function handleDepositPaymentComplete(session) {
-    console.log('🎉 Deposit payment completed!');
     const bookingId = session.metadata.booking_id;
     if (!bookingId) return;
     
@@ -226,19 +216,19 @@ async function handleDepositPaymentComplete(session) {
         notifyAdmins('payment_received', {
             type: 'payment',
             title: 'Deposit Paid 📝',
-            message: `$${(session.amount_total / 100).toFixed(2)} deposit for Booking ${booking.booking_reference}`,
+            message: '$' + (session.amount_total / 100).toFixed(2) + ' for Booking ' + booking.booking_reference,
             data: { payment: { amount: session.amount_total / 100 }, booking: { id: booking.id, booking_reference: booking.booking_reference } },
             timestamp: new Date()
         });
         
     } catch (error) {
-        console.error('❌ Error:', error.message);
+        console.error('Error:', error.message);
     }
 }
 
 async function handlePaymentSuccess(paymentIntent) {
     const metadata = paymentIntent.metadata;
-    if (metadata?.booking_id) {
+    if (metadata && metadata.booking_id) {
         try {
             const booking = await Booking.findByPk(parseInt(metadata.booking_id));
             if (booking && booking.payment_status !== PAYMENT_STATUS.PAID) {
@@ -247,7 +237,7 @@ async function handlePaymentSuccess(paymentIntent) {
                 await booking.save();
             }
         } catch (error) {
-            console.error('❌ Error:', error.message);
+            console.error('Error:', error.message);
         }
     }
 }

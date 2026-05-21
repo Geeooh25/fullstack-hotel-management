@@ -791,3 +791,6 @@ h1, h2, h3, h4, h5, h6 {
         padding-right: 35px;
     }
 }
+ 
+/* Mobile date input fix */ 
+@media (max-width: 576px) { input[type="date"]::-webkit-calendar-picker-indicator { display: block !important; opacity: 1 !important; width: 20px; height: 20px; } } 

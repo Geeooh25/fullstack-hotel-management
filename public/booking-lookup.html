@@ -391,7 +391,7 @@
             console.log('Downloading receipt for:', identifier);
             
             try {
-                const url = `/api/bookings/${identifier}/receipt`;
+               const url = `/api/bookings/receipt/${currentBookingReference}`;
                 window.open(url, '_blank');
             } catch (error) {
                 console.error('Receipt download error:', error);
