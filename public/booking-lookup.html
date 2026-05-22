@@ -557,11 +557,42 @@
         
         window.loadMyBookings = loadMyBookingsForUser;
         
-        async function lookupByReferenceAndScroll(reference) {
+                async function lookupByReferenceAndScroll(reference) {
             currentBookingReference = reference;
             currentBookingId = null;
             const container = document.getElementById('results-container');
             container.innerHTML = '<div class="col-12 text-center py-5"><div class="loader"></div><p class="mt-2">Searching...</p></div>';
+
+            // Handle service order references (SRV-)
+            if (reference && reference.startsWith('SRV-')) {
+                try {
+                    const response = await fetch('/api/bookings/service-receipt/' + reference);
+                    if (response.ok) {
+                        container.innerHTML = `
+                            <div class="col-lg-8">
+                                <div class="result-card">
+                                    <h5><i class="fas fa-concierge-bell"></i> Service Order</h5>
+                                    <p><strong>Reference:</strong> ${reference}</p>
+                                    <p><strong>Status:</strong> <span class="badge bg-success">Paid</span></p>
+                                    <p>This is a standalone service order.</p>
+                                    <button onclick="window.open('/api/bookings/service-receipt/${reference}', '_blank')" class="btn-gold mt-2">
+                                        <i class="fas fa-download"></i> Download Receipt (PDF)
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        container.innerHTML = '<div class="col-lg-6"><div class="result-card text-center"><p>Service order not found. It may still be processing.</p></div></div>';
+                    }
+                } catch (error) {
+                    container.innerHTML = '<div class="col-lg-6"><div class="result-card text-center"><p class="text-danger">Error loading</p></div></div>';
+                }
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(reference)}`);
+                
             
             try {
                 const response = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(reference)}`);
