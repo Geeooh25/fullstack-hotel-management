@@ -1,266 +1,28 @@
-<div class="row">
-    <div class="col-md-12">
-        <div class="stats-card">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5><i class="fas fa-exchange-alt"></i> Check-in / Check-out Management</h5>
-                <button class="btn btn-secondary" onclick="location.reload()">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-            </div>
-            
-            <ul class="nav nav-tabs mb-3">
-                <li class="nav-item">
-                    <a class="nav-link active" data-tab="arrivals" href="#">Today's Arrivals</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-tab="departures" href="#">Today's Departures</a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" data-tab="search" href="#">Search Booking</a>
-                </li>
-            </ul>
-            
-            <div id="arrivalsTab">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead><tr><th>Booking Ref</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></tr></thead>
-                        <tbody id="arrivalsTable"><tr><td colspan="7" class="text-center">Loading...</td</tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="departuresTab" style="display:none;">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead><tr><th>Booking Ref</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Status</th><th>Action</th></td></thead>
-                        <tbody id="departuresTable"><tr><td colspan="7" class="text-center">Loading...<ne(sq</td</tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <div id="searchTab" style="display:none;">
-                <div class="row mb-3">
-                    <div class="col-md-8">
-                        <input type="text" id="searchInput" class="form-control" placeholder="Enter Booking Reference (e.g., BKG-202605-e09b)">
-                    </div>
-                    <div class="col-md-4">
-                        <button class="btn-gold" id="searchBtn">Search</button>
-                    </div>
-                </div>
-                <div id="searchResults"></div>
-            </div>
+﻿<div class="col-md-12">
+    <div class="stats-card">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5><i class="fas fa-exchange-alt"></i> Check-in / Check-out</h5>
         </div>
+        <ul class="nav nav-tabs mb-3">
+            <li class="nav-item"><a class="nav-link active" data-tab="arrivals" href="#">Arrivals</a></li>
+            <li class="nav-item"><a class="nav-link" data-tab="departures" href="#">Departures</a></li>
+            <li class="nav-item"><a class="nav-link" data-tab="search" href="#">Search</a></li>
+        </ul>
+        <div id="arrivalsTab"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Ref</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Alert</th><th>Action</th></tr></thead><tbody id="arrivalsTable"><tr><td colspan="7">Loading...</td></tr></tbody></table></div></div>
+        <div id="departuresTab" style="display:none;"><div class="table-responsive"><table class="table table-hover"><thead><tr><th>Ref</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Check-out</th><th>Alert</th><th>Action</th></tr></thead><tbody id="departuresTable"><tr><td colspan="7">Loading...</td></tr></tbody></table></div></div>
+        <div id="searchTab" style="display:none;"><div class="row mb-3"><div class="col-md-8"><input type="text" id="searchInput" class="form-control" placeholder="Booking reference..."></div><div class="col-md-4"><button class="btn-gold" id="searchBtn">Search</button></div></div><div id="searchResults"></div></div>
     </div>
 </div>
-
-<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
-
-<style>
-    .nav-tabs .nav-link { color: #B8860B; cursor: pointer; }
-    .nav-tabs .nav-link.active { background: #B8860B; color: white; border-color: #B8860B; }
-    .badge-checked_in { background: #28a745; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; }
-    .badge-confirmed { background: #17a2b8; color: white; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; }
-    .badge-pending { background: #ffc107; color: #333; padding: 5px 10px; border-radius: 20px; font-size: 0.75rem; }
-    .btn-checkin { background: #28a745; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; }
-    .btn-checkout { background: #dc3545; color: white; border: none; padding: 5px 12px; border-radius: 5px; cursor: pointer; }
-    .toast-notification { background: white; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 280px; animation: slideIn 0.3s ease; }
-    .toast-success { border-left: 4px solid #28a745; background: #d4edda; color: #155724; }
-    .toast-error { border-left: 4px solid #dc3545; background: #f8d7da; color: #721c24; }
-    .toast-content { display: flex; align-items: center; gap: 10px; }
-    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-</style>
-
 <script>
-    function showToast(message, type) {
-        let container = document.getElementById('toastContainer');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toastContainer';
-            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
-            document.body.appendChild(container);
-        }
-        const toast = document.createElement('div');
-        toast.className = `toast-notification toast-${type}`;
-        toast.innerHTML = `<div class="toast-content"><i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}"></i><span>${message}</span><button style="background:none;border:none;margin-left:10px;cursor:pointer;" onclick="this.parentElement.remove()">&times;</button></div>`;
-        container.appendChild(toast);
-        setTimeout(() => toast.remove(), 3000);
-    }
-    
-    async function checkInGuest(bookingId, bookingRef) {
-        if (!confirm(`Confirm check-in for ${bookingRef}?`)) return;
-        showToast('Processing check-in...', 'success');
-        try {
-            const response = await fetch(`/api/bookings/${bookingId}/checkin`, { method: 'POST' });
-            const result = await response.json();
-            if (response.ok && result.success) {
-                showToast(`✅ Check-in successful for ${bookingRef}`, 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showToast(result.error || 'Check-in failed', 'error');
-            }
-        } catch (error) {
-            showToast('Error: ' + error.message, 'error');
-        }
-    }
-    
-    async function checkOutGuest(bookingId, bookingRef) {
-        if (!confirm(`Confirm check-out for ${bookingRef}?`)) return;
-        showToast('Processing check-out...', 'success');
-        try {
-            const response = await fetch(`/api/bookings/${bookingId}/checkout`, { method: 'POST' });
-            const result = await response.json();
-            if (response.ok && result.success) {
-                showToast(`✅ Check-out successful for ${bookingRef}`, 'success');
-                setTimeout(() => location.reload(), 1000);
-            } else {
-                showToast(result.error || 'Check-out failed', 'error');
-            }
-        } catch (error) {
-            showToast('Error: ' + error.message, 'error');
-        }
-    }
-    
-    async function loadTodayArrivals() {
-        try {
-            const response = await fetch('/api/bookings/today/arrivals');
-            const bookings = await response.json();
-            const table = document.getElementById('arrivalsTable');
-            
-            if (!bookings || bookings.length === 0) {
-                table.innerHTML = '<tr><td colspan="7" class="text-center">No arrivals today</td></tr>';
-                return;
-            }
-            
-            let html = '';
-            bookings.forEach(booking => {
-                const guest = booking.Guest || booking.guest || {};
-                const room = booking.Room || booking.room || {};
-                html += `<tr>
-                    <td><strong>${booking.booking_reference}</strong></td>
-                    <td>${guest.first_name || ''} ${guest.last_name || ''}</td>
-                    <td>Room ${room.room_number || 'N/A'}</td>
-                    <td>${new Date(booking.check_in).toLocaleDateString()}</td>
-                    <td>${new Date(booking.check_out).toLocaleDateString()}</td>
-                    <td><span class="badge-${booking.status}">${booking.status.toUpperCase()}</span></td>
-                    <td><button class="btn-checkin" onclick="checkInGuest(${booking.id}, '${booking.booking_reference}')">Check In</button></td>
-                </tr>`;
-            });
-            table.innerHTML = html;
-        } catch (error) {
-            console.error('Arrivals error:', error);
-            document.getElementById('arrivalsTable').innerHTML = '<tr><td colspan="7" class="text-center">Error loading data</td></tr>';
-        }
-    }
-    
-    async function loadTodayDepartures() {
-        try {
-            const response = await fetch('/api/bookings/today/departures');
-            const bookings = await response.json();
-            const table = document.getElementById('departuresTable');
-            
-            if (!bookings || bookings.length === 0) {
-                table.innerHTML = '<tr><td colspan="7" class="text-center">No departures today</td></tr>';
-                return;
-            }
-            
-            let html = '';
-            bookings.forEach(booking => {
-                const guest = booking.Guest || booking.guest || {};
-                const room = booking.Room || booking.room || {};
-                const canCheckout = booking.status === 'checked_in';
-                html += `<tr>
-                    <td><strong>${booking.booking_reference}</strong></td>
-                    <td>${guest.first_name || ''} ${guest.last_name || ''}</td>
-                    <td>Room ${room.room_number || 'N/A'}</td>
-                    <td>${new Date(booking.check_in).toLocaleDateString()}</td>
-                    <td>${new Date(booking.check_out).toLocaleDateString()}</td>
-                    <td><span class="badge-${booking.status}">${booking.status.toUpperCase()}</span></td>
-                    <td>${canCheckout ? `<button class="btn-checkout" onclick="checkOutGuest(${booking.id}, '${booking.booking_reference}')">Check Out</button>` : '<span class="text-muted">Completed</span>'}</td>
-                </tr>`;
-            });
-            table.innerHTML = html;
-        } catch (error) {
-            console.error('Departures error:', error);
-            document.getElementById('departuresTable').innerHTML = '<tr><td colspan="7" class="text-center">Error loading data</td></tr>';
-        }
-    }
-    
-    // FIXED SEARCH FUNCTION - Uses direct booking reference search
-    document.getElementById('searchBtn').addEventListener('click', async () => {
-        const query = document.getElementById('searchInput').value.trim();
-        if (!query) {
-            showToast('Please enter a booking reference', 'error');
-            return;
-        }
-        
-        showToast('Searching...', 'info');
-        
-        try {
-            // First try to find by exact booking reference
-            const response = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(query)}`);
-            const data = await response.json();
-            const resultsDiv = document.getElementById('searchResults');
-            
-            if (data.success && data.booking) {
-                const booking = data.booking;
-                const guest = booking.Guest || booking.guest || {};
-                const room = booking.Room || booking.room || {};
-                
-                const html = `
-                    <div class="alert alert-success">Booking found!</div>
-                    <div class="table-responsive">
-                        <table class="table table-bordered">
-                            <tr><th>Booking Reference</th><td><strong>${booking.booking_reference}</strong></td></tr>
-                            <tr><th>Guest Name</th><td>${guest.first_name || ''} ${guest.last_name || ''}</td></tr>
-                            <tr><th>Email</th><td>${guest.email || 'N/A'}</td></tr>
-                            <tr><th>Phone</th><td>${guest.phone || 'N/A'}</td></tr>
-                            <tr><th>Room</th><td>Room ${room.room_number || 'N/A'}</td></tr>
-                            <tr><th>Check-in</th><td>${new Date(booking.check_in).toLocaleDateString()}</td></tr>
-                            <tr><th>Check-out</th><td>${new Date(booking.check_out).toLocaleDateString()}</td></tr>
-                            <tr><th>Status</th><td><span class="badge-${booking.status}">${booking.status.toUpperCase()}</span></td></tr>
-                            <tr><th>Total Amount</th><td>$${parseFloat(booking.total_amount || 0).toFixed(2)}</td></tr>
-                        </table>
-                        <div class="mt-3">
-                            ${booking.status === 'confirmed' ? `<button class="btn-checkin" onclick="checkInGuest(${booking.id}, '${booking.booking_reference}')">Check In</button>` : ''}
-                            ${booking.status === 'checked_in' ? `<button class="btn-checkout" onclick="checkOutGuest(${booking.id}, '${booking.booking_reference}')">Check Out</button>` : ''}
-                            <button onclick="window.open('/api/bookings/${booking.id}/receipt', '_blank')" class="btn-gold ms-2">Download Receipt</button>
-                        </div>
-                    </div>
-                `;
-                resultsDiv.innerHTML = html;
-            } else {
-                resultsDiv.innerHTML = `<div class="alert alert-info">No booking found with reference: ${query}</div>`;
-            }
-            
-            resultsDiv.scrollIntoView({ behavior: 'smooth' });
-        } catch (error) {
-            console.error('Search error:', error);
-            showToast('Search failed: ' + error.message, 'error');
-        }
-    });
-    
-    document.querySelectorAll('[data-tab]').forEach(tab => {
-        tab.addEventListener('click', function() {
-            document.querySelectorAll('[data-tab]').forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            document.getElementById('arrivalsTab').style.display = 'none';
-            document.getElementById('departuresTab').style.display = 'none';
-            document.getElementById('searchTab').style.display = 'none';
-            if (this.dataset.tab === 'arrivals') {
-                document.getElementById('arrivalsTab').style.display = 'block';
-                loadTodayArrivals();
-            } else if (this.dataset.tab === 'departures') {
-                document.getElementById('departuresTab').style.display = 'block';
-                loadTodayDepartures();
-            } else {
-                document.getElementById('searchTab').style.display = 'block';
-            }
-        });
-    });
-    
-    document.getElementById('searchInput').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') document.getElementById('searchBtn').click();
-    });
-    
-    loadTodayArrivals();
+function showToast(m,t){const c=document.getElementById('toastContainer')||(()=>{const d=document.createElement('div');d.id='toastContainer';d.style.cssText='position:fixed;bottom:20px;right:20px;z-index:9999;';document.body.appendChild(d);return d;})();const toast=document.createElement('div');toast.className='toast-notification toast-'+t;toast.innerHTML='<div class="toast-content"><i class="fas '+(t==='success'?'fa-check-circle':'fa-exclamation-circle')+'"></i><span>'+m+'</span><button style="background:none;border:none;margin-left:10px;cursor:pointer;" onclick="this.parentElement.remove()">&times;</button></div>';c.appendChild(toast);setTimeout(()=>toast.remove(),3000);}
+function getWarning(b){const now=new Date();const out=new Date(b.check_out);const h=(out-now)/(1000*60*60);if(b.status==='checked_in'&&h<0)return'<span class="badge bg-danger"><i class="fas fa-exclamation-triangle"></i> Overdue</span>';if(b.status==='confirmed'&&h<=0.17&&h>0)return'<span class="badge bg-warning text-dark"><i class="fas fa-clock"></i> Soon</span>';if(b.status==='checked_in'&&h<=0.5&&h>0)return'<span class="badge bg-warning text-dark">'+Math.ceil(h*60)+'min left</span>';return'';}
+async function checkInGuest(id,ref){if(!confirm('Check-in: '+ref+'?'))return;try{const r=await fetch('/api/bookings/'+id+'/checkin',{method:'POST'});if(r.ok){showToast('Checked in: '+ref,'success');loadAll();}else{const d=await r.json();showToast(d.error||'Failed','error');}}catch(e){showToast('Error: '+e.message,'error');}}
+async function checkOutGuest(id,ref){if(!confirm('Check-out: '+ref+'?'))return;try{const r=await fetch('/api/bookings/'+id+'/checkout',{method:'POST'});if(r.ok){showToast('Checked out: '+ref,'success');loadAll();}else{const d=await r.json();showToast(d.error||'Failed','error');}}catch(e){showToast('Error: '+e.message,'error');}}
+async function loadArrivals(){try{const r=await fetch('/api/bookings/today/arrivals');const b=await r.json();const t=document.getElementById('arrivalsTable');if(!b||!b.length){t.innerHTML='<tr><td colspan="7">No arrivals</td></tr>';return;}t.innerHTML=b.map(x=>{const g=x.Guest||x.guest||{};const rm=x.Room||x.room||{};return'<tr><td><strong>'+x.booking_reference+'</strong></td><td>'+(g.first_name||'')+' '+(g.last_name||'')+'</td><td>Room '+(rm.room_number||'N/A')+'</td><td>'+new Date(x.check_in).toLocaleDateString()+'</td><td>'+new Date(x.check_out).toLocaleDateString()+'</td><td>'+getWarning(x)+'</td><td>'+(x.status==='confirmed'?'<button class="btn-checkin" onclick="checkInGuest('+x.id+',\''+x.booking_reference+'\')">Check In</button>':'<span class="badge bg-success">Checked In</span>')+'</td></tr>';}).join('');}catch(e){document.getElementById('arrivalsTable').innerHTML='<tr><td colspan="7">Error</td></tr>';}}
+async function loadDepartures(){try{const r=await fetch('/api/bookings/today/departures');const b=await r.json();const t=document.getElementById('departuresTable');if(!b||!b.length){t.innerHTML='<tr><td colspan="7">No departures</td></tr>';return;}t.innerHTML=b.map(x=>{const g=x.Guest||x.guest||{};const rm=x.Room||x.room||{};return'<tr><td><strong>'+x.booking_reference+'</strong></td><td>'+(g.first_name||'')+' '+(g.last_name||'')+'</td><td>Room '+(rm.room_number||'N/A')+'</td><td>'+new Date(x.check_in).toLocaleDateString()+'</td><td>'+new Date(x.check_out).toLocaleDateString()+'</td><td>'+getWarning(x)+'</td><td>'+(x.status==='checked_in'?'<button class="btn-checkout" onclick="checkOutGuest('+x.id+',\''+x.booking_reference+'\')">Check Out</button>':'<span class="badge bg-secondary">Done</span>')+'</td></tr>';}).join('');}catch(e){document.getElementById('departuresTable').innerHTML='<tr><td colspan="7">Error</td></tr>';}}
+function loadAll(){loadArrivals();loadDepartures();}
+document.querySelectorAll('.nav-tabs .nav-link').forEach(l=>{l.addEventListener('click',function(e){e.preventDefault();document.querySelectorAll('.nav-tabs .nav-link').forEach(x=>x.classList.remove('active'));this.classList.add('active');const tab=this.dataset.tab;document.getElementById('arrivalsTab').style.display=tab==='arrivals'?'':'none';document.getElementById('departuresTab').style.display=tab==='departures'?'':'none';document.getElementById('searchTab').style.display=tab==='search'?'':'none';});});
+document.getElementById('searchBtn').addEventListener('click',async()=>{const ref=document.getElementById('searchInput').value.trim();if(!ref)return;const d=document.getElementById('searchResults');d.innerHTML='<p>Searching...</p>';try{const r=await fetch('/api/bookings/lookup?reference='+ref);const data=await r.json();if(data.success&&data.booking){const b=data.booking;const g=b.Guest||{};const rm=b.Room||{};d.innerHTML='<div class="result-card"><table class="table"><tr><th>Ref</th><td>'+b.booking_reference+'</td></tr><tr><th>Guest</th><td>'+(g.first_name||'')+' '+(g.last_name||'')+'</td></tr><tr><th>Room</th><td>'+rm.room_number+'</td></tr><tr><th>Status</th><td><span class="badge bg-'+(b.status==='confirmed'?'success':'warning')+'">'+b.status+'</span></td></tr></table>'+(b.status==='confirmed'?'<button class="btn-checkin mt-2" onclick="checkInGuest('+b.id+',\''+b.booking_reference+'\')">Check In</button>':'')+(b.status==='checked_in'?'<button class="btn-checkout mt-2" onclick="checkOutGuest('+b.id+',\''+b.booking_reference+'\')">Check Out</button>':'')+'</div>';}else{d.innerHTML='<p>Not found</p>';}}catch(e){d.innerHTML='<p>Error</p>';}});
+loadAll();setInterval(loadAll,30000);
 </script>
+<style>.nav-tabs .nav-link{color:#B8860B;cursor:pointer;}.nav-tabs .nav-link.active{background:#B8860B;color:white;}.btn-checkin{background:#28a745;color:white;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;}.btn-checkout{background:#dc3545;color:white;border:none;padding:5px 12px;border-radius:5px;cursor:pointer;}.result-card{background:#f8f9fa;padding:15px;border-radius:8px;margin-top:10px;}.toast-notification{background:white;padding:12px 16px;margin-bottom:8px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.15);animation:slideIn 0.3s;}.toast-success{border-left:4px solid #28a745;background:#d4edda;color:#155724;}.toast-error{border-left:4px solid #dc3545;background:#f8d7da;color:#721c24;}.toast-content{display:flex;align-items:center;gap:10px;}@keyframes slideIn{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}</style>

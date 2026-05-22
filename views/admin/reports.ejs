@@ -1,50 +1,114 @@
-<div class="row">
-    <div class="col-md-12">
-        <div class="row">
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <h5>Total Bookings</h5>
-                    <div class="stats-number"><%= totalBookings || 0 %></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <h5>Total Revenue</h5>
-                    <div class="stats-number">$<%= (totalRevenue || 0).toLocaleString() %></div>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <h5>Reports Generated</h5>
-                    <div class="stats-number"><%= recentBookings ? recentBookings.length : 0 %></div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="stats-card mt-4">
-            <h5>Recent Activity</h5>
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr><th>Booking ID</th><th>Guest</th><th>Amount</th><th>Date</th><th>Status</th></tr>
-                    </thead>
-                    <tbody>
-                        <% if (recentBookings && recentBookings.length > 0) { %>
-                            <% recentBookings.forEach(booking => { %>
-                                <tr>
-                                    <td>#<%= booking.id %></td>
-                                    <td><%= booking.guest ? booking.guest.first_name + ' ' + booking.guest.last_name : 'N/A' %></td>
-                                    <td>$<%= booking.total_amount %></td>
-                                    <td><%= new Date(booking.created_at).toLocaleDateString() %></td>
-                                    <td><span class="badge bg-success"><%= booking.status %></span></td>
-                                </tr>
-                            <% }) %>
-                        <% } else { %>
-                            <tr><td colspan="5" class="text-center">No recent activity</td></tr>
-                        <% } %>
-                    </tbody>
-                </table>
+<div class="col-md-12">
+    <!-- Filter Bar -->
+    <div class="stats-card mb-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <h5><i class="fas fa-chart-bar"></i> Reports</h5>
+            <div class="d-flex gap-2">
+                <a href="/admin/reports?filter=day" class="btn btn-sm <%= filter === 'day' ? 'btn-gold' : 'btn-outline-gold' %>">Today</a>
+                <a href="/admin/reports?filter=week" class="btn btn-sm <%= filter === 'week' ? 'btn-gold' : 'btn-outline-gold' %>">Week</a>
+                <a href="/admin/reports?filter=month" class="btn btn-sm <%= filter === 'month' ? 'btn-gold' : 'btn-outline-gold' %>">Month</a>
+                <a href="/admin/reports?filter=all" class="btn btn-sm <%= !filter || filter === 'all' ? 'btn-gold' : 'btn-outline-gold' %>">All</a>
             </div>
         </div>
     </div>
+
+    <!-- Stats Cards -->
+    <div class="row">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>Total Bookings</h5>
+                <div class="stats-number"><%= totalBookings || 0 %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>Total Revenue</h5>
+                <div class="stats-number">$<%= (totalRevenue || 0).toLocaleString() %></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>Occupancy</h5>
+                <div class="stats-number"><%= occupancy || 0 %>%</div>
+                <small><%= occupiedRooms || 0 %> / <%= totalRooms || 0 %> rooms</small>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <h5>Cancellation Rate</h5>
+                <div class="stats-number"><%= cancellationRate.rate || 0 %>%</div>
+                <small><%= cancellationRate.cancelled || 0 %> / <%= cancellationRate.total || 0 %></small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Revenue by Room Type -->
+    <% if (revenueByRoomType && revenueByRoomType.length > 0) { %>
+    <div class="stats-card mt-4">
+        <h5>Revenue by Room Type</h5>
+        <div class="table-responsive">
+            <table class="table">
+                <thead><tr><th>Room Type</th><th>Bookings</th><th>Revenue</th><th>Avg Value</th></tr></thead>
+                <tbody>
+                    <% revenueByRoomType.forEach(r => { %>
+                        <tr>
+                            <td><strong><%= r.room_type %></strong></td>
+                            <td><%= r.bookings %></td>
+                            <td>$<%= parseFloat(r.revenue).toLocaleString() %></td>
+                            <td>$<%= parseFloat(r.avg_booking_value).toFixed(2) %></td>
+                        </tr>
+                    <% }) %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Recent Bookings -->
+    <div class="stats-card mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5>Recent Bookings</h5>
+            <button class="btn btn-sm btn-gold" onclick="exportReport()">
+                <i class="fas fa-download"></i> Download CSV
+            </button>
+        </div>
+        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+            <table class="table table-hover">
+                <thead>
+                    <tr><th>Reference</th><th>Guest</th><th>Room</th><th>Check-in</th><th>Amount</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <% if (recentBookings && recentBookings.length > 0) { %>
+                        <% recentBookings.forEach(booking => { %>
+                            <tr>
+                                <td><strong><%= booking.booking_reference %></strong></td>
+                                <td>
+                                    <% if (booking.Guest) { %>
+                                        <%= booking.Guest.first_name %> <%= booking.Guest.last_name %>
+                                    <% } else { %>
+                                        N/A
+                                    <% } %>
+                                </td>
+                                <td>Room <%= booking.Room?.room_number || 'N/A' %></td>
+                                <td><%= new Date(booking.check_in).toLocaleDateString() %></td>
+                                <td>$<%= parseFloat(booking.total_amount).toFixed(2) %></td>
+                                <td><span class="badge bg-<%= booking.status === 'confirmed' ? 'success' : booking.status === 'cancelled' ? 'danger' : 'warning' %>"><%= booking.status %></span></td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="6" class="text-center">No bookings for this period</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<script>
+    function exportReport() {
+        const filter = new URLSearchParams(window.location.search).get('filter') || 'all';
+        const today = new Date().toISOString().split('T')[0];
+        const startDate = filter === 'day' ? today : filter === 'week' ? new Date(Date.now() - 7*24*60*60*1000).toISOString().split('T')[0] : filter === 'month' ? new Date(Date.now() - 30*24*60*60*1000).toISOString().split('T')[0] : '2024-01-01';
+        window.open(`/admin/reports/export?type=bookings&startDate=${startDate}&endDate=${today}`, '_blank');
+    }
+</script>

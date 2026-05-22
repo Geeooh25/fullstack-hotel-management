@@ -6,193 +6,186 @@ const reportController = {
     getReports: async (req, res) => {
         try {
             const range = req.query.range || '30';
+            const filter = req.query.filter || 'all'; // day, week, month, all
             const endDate = new Date();
             const startDate = new Date();
-            startDate.setDate(startDate.getDate() - parseInt(range));
             
-            // Get booking trends
-            const bookingTrends = await db.Booking.findAll({
-                attributes: [
-                    [db.sequelize.fn('DATE', db.sequelize.col('created_at')), 'date'],
-                    [db.sequelize.fn('COUNT', db.sequelize.col('id')), 'bookings'],
-                    [db.sequelize.fn('SUM', db.sequelize.col('total_amount')), 'revenue'],
-                    [db.sequelize.fn('SUM', db.sequelize.literal(`CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END`)), 'confirmed'],
-                    [db.sequelize.fn('SUM', db.sequelize.literal(`CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END`)), 'cancelled']
-                ],
-                where: {
-                    created_at: { [Op.gte]: startDate }
-                },
-                group: [db.sequelize.fn('DATE', db.sequelize.col('created_at'))],
-                order: [[db.sequelize.fn('DATE', db.sequelize.col('created_at')), 'ASC']],
-                raw: true
-            });
-            
-            // Get revenue by room type
-            const revenueByRoomType = await db.Booking.findAll({
-                attributes: [
-                    [db.sequelize.col('Room.RoomType.name'), 'room_type'],
-                    [db.sequelize.fn('COUNT', db.sequelize.col('Booking.id')), 'bookings'],
-                    [db.sequelize.fn('SUM', db.sequelize.col('Booking.total_amount')), 'revenue'],
-                    [db.sequelize.fn('AVG', db.sequelize.col('Booking.total_amount')), 'avg_booking_value']
-                ],
+            // Handle filters
+            if (filter === 'day') {
+                startDate.setHours(0, 0, 0, 0);
+            } else if (filter === 'week') {
+                startDate.setDate(startDate.getDate() - 7);
+            } else if (filter === 'month') {
+                startDate.setMonth(startDate.getMonth() - 1);
+            } else {
+                startDate.setDate(startDate.getDate() - parseInt(range));
+            }
+
+            // Get recent bookings with guest info (FIXED: N/A guests)
+            const recentBookings = await db.Booking.findAll({
                 include: [
-                    {
-                        model: db.Room,
-                        include: [{ model: db.RoomType }]
-                    }
+                    { model: db.Guest },
+                    { model: db.Room, include: [{ model: db.RoomType }] }
                 ],
-                where: {
-                    created_at: { [Op.gte]: startDate },
-                    status: { [Op.ne]: 'cancelled' }
-                },
-                group: ['Room.RoomType.name'],
-                raw: true
+                where: { created_at: { [Op.gte]: startDate } },
+                order: [['created_at', 'DESC']],
+                limit: 50
             });
-            
-            // Get top performing rooms
-            const topRooms = await db.Booking.findAll({
-                attributes: [
-                    [db.sequelize.col('Room.room_number'), 'room_number'],
-                    [db.sequelize.col('Room.RoomType.name'), 'room_type'],
-                    [db.sequelize.fn('COUNT', db.sequelize.col('Booking.id')), 'total_bookings'],
-                    [db.sequelize.fn('SUM', db.sequelize.col('Booking.total_amount')), 'total_revenue']
-                ],
-                include: [
-                    {
-                        model: db.Room,
-                        include: [{ model: db.RoomType }]
-                    }
-                ],
-                where: {
-                    created_at: { [Op.gte]: startDate },
-                    status: { [Op.ne]: 'cancelled' }
-                },
-                group: ['Room.id', 'Room.room_number', 'Room.RoomType.name'],
-                order: [[db.sequelize.fn('SUM', db.sequelize.col('Booking.total_amount')), 'DESC']],
-                limit: 10,
-                raw: true
-            });
-            
-            // Get cancellation rate
+
+            // Get total stats
             const totalBookings = await db.Booking.count({
                 where: { created_at: { [Op.gte]: startDate } }
             });
-            
-            const cancelledBookings = await db.Booking.count({
-                where: {
+
+            const totalRevenue = await db.Booking.sum('total_amount', {
+                where: { 
                     created_at: { [Op.gte]: startDate },
-                    status: 'cancelled'
+                    status: { [Op.ne]: 'cancelled' }
                 }
             });
-            
+
+            // Revenue by room type
+            const revenueByRoomType = await db.sequelize.query(
+                `SELECT rt.name as room_type, COUNT(b.id) as bookings, 
+                        COALESCE(SUM(b.total_amount), 0) as revenue,
+                        COALESCE(AVG(b.total_amount), 0) as avg_booking_value
+                 FROM bookings b
+                 JOIN rooms r ON b.room_id = r.id
+                 JOIN room_types rt ON r.room_type_id = rt.id
+                 WHERE b.created_at >= :startDate AND b.status != 'cancelled'
+                 GROUP BY rt.name
+                 ORDER BY revenue DESC`,
+                { replacements: { startDate }, type: db.sequelize.QueryTypes.SELECT }
+            );
+
+            // Top rooms
+            const topRooms = await db.sequelize.query(
+                `SELECT r.room_number, rt.name as room_type, 
+                        COUNT(b.id) as total_bookings,
+                        COALESCE(SUM(b.total_amount), 0) as total_revenue
+                 FROM bookings b
+                 JOIN rooms r ON b.room_id = r.id
+                 JOIN room_types rt ON r.room_type_id = rt.id
+                 WHERE b.created_at >= :startDate AND b.status != 'cancelled'
+                 GROUP BY r.id, r.room_number, rt.name
+                 ORDER BY total_revenue DESC
+                 LIMIT 10`,
+                { replacements: { startDate }, type: db.sequelize.QueryTypes.SELECT }
+            );
+
+            // Cancellation rate
+            const cancelledBookings = await db.Booking.count({
+                where: { created_at: { [Op.gte]: startDate }, status: 'cancelled' }
+            });
+
             const cancellationRate = {
                 cancelled: cancelledBookings,
                 total: totalBookings,
-                rate: totalBookings > 0 ? (cancelledBookings / totalBookings * 100).toFixed(2) : 0
+                rate: totalBookings > 0 ? ((cancelledBookings / totalBookings) * 100).toFixed(1) : 0
             };
-            
-            // Get repeat customers (users with multiple bookings)
-            const repeatCustomers = await db.Booking.findAll({
-                attributes: [
-                    [db.sequelize.col('User.email'), 'email'],
-                    [db.sequelize.col('User.first_name'), 'first_name'],
-                    [db.sequelize.col('User.last_name'), 'last_name'],
-                    [db.sequelize.fn('COUNT', db.sequelize.col('Booking.id')), 'booking_count'],
-                    [db.sequelize.fn('SUM', db.sequelize.col('Booking.total_amount')), 'total_spent']
-                ],
-                include: [{ model: db.User, as: 'user' }],
-                where: {
-                    created_at: { [Op.gte]: startDate },
-                    user_id: { [Op.not]: null }
-                },
-                group: ['User.id', 'User.email', 'User.first_name', 'User.last_name'],
-                having: db.sequelize.literal('COUNT(Booking.id) > 1'),
-                order: [[db.sequelize.fn('COUNT', db.sequelize.col('Booking.id')), 'DESC']],
-                limit: 10,
-                raw: true
-            });
-            
+
+            // Occupancy
+            const totalRooms = await db.Room.count();
+            const occupiedRooms = await db.Room.count({ where: { status: 'occupied' } });
+            const occupancy = totalRooms > 0 ? ((occupiedRooms / totalRooms) * 100).toFixed(1) : 0;
+
             res.render('admin/reports', {
+                title: 'Reports',
                 range,
-                bookingTrends: JSON.stringify(bookingTrends),
+                filter,
+                recentBookings: recentBookings || [],
+                totalBookings,
+                totalRevenue: totalRevenue || 0,
                 revenueByRoomType: revenueByRoomType || [],
                 topRooms: topRooms || [],
                 cancellationRate,
-                repeatCustomers: repeatCustomers || [],
+                occupancy,
+                totalRooms,
+                occupiedRooms,
                 session: req.session
             });
         } catch (error) {
-            console.error(error);
-            res.render('admin/reports', { 
-                error: 'Failed to load reports',
-                bookingTrends: '[]',
+            console.error('Report error:', error);
+            res.render('admin/reports', {
+                title: 'Reports',
+                error: 'Failed to load reports: ' + error.message,
+                recentBookings: [],
+                totalBookings: 0,
+                totalRevenue: 0,
+                revenueByRoomType: [],
+                topRooms: [],
+                cancellationRate: { cancelled: 0, total: 0, rate: 0 },
+                occupancy: 0,
                 session: req.session
             });
         }
     },
-    
-    // Export report as CSV
+
+    // Export report
     exportReport: async (req, res) => {
-        const { type, format, startDate, endDate } = req.query;
-        
+        const { type, startDate, endDate } = req.query;
+
         try {
             let data = [];
-            let filename = '';
-            
-            switch(type) {
-                case 'bookings':
-                    data = await db.Booking.findAll({
-                        include: [
-                            { model: db.User, as: 'user', attributes: ['email'] },
-                            { model: db.Room, attributes: ['room_number'] }
-                        ],
-                        where: {
-                            created_at: {
-                                [Op.between]: [new Date(startDate), new Date(endDate)]
-                            }
-                        },
-                        order: [['created_at', 'DESC']],
-                        raw: true
-                    });
-                    filename = `bookings_${startDate}_to_${endDate}.csv`;
-                    break;
-                    
-                case 'payments':
-                    data = await db.Payment.findAll({
-                        include: [
-                            { model: db.Booking, include: [{ model: db.User, attributes: ['email'] }] }
-                        ],
-                        where: {
-                            created_at: {
-                                [Op.between]: [new Date(startDate), new Date(endDate)]
-                            }
-                        },
-                        order: [['created_at', 'DESC']],
-                        raw: true
-                    });
-                    filename = `payments_${startDate}_to_${endDate}.csv`;
-                    break;
+            let filename = 'report.csv';
+
+            if (type === 'bookings') {
+                const bookings = await db.Booking.findAll({
+                    include: [
+                        { model: db.Guest },
+                        { model: db.Room, include: [{ model: db.RoomType }] }
+                    ],
+                    where: {
+                        created_at: { [Op.between]: [new Date(startDate), new Date(endDate)] }
+                    },
+                    order: [['created_at', 'DESC']]
+                });
+
+                data = bookings.map(b => ({
+                    Reference: b.booking_reference,
+                    Guest: b.Guest ? `${b.Guest.first_name} ${b.Guest.last_name}` : 'N/A',
+                    Email: b.Guest?.email || 'N/A',
+                    Room: b.Room?.room_number || 'N/A',
+                    Type: b.Room?.RoomType?.name || 'N/A',
+                    CheckIn: b.check_in,
+                    CheckOut: b.check_out,
+                    Amount: b.total_amount,
+                    Status: b.status,
+                    Date: new Date(b.created_at).toLocaleDateString()
+                }));
+                filename = `bookings_report_${startDate}_to_${endDate}.csv`;
+            } else if (type === 'revenue') {
+                const payments = await db.Payment.findAll({
+                    include: [{ model: db.Booking, include: [{ model: db.Guest }] }],
+                    where: { created_at: { [Op.between]: [new Date(startDate), new Date(endDate)] }, status: 'completed' },
+                    order: [['created_at', 'DESC']]
+                });
+                data = payments.map(p => ({
+                    Transaction: p.transaction_id || 'N/A',
+                    Booking: p.Booking?.booking_reference || 'N/A',
+                    Guest: p.Booking?.Guest ? `${p.Booking.Guest.first_name} ${p.Booking.Guest.last_name}` : 'N/A',
+                    Amount: p.amount,
+                    Method: p.payment_method,
+                    Date: new Date(p.created_at).toLocaleDateString()
+                }));
+                filename = `revenue_report_${startDate}_to_${endDate}.csv`;
             }
-            
-            if (format === 'json') {
-                res.json(data);
-            } else {
-                if (data.length === 0) {
-                    return res.status(404).json({ error: 'No data found' });
-                }
-                
-                const headers = Object.keys(data[0]);
-                const csvRows = [
-                    headers.join(','),
-                    ...data.map(row => headers.map(header => JSON.stringify(row[header] || '')).join(','))
-                ];
-                
-                res.setHeader('Content-Type', 'text/csv');
-                res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-                res.send(csvRows.join('\n'));
+
+            if (data.length === 0) {
+                return res.status(404).json({ error: 'No data found for selected period' });
             }
+
+            const headers = Object.keys(data[0]);
+            const csvRows = [
+                headers.join(','),
+                ...data.map(row => headers.map(h => `"${row[h] || ''}"`).join(','))
+            ];
+
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+            res.send(csvRows.join('\n'));
         } catch (error) {
-            console.error(error);
+            console.error('Export error:', error);
             res.status(500).json({ error: 'Failed to export report' });
         }
     }

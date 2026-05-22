@@ -83,8 +83,7 @@
                     <div class="col-md-12">
                         <div class="alert alert-info">
                             <strong>Total Amount:</strong> $<span id="totalAmount">0.00</span>
-                            <small class="text-muted">(Tax included)</small>
-                        </div>
+                            
                     </div>
                 </div>
                 
@@ -156,8 +155,8 @@ document.getElementById('checkIn').addEventListener('change', function() {
                 const nights = Math.ceil((end - start) / (1000 * 60 * 60 * 24));
                 if (nights > 0) {
                     const subtotal = price * nights;
-                    const tax = subtotal * 0.1;
-                    const total = subtotal + tax;
+                    
+                    const total = subtotal;
                     document.getElementById('totalAmount').innerText = total.toFixed(2);
                     return;
                 }

@@ -17,12 +17,20 @@
                         <input type="text" name="hotel_phone" class="form-control" value="<%= settings.hotel_phone || '+1 (555) 123-4567' %>">
                     </div>
                     <div class="col-md-6 mb-3">
-                        <label class="form-label">Tax Rate (%)</label>
-                        <input type="number" name="tax_rate" class="form-control" step="0.01" value="<%= settings.tax_rate || 10 %>">
+                        <label class="form-label">Check-in Time</label>
+                        <input type="time" name="check_in_time" class="form-control" value="<%= settings.check_in_time || '14:00' %>">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Check-out Time</label>
+                        <input type="time" name="check_out_time" class="form-control" value="<%= settings.check_out_time || '11:00' %>">
                     </div>
                     <div class="col-12 mb-3">
                         <label class="form-label">Address</label>
                         <textarea name="hotel_address" class="form-control" rows="2"><%= settings.hotel_address || '123 Luxury Avenue, Beverly Hills, CA 90210' %></textarea>
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label class="form-label">Cancellation Policy</label>
+                        <textarea name="cancellation_policy" class="form-control" rows="2"><%= settings.cancellation_policy || 'Free cancellation up to 3 days before check-in. Late cancellations may be subject to charges.' %></textarea>
                     </div>
                 </div>
                 <button type="submit" class="btn-gold">Save Settings</button>
@@ -36,12 +44,20 @@
         e.preventDefault();
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
-        
-        const response = await fetch('/admin/settings', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-        if (response.ok) alert('Settings saved!');
+        try {
+            const response = await fetch('/admin/settings', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            const result = await response.json();
+            if (result.success) {
+                alert('Settings saved successfully!');
+            } else {
+                alert('Error: ' + (result.error || 'Failed to save'));
+            }
+        } catch (error) {
+            alert('Network error');
+        }
     });
 </script>

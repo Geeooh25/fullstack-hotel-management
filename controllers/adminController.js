@@ -391,48 +391,65 @@ postResetPassword: async (req, res) => {
 
   updateBookingStatus: async (req, res) => {
     if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
-    
+
     const { id } = req.params;
     const { status } = req.body;
-    
-    const validStatuses = ['pending', 'confirmed', 'checked_in', 'checked_out', 'cancelled'];
-    
-    if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: 'Invalid status' });
-    }
-    
+
+    // Define valid status transitions (one-way only)
+    const allowedTransitions = {
+        'pending': ['confirmed', 'cancelled'],
+        'confirmed': ['checked_in', 'cancelled'],
+        'checked_in': ['checked_out'],
+        'checked_out': [],           // Cannot change
+        'cancelled': []              // Cannot change
+    };
+
     try {
-        // First, update the status
-        await db.Booking.update({ status }, { where: { id } });
-        
-        // Then try to send email (don't let email failure break the update)
+        // Get current booking status
+        const booking = await db.Booking.findByPk(id);
+        if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+        const currentStatus = booking.status;
+
+        // Check if transition is allowed
+        if (!allowedTransitions[currentStatus] || !allowedTransitions[currentStatus].includes(status)) {
+            return res.status(400).json({ 
+                error: `Cannot change status from '${currentStatus}' to '${status}'. Allowed transitions: ${(allowedTransitions[currentStatus] || ['none']).join(', ')}` 
+            });
+        }
+
+        // Update timestamp based on status
+        const updates = { status };
+        if (status === 'confirmed') updates.confirmed_at = new Date();
+        if (status === 'checked_in') updates.checked_in_at = new Date();
+        if (status === 'checked_out') updates.checked_out_at = new Date();
+        if (status === 'cancelled') updates.cancelled_at = new Date();
+
+        await db.Booking.update(updates, { where: { id } });
+
+        // Update room status
+        if (status === 'checked_in') {
+            await db.Room.update({ status: 'occupied' }, { where: { id: booking.room_id } });
+        } else if (status === 'checked_out' || status === 'cancelled') {
+            await db.Room.update({ status: 'available' }, { where: { id: booking.room_id } });
+        }
+
+        // Send email notification
         try {
-            // Get booking details with correct alias - use 'Guest' not 'guest'
-            const booking = await db.Booking.findByPk(id, {
+            const updatedBooking = await db.Booking.findByPk(id, {
                 include: [
-                    { model: db.Guest },  // Remove the 'as' alias
+                    { model: db.Guest },
                     { model: db.Room, include: [{ model: db.RoomType }] }
                 ]
             });
-            
-            if (booking && booking.Guest && booking.Room) {
+            if (updatedBooking?.Guest && updatedBooking?.Room) {
                 const EmailService = require('../services/emailService');
-                
                 if (status === 'confirmed') {
-                    await EmailService.sendBookingConfirmation(booking, booking.Guest, booking.Room, {});
-                    console.log(`📧 Confirmation email sent for booking #${id}`);
-                } else if (status === 'cancelled') {
-                    await EmailService.sendCancellationEmail(booking, booking.Guest, 'Booking cancelled by admin');
-                    console.log(`📧 Cancellation email sent for booking #${id}`);
-                } else if (status === 'checked_in') {
-                    await EmailService.sendCheckInReminder(booking, booking.Guest, booking.Room);
-                    console.log(`📧 Check-in notification sent for booking #${id}`);
+                    await EmailService.sendBookingConfirmation(updatedBooking, updatedBooking.Guest, updatedBooking.Room, {});
                 }
             }
-        } catch (emailError) {
-            console.error('Email error (non-blocking):', emailError.message);
-        }
-        
+        } catch (e) { console.error('Email error:', e.message); }
+
         res.json({ success: true });
     } catch (error) {
         console.error('Status update error:', error);

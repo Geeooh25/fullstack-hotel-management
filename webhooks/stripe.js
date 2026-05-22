@@ -86,7 +86,7 @@ async function handleStandaloneServicePayment(session) {
             guest_email: pending.guest_email,
             services: JSON.stringify(pending.services),
             total_amount: pending.total,
-            status: 'pending',
+            status: 'paid',
             payment_status: 'paid'
         });
         console.log('✅ Service order saved:', ref);
