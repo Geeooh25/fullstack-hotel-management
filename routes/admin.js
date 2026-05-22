@@ -148,6 +148,11 @@ router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res)
         res.status(500).json({ error: error.message });
     }
 });
+// Bulk add rooms page
+router.get('/rooms/bulk', isAdminAuthenticated, hasRole(['super_admin', 'admin']), async (req, res) => {
+    const roomTypes = await db.RoomType.findAll();
+    res.render('admin/rooms-bulk', { title: 'Bulk Add Rooms', roomTypes, session: req.session });
+});
 
 // TEMP: Create service_orders table only
 router.get('/sync-db', isAdminAuthenticated, hasRole(['super_admin']), async (req, res) => {
