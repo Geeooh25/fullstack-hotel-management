@@ -79,18 +79,18 @@ async function handleStandaloneServicePayment(session) {
     if (!pending) return;
     
     try {
-        for (const service of pending.services) {
-            await RequestSubmission.create({
-                amenity_id: service.menu_item_id || 1,
-                guest_name: pending.guest_name || 'Guest',
-                guest_email: pending.guest_email,
-                guest_phone: 'Not provided',
-                request_type: 'service_order',
-                request_details: service.name + ' x' + service.quantity + ' - $' + (service.price * service.quantity).toFixed(2),
-                status: 'pending'
-            });
-        }
-        console.log('✅ Service orders saved');
+        // Save to ServiceOrder table (permanent)
+        const ServiceOrder = require('../models/serviceOrder');
+        await ServiceOrder.create({
+            reference: ref,
+            guest_name: pending.guest_name || 'Guest',
+            guest_email: pending.guest_email,
+            services: JSON.stringify(pending.services),
+            total_amount: pending.total,
+            status: 'pending',
+            payment_status: 'paid'
+        });
+        console.log('✅ Service order saved to database');
     } catch (e) { console.error('Save error:', e.message); }
     
     notifyAdmins('new_request', {

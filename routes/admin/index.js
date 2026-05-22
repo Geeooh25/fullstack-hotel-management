@@ -10,7 +10,7 @@ const calendarRoutes = require('./calendar');
 const housekeepingRoutes = require('./housekeeping');
 const reportsRoutes = require('./reports');
 const settingsRoutes = require('./settings');
-
+const serviceOrdersRoutes = require('./serviceOrders');
 // Mount routes
 router.use('/dashboard', dashboardRoutes);
 router.use('/rooms', roomsRoutes);
@@ -20,7 +20,7 @@ router.use('/calendar', calendarRoutes);
 router.use('/housekeeping', housekeepingRoutes);
 router.use('/reports', reportsRoutes);
 router.use('/settings', settingsRoutes);
-
+router.use('/service-orders', serviceOrdersRoutes);
 // Admin home redirects to dashboard
 router.get('/', (req, res) => {
     res.redirect('/admin/dashboard');

@@ -16,7 +16,7 @@ const MenuItem = require('./menuItem');
 const CartItem = require('./cartItem');
 const BookingService = require('./bookingService');
 const RequestSubmission = require('./requestSubmission');
-
+const ServiceOrder = require('./serviceOrder');
 // Stage 3 Models
 const SystemSetting = require('./SystemSetting');
 const NotificationSetting = require('./NotificationSetting');
@@ -34,6 +34,7 @@ const models = {
     EmailLog,
     Amenity,
     MenuCategory,
+    ServiceOrder,
     MenuItem,
     CartItem,
     BookingService,

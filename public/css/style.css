@@ -794,3 +794,6 @@ h1, h2, h3, h4, h5, h6 {
  
 /* Mobile date input fix */ 
 @media (max-width: 576px) { input[type="date"]::-webkit-calendar-picker-indicator { display: block !important; opacity: 1 !important; width: 20px; height: 20px; } } 
+ 
+/* Show calendar icon on mobile */ 
+@media (max-width: 576px) { input[type="date"]::-webkit-calendar-picker-indicator { opacity: 1 !important; display: block !important; } input[type="date"] { padding-right: 35px !important; } } 

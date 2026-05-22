@@ -1237,6 +1237,52 @@ router.get('/receipt/:ref', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+// GET /api/bookings/service-receipt/:ref - Service order receipt
+router.get('/service-receipt/:ref', async (req, res) => {
+    try {
+        const ServiceOrder = require('../../models/serviceOrder');
+        const order = await ServiceOrder.findOne({ where: { reference: req.params.ref } });
+        
+        if (!order) {
+            return res.status(404).json({ error: 'Service order not found' });
+        }
+        
+        const PDFDocument = require('pdfkit');
+        const doc = new PDFDocument({ margin: 50, size: 'A4' });
+        const chunks = [];
+        doc.on('data', chunk => chunks.push(chunk));
+        doc.on('end', () => {
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename="service-receipt-' + order.reference + '.pdf"');
+            res.send(Buffer.concat(chunks));
+        });
+        
+        doc.fontSize(20).font('Helvetica-Bold').fillColor('#B8860B').text('GEEOOH HOTEL', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(16).fillColor('#1a2a3a').text('SERVICE RECEIPT', { align: 'center' });
+        doc.moveDown();
+        doc.fontSize(10).fillColor('#333')
+            .text('Reference: ' + order.reference)
+            .text('Date: ' + new Date(order.createdAt).toLocaleDateString())
+            .text('Guest: ' + order.guest_name)
+            .text('Email: ' + order.guest_email);
+        doc.moveDown();
+        
+        const services = JSON.parse(order.services || '[]');
+        doc.fontSize(11).font('Helvetica-Bold').text('Services:');
+        services.forEach(s => {
+            doc.fontSize(10).font('Helvetica').text('  ' + s.name + ' x' + s.quantity + ' - $' + (s.price * s.quantity).toFixed(2));
+        });
+        doc.moveDown();
+        doc.fontSize(14).font('Helvetica-Bold').fillColor('#B8860B').text('Total: $' + parseFloat(order.total_amount).toFixed(2), { align: 'right' });
+        doc.moveDown(2);
+        doc.fontSize(10).font('Helvetica').fillColor('#666').text('Thank you for choosing GEEOOH HOTEL!', { align: 'center' });
+        doc.end();
+        
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 
 module.exports = router;

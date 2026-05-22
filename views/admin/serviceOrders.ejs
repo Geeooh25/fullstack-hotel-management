@@ -1,0 +1,78 @@
+<div class="container-fluid">
+    <h3><i class="fas fa-concierge-bell"></i> Service Orders</h3>
+    <p class="text-muted">Manage paid standalone service orders</p>
+    
+    <% if (typeof error !== 'undefined' && error) { %>
+        <div class="alert alert-danger"><%= error %></div>
+    <% } %>
+    
+    <div class="stats-card">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Reference</th>
+                        <th>Guest</th>
+                        <th>Email</th>
+                        <th>Services</th>
+                        <th>Total</th>
+                        <th>Date</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if (orders && orders.length > 0) { %>
+                        <% orders.forEach(function(order) { %>
+                            <tr>
+                                <td><strong><%= order.reference %></strong></td>
+                                <td><%= order.guest_name %></td>
+                                <td><%= order.guest_email %></td>
+                                <td>
+                                    <% try { 
+                                        var services = JSON.parse(order.services || '[]');
+                                        services.forEach(function(s) { %>
+                                            <small><%= s.name %> x<%= s.quantity %></small><br>
+                                        <% });
+                                    } catch(e) { %>
+                                        <small>View details</small>
+                                    <% } %>
+                                </td>
+                                <td>$<%= parseFloat(order.total_amount).toFixed(2) %></td>
+                                <td><%= new Date(order.createdAt).toLocaleDateString() %></td>
+                                <td>
+                                    <span class="badge bg-<%= order.status === 'completed' ? 'success' : order.status === 'contacted' ? 'info' : 'warning' %>">
+                                        <%= order.status %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <select class="form-select form-select-sm" onchange="updateStatus(<%= order.id %>, this.value)" style="width:130px;">
+                                        <option value="pending" <%= order.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                                        <option value="contacted" <%= order.status === 'contacted' ? 'selected' : '' %>>Contacted</option>
+                                        <option value="completed" <%= order.status === 'completed' ? 'selected' : '' %>>Completed</option>
+                                    </select>
+                                </td>
+                            </tr>
+                        <% }); %>
+                    <% } else { %>
+                        <tr><td colspan="8" class="text-center">No service orders yet</td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    async function updateStatus(id, status) {
+        try {
+            await fetch('/admin/service-orders/' + id + '/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: status })
+            });
+        } catch (e) {
+            alert('Error updating status');
+        }
+    }
+</script>

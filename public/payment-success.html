@@ -36,6 +36,15 @@
             display: inline-block;
             border-radius: 8px;
         }
+        .btn-outline-gold {
+            border: 2px solid var(--gold);
+            color: var(--gold);
+            padding: 12px 30px;
+            text-decoration: none;
+            display: inline-block;
+            border-radius: 8px;
+            background: transparent;
+        }
         .receipt-item {
             display: flex;
             justify-content: space-between;
@@ -50,9 +59,7 @@
             animation: spin 0.8s linear infinite;
             margin: 20px auto;
         }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        @keyframes spin { to { transform: rotate(360deg); } }
         .retry-btn {
             background: transparent;
             border: 2px solid var(--gold);
@@ -60,10 +67,9 @@
             padding: 8px 20px;
             border-radius: 8px;
             margin-top: 10px;
+            cursor: pointer;
         }
-        .service-name {
-            font-weight: 500;
-        }
+        .service-name { font-weight: 500; }
         .page-hero {
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('https://images.unsplash.com/photo-1566073771259-6a8506099945?w=1600');
             background-size: cover;
@@ -76,18 +82,10 @@
             margin-top: 0;
             padding-top: 80px;
         }
-        .page-hero h1 {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            font-family: 'Playfair Display', serif;
-        }
+        .page-hero h1 { font-size: 2.5rem; margin-bottom: 1rem; font-family: 'Playfair Display', serif; }
         @media (max-width: 768px) {
-            .page-hero {
-                min-height: 200px;
-            }
-            .page-hero h1 {
-                font-size: 1.8rem;
-            }
+            .page-hero { min-height: 200px; }
+            .page-hero h1 { font-size: 1.8rem; }
         }
     </style>
 </head>
@@ -113,7 +111,6 @@
         </div>
     </nav>
 
-    <!-- Page Hero -->
     <div class="page-hero">
         <div class="container">
             <h1>Payment Successful!</h1>
@@ -163,14 +160,14 @@
     <script>
         const urlParams = new URLSearchParams(window.location.search);
         const bookingRef = urlParams.get('ref');
+        const paymentType = urlParams.get('type') || 'combined';
         
-        // Update view booking link
         if (bookingRef) {
             document.getElementById('viewBookingLink').href = `/booking-lookup.html?ref=${bookingRef}`;
         }
         
         let retryCount = 0;
-        const maxRetries = 10; // Reduced to avoid 429 error
+        const maxRetries = 10;
         let retryTimeout = null;
         
         async function loadReceipt() {
@@ -179,8 +176,13 @@
                 return;
             }
 
+            // Handle service-only payments
+            if (bookingRef.startsWith('SRV-') || paymentType === 'services-only') {
+                loadServiceReceipt();
+                return;
+            }
+
             try {
-                // Use the lookup endpoint (more reliable)
                 const response = await fetch(`/api/bookings/lookup?reference=${bookingRef}`);
                 const data = await response.json();
                 
@@ -188,39 +190,67 @@
                     displayReceipt(data.booking);
                 } else if (retryCount < maxRetries) {
                     retryCount++;
-                    const delay = 3000; // 3 seconds between retries
-                    console.log(`Booking not found yet, retrying (${retryCount}/${maxRetries})...`);
-                    retryTimeout = setTimeout(loadReceipt, delay);
+                    console.log(`Retrying (${retryCount}/${maxRetries})...`);
+                    retryTimeout = setTimeout(loadReceipt, 3000);
+                } else {
+                    showFallback();
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                if (retryCount < maxRetries) {
+                    retryCount++;
+                    retryTimeout = setTimeout(loadReceipt, 3000);
+                } else {
+                    showFallback();
+                }
+            }
+        }
+        
+        async function loadServiceReceipt() {
+            try {
+                const response = await fetch(`/api/bookings/service-receipt/${bookingRef}`);
+                if (response.ok) {
+                    // Download PDF automatically
+                    window.open(`/api/bookings/service-receipt/${bookingRef}`, '_blank');
+                    document.getElementById('receiptContainer').innerHTML = `
+                        <h4>Service Payment Receipt</h4>
+                        <p><strong>Reference:</strong> ${bookingRef}</p>
+                        <p><strong>Status:</strong> <span class="badge bg-success">Paid</span></p>
+                        <p>Your receipt has been downloaded. Check your downloads folder.</p>
+                        <p class="text-muted small">A confirmation email has been sent to your inbox.</p>
+                        <button onclick="window.open('/api/bookings/service-receipt/${bookingRef}', '_blank')" class="retry-btn">Download Again</button>
+                    `;
+                } else if (retryCount < maxRetries) {
+                    retryCount++;
+                    retryTimeout = setTimeout(loadServiceReceipt, 3000);
                 } else {
                     document.getElementById('receiptContainer').innerHTML = `
-                        <div class="text-center">
-                            <i class="fas fa-clock" style="font-size: 3rem; color: var(--gold);"></i>
-                            <h4>Booking is being processed</h4>
-                            <p>Your payment was successful! Your booking confirmation will appear here shortly.</p>
-                            <p class="text-muted">A confirmation email has been sent to your inbox.</p>
-                            <button onclick="location.reload()" class="retry-btn">Refresh Now</button>
-                            <a href="/booking-lookup.html?ref=${bookingRef}" class="btn-gold d-block mt-3">Go to My Bookings</a>
-                        </div>
+                        <h4>Service Payment Receipt</h4>
+                        <p><strong>Reference:</strong> ${bookingRef}</p>
+                        <p><strong>Status:</strong> <span class="badge bg-success">Paid</span></p>
+                        <p>Your payment was successful! Your receipt is being generated.</p>
+                        <button onclick="window.open('/api/bookings/service-receipt/${bookingRef}', '_blank')" class="retry-btn">Download Receipt</button>
                     `;
                 }
             } catch (error) {
-                console.error('Error loading receipt:', error);
+                console.error('Error:', error);
                 if (retryCount < maxRetries) {
                     retryCount++;
-                    const delay = 3000;
-                    console.log(`Error, retrying (${retryCount}/${maxRetries})...`);
-                    retryTimeout = setTimeout(loadReceipt, delay);
-                } else {
-                    document.getElementById('receiptContainer').innerHTML = `
-                        <div class="text-center">
-                            <i class="fas fa-envelope" style="font-size: 3rem; color: var(--gold);"></i>
-                            <h4>Check Your Email</h4>
-                            <p>Your booking confirmation has been sent to your email address.</p>
-                            <a href="/booking-lookup.html?ref=${bookingRef}" class="btn-gold">View My Booking</a>
-                        </div>
-                    `;
+                    retryTimeout = setTimeout(loadServiceReceipt, 3000);
                 }
             }
+        }
+        
+        function showFallback() {
+            document.getElementById('receiptContainer').innerHTML = `
+                <div class="text-center">
+                    <i class="fas fa-envelope" style="font-size: 3rem; color: var(--gold);"></i>
+                    <h4>Payment Successful!</h4>
+                    <p>Your booking is being processed. A confirmation email will be sent shortly.</p>
+                    <a href="/booking-lookup.html?ref=${bookingRef}" class="btn-gold">View My Booking</a>
+                    <button onclick="location.reload()" class="retry-btn d-block mx-auto mt-2">Refresh</button>
+                </div>
+            `;
         }
         
         function displayReceipt(booking) {
@@ -234,40 +264,24 @@
             if (services.length > 0) {
                 servicesHtml = '<h5>Services Purchased:</h5>';
                 services.forEach(service => {
-                    let itemName = 'Service';
-                    if (service.menu_item && service.menu_item.name) {
-                        itemName = service.menu_item.name;
-                    } else if (service.MenuItem && service.MenuItem.name) {
-                        itemName = service.MenuItem.name;
-                    } else if (service.name) {
-                        itemName = service.name;
-                    } else {
-                        itemName = `Item #${service.menu_item_id}`;
-                    }
-                    
+                    let itemName = service.menu_item?.name || service.MenuItem?.name || service.name || `Item #${service.menu_item_id}`;
                     const price = parseFloat(service.price_at_time);
                     const qty = service.quantity;
-                    servicesHtml += `
-                        <div class="receipt-item">
-                            <span class="service-name">${itemName} x${qty}</span>
-                            <span>$${(price * qty).toFixed(2)}</span>
-                        </div>
-                    `;
+                    servicesHtml += `<div class="receipt-item"><span class="service-name">${itemName} x${qty}</span><span>$${(price * qty).toFixed(2)}</span></div>`;
                     servicesTotal += price * qty;
                 });
                 servicesHtml += `<div class="receipt-item mt-2"><strong>Services Total:</strong><strong>$${servicesTotal.toFixed(2)}</strong></div>`;
             }
             
             const roomTotal = parseFloat(booking.total_amount) - servicesTotal;
-            const roomNumberDisplay = room.room_number ? ` (Room ${room.room_number})` : '';
-            const roomDisplay = `${roomType.name || 'Standard Room'}${roomNumberDisplay}`;
+            const roomDisplay = `${roomType.name || 'Standard Room'}${room.room_number ? ' (Room ' + room.room_number + ')' : ''}`;
             
-            const html = `
+            document.getElementById('receiptContainer').innerHTML = `
                 <h4>Booking Receipt</h4>
-                <p><strong>Booking Reference:</strong> ${booking.booking_reference}</p>
+                <p><strong>Reference:</strong> ${booking.booking_reference}</p>
                 <p><strong>Status:</strong> <span class="badge bg-success">Confirmed</span></p>
                 <hr>
-                <h5>Room Details:</h5>
+                <h5>Room:</h5>
                 <div class="receipt-item"><span>${roomDisplay}</span><span>$${roomTotal.toFixed(2)}</span></div>
                 <div class="receipt-item"><span>Check-in:</span><span>${new Date(booking.check_in).toLocaleDateString()}</span></div>
                 <div class="receipt-item"><span>Check-out:</span><span>${new Date(booking.check_out).toLocaleDateString()}</span></div>
@@ -275,39 +289,26 @@
                 ${servicesHtml}
                 <hr>
                 <div class="receipt-item"><strong>Total Paid:</strong><strong>$${parseFloat(booking.total_amount).toFixed(2)}</strong></div>
-                <div class="receipt-item"><strong>Deposit Paid:</strong><strong>$${parseFloat(booking.deposit_paid).toFixed(2)}</strong></div>
-                <div class="receipt-item"><strong>Remaining Balance:</strong><strong>$${parseFloat(booking.remaining_balance).toFixed(2)}</strong></div>
-                <hr>
-                <p class="text-muted small">A confirmation email has been sent to your email address.</p>
+                <div class="receipt-item"><strong>Balance:</strong><strong>$${parseFloat(booking.remaining_balance || 0).toFixed(2)}</strong></div>
+                <p class="text-muted small mt-3">A confirmation email has been sent to your inbox.</p>
             `;
-            
-            document.getElementById('receiptContainer').innerHTML = html;
         }
         
-        // Check auth and update nav
-        async function checkAuth() {
-            if (typeof Auth !== 'undefined') {
-                const user = await Auth.getCurrentUser();
-                const authNav = document.getElementById('authNav');
-                if (authNav) {
-                    if (user) {
-                        authNav.innerHTML = `<a class="nav-link" href="/profile.html"><i class="fas fa-user"></i> ${user.first_name}</a>`;
-                    } else {
-                        authNav.innerHTML = `<a class="nav-link" href="/login.html"><i class="fas fa-sign-in-alt"></i> Login</a>`;
-                    }
-                }
-            }
-        }
-        
-        // Clear timeout on page unload
-        window.addEventListener('beforeunload', function() {
-            if (retryTimeout) {
-                clearTimeout(retryTimeout);
-            }
+        window.addEventListener('beforeunload', () => {
+            if (retryTimeout) clearTimeout(retryTimeout);
         });
         
         loadReceipt();
-        checkAuth();
+        
+        if (typeof Auth !== 'undefined') {
+            Auth.getCurrentUser().then(user => {
+                const authNav = document.getElementById('authNav');
+                if (authNav && user) {
+                    authNav.innerHTML = `<a class="nav-link" href="/profile.html"><i class="fas fa-user"></i> ${user.first_name}</a>`;
+                }
+            }).catch(() => {});
+        }
     </script>
-<script src="/js/newsletter.js"></script></body>
+    <script src="/js/newsletter.js"></script>
+</body>
 </html>
