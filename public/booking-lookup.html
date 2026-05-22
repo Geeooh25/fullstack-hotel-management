@@ -557,7 +557,7 @@
         
         window.loadMyBookings = loadMyBookingsForUser;
         
-                async function lookupByReferenceAndScroll(reference) {
+         async function lookupByReferenceAndScroll(reference) {
             currentBookingReference = reference;
             currentBookingId = null;
             const container = document.getElementById('results-container');
@@ -590,11 +590,7 @@
                 return;
             }
 
-            try {
-                const response = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(reference)}`);
-                
-            
-            try {
+                        try {
                 const response = await fetch(`/api/bookings/lookup?reference=${encodeURIComponent(reference)}`);
                 const data = await response.json();
                 
