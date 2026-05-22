@@ -76,10 +76,9 @@ async function handleStandaloneServicePayment(session) {
     console.log('🎉 Standalone service payment!');
     const ref = session.metadata.booking_reference;
     const pending = global.pendingServices && global.pendingServices[ref];
-    if (!pending) return;
+    if (!pending) { console.log('No pending services found for:', ref); return; }
     
     try {
-        // Save to ServiceOrder table (permanent)
         const ServiceOrder = require('../models/serviceOrder');
         await ServiceOrder.create({
             reference: ref,
@@ -90,7 +89,7 @@ async function handleStandaloneServicePayment(session) {
             status: 'pending',
             payment_status: 'paid'
         });
-        console.log('✅ Service order saved to database');
+        console.log('✅ Service order saved:', ref);
     } catch (e) { console.error('Save error:', e.message); }
     
     notifyAdmins('new_request', {

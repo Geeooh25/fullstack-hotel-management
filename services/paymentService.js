@@ -190,7 +190,7 @@ class PaymentService {
                 metadata: {
                     booking_id: bookingId.toString(),
                     booking_reference: bookingReference,
-                    payment_type: 'services',
+                    payment_type: 'services-only',
                     services_total: servicesTotal.toString()
                 },
             });
