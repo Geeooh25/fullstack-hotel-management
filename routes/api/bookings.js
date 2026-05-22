@@ -1237,6 +1237,55 @@ router.get('/receipt/:ref', async (req, res) => {
         res.status(500).json({ success: false, error: error.message });
     }
 });
+
+// POST /api/bookings/service-only-payment - Standalone service payment
+router.post('/service-only-payment', async (req, res) => {
+    try {
+        const { services, guest_email, guest_name } = req.body;
+        
+        if (!services || !services.length || !guest_email) {
+            return res.status(400).json({ success: false, error: 'Services and guest email required' });
+        }
+        
+        const servicesTotal = services.reduce((sum, s) => sum + (parseFloat(s.price) * parseInt(s.quantity)), 0);
+        const tempRef = 'SRV-' + Date.now();
+        
+        const successUrl = (process.env.APP_URL || 'http://localhost:3000') + '/payment-success.html?ref=' + tempRef + '&type=services-only';
+        const cancelUrl = (process.env.APP_URL || 'http://localhost:3000') + '/payment-failed.html?ref=' + tempRef + '&type=services-only';
+        
+        const paymentResult = await PaymentService.createServicePaymentSession(
+            servicesTotal, tempRef, guest_email, 0, successUrl, cancelUrl
+        );
+        
+        if (!paymentResult.success) {
+            return res.status(400).json({ success: false, error: paymentResult.error });
+        }
+        
+        // Store pending services for webhook
+        global.pendingServices = global.pendingServices || {};
+        global.pendingServices[tempRef] = { services, guest_email, guest_name: guest_name || 'Guest', total: servicesTotal };
+        
+        // Notify admin
+        try {
+            const { getIO } = require('../../socket');
+            const io = getIO();
+            if (io) {
+                io.to('admin_room').emit('new_request', {
+                    type: 'request',
+                    title: 'New Service Order 🛎️',
+                    message: (guest_name || 'Guest') + ' ordered ' + services.length + ' service(s) - $' + servicesTotal.toFixed(2),
+                    data: { services, guest_email, guest_name, total: servicesTotal },
+                    timestamp: new Date()
+                });
+            }
+        } catch (e) {}
+        
+        res.json({ success: true, checkoutUrl: paymentResult.url });
+    } catch (error) {
+        console.error('Service payment error:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 // GET /api/bookings/service-receipt/:ref - Service order receipt
 router.get('/service-receipt/:ref', async (req, res) => {
     try {

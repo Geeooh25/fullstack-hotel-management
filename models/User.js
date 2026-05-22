@@ -80,7 +80,9 @@ permissions: {
         manage_guests: false,
         manage_staff: false,
         view_reports: false,
-        manage_settings: false
+        manage_settings: false,
+        manage_menu: false,
+        manage_services: false
     }
 },
     is_active: {
