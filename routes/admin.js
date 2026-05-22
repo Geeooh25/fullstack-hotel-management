@@ -81,7 +81,7 @@ router.get('/activity', isAdminAuthenticated, hasRole(['super_admin', 'admin']),
 router.get('/bookings/:id/receipt', isAdminAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
-        const PDFService = require('../services/pdfService');
+        const PDFService = require('../services/pdfservice');
         const db = require('../models');
         
         const booking = await db.Booking.findByPk(id, {
@@ -116,6 +116,36 @@ router.get('/bookings/:id/receipt', isAdminAuthenticated, async (req, res) => {
     } catch (error) {
         console.error('Receipt error:', error);
         res.status(500).send('Error generating receipt');
+    }
+});
+
+// ==================== SERVICE ORDERS ====================
+router.get('/service-orders', isAdminAuthenticated, hasRole(['super_admin', 'admin', 'receptionist']), async (req, res) => {
+    try {
+        const ServiceOrder = require('../models/serviceOrder');
+        const orders = await ServiceOrder.findAll({ order: [['created_at', 'DESC']] });
+        res.render('admin/serviceOrders', {
+            title: 'Service Orders',
+            orders: orders.map(o => o.toJSON()),
+            session: req.session
+        });
+    } catch (error) {
+        res.render('admin/serviceOrders', {
+            title: 'Service Orders',
+            orders: [],
+            error: error.message,
+            session: req.session
+        });
+    }
+});
+
+router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res) => {
+    try {
+        const ServiceOrder = require('../models/serviceOrder');
+        await ServiceOrder.update({ status: req.body.status }, { where: { id: req.params.id } });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
     }
 });
 module.exports = router;
