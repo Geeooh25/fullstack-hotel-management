@@ -148,4 +148,15 @@ router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res)
         res.status(500).json({ error: error.message });
     }
 });
+
+// TEMP: Sync database tables
+router.get('/sync-db', isAdminAuthenticated, hasRole(['super_admin']), async (req, res) => {
+    try {
+        const { sequelize } = require('../config/database');
+        await sequelize.sync({ alter: true });
+        res.json({ success: true, message: 'Database synced - new tables created' });
+    } catch (error) {
+        res.json({ success: false, error: error.message });
+    }
+});
 module.exports = router;
