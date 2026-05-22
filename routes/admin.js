@@ -149,12 +149,28 @@ router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res)
     }
 });
 
-// TEMP: Sync database tables
+// TEMP: Create service_orders table only
 router.get('/sync-db', isAdminAuthenticated, hasRole(['super_admin']), async (req, res) => {
     try {
         const { sequelize } = require('../config/database');
-        await sequelize.sync({ alter: true });
-        res.json({ success: true, message: 'Database synced - new tables created' });
+        
+        // Only create the service_orders table
+        await sequelize.query(`
+            CREATE TABLE IF NOT EXISTS service_orders (
+                id SERIAL PRIMARY KEY,
+                reference VARCHAR(50) NOT NULL,
+                guest_name VARCHAR(200) NOT NULL,
+                guest_email VARCHAR(255) NOT NULL,
+                services TEXT NOT NULL,
+                total_amount DECIMAL(10,2) NOT NULL,
+                status VARCHAR(20) DEFAULT 'pending',
+                payment_status VARCHAR(20) DEFAULT 'paid',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        `);
+        
+        res.json({ success: true, message: 'service_orders table created' });
     } catch (error) {
         res.json({ success: false, error: error.message });
     }
