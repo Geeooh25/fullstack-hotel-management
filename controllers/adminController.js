@@ -844,7 +844,7 @@ createStaff: async (req, res) => {
             first_name: first_name,
             last_name: last_name,
             email: email,
-            password: Password,
+            password: password,
             role: role,
             is_active: true,
             status: 'active'
