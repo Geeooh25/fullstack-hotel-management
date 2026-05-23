@@ -163,7 +163,7 @@ router.post('/bulk', async (req, res) => {
         const cnt = parseInt(count);
         
         for (let i = 0; i < cnt; i++) {
-            const num = prefix ? prefix + String(startNum + i).padStart(2, '0') : String(startNum + i);
+            const num = prefix ? prefix + String(startNum + i).padStart(2, '0') : String(startNum + i).padStart(3, '0');
             rooms.push({
                 room_number: num,
                 room_type_id: parseInt(room_type_id),
