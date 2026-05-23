@@ -141,6 +141,7 @@ router.get('/service-orders', isAdminAuthenticated, hasRole(['super_admin', 'adm
 });
 
 
+
 router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res) => {
     try {
         const ServiceOrder = require('../models/serviceOrder');
