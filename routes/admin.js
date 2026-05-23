@@ -174,28 +174,16 @@ router.get('/rooms/bulk', isAdminAuthenticated, hasRole(['super_admin', 'admin']
     res.render('admin/rooms-bulk', { title: 'Bulk Add Rooms', roomTypes, session: req.session });
 });
 
-// TEMP: Create service_orders table only
-router.get('/sync-db', isAdminAuthenticated, hasRole(['super_admin']), async (req, res) => {
+// TEMP: Update user role ENUM
+router.get('/update-roles', isAdminAuthenticated, hasRole(['super_admin']), async (req, res) => {
     try {
         const { sequelize } = require('../config/database');
-        
-        // Only create the service_orders table
         await sequelize.query(`
-            CREATE TABLE IF NOT EXISTS service_orders (
-                id SERIAL PRIMARY KEY,
-                reference VARCHAR(50) NOT NULL,
-                guest_name VARCHAR(200) NOT NULL,
-                guest_email VARCHAR(255) NOT NULL,
-                services TEXT NOT NULL,
-                total_amount DECIMAL(10,2) NOT NULL,
-                status VARCHAR(20) DEFAULT 'pending',
-                payment_status VARCHAR(20) DEFAULT 'paid',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
+            ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_role_check";
+            ALTER TABLE "users" ADD CONSTRAINT "users_role_check" 
+            CHECK (role IN ('super_admin', 'admin', 'receptionist', 'housekeeping', 'spa_staff', 'menu_manager', 'concierge', 'accountant', 'guest_relations', 'guest'));
         `);
-        
-        res.json({ success: true, message: 'service_orders table created' });
+        res.json({ success: true, message: 'Roles updated' });
     } catch (error) {
         res.json({ success: false, error: error.message });
     }
