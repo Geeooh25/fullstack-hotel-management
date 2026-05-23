@@ -90,20 +90,21 @@ const reportController = {
             const occupancy = totalRooms > 0 ? ((occupiedRooms / totalRooms) * 100).toFixed(1) : 0;
 
             res.render('admin/reports', {
-                title: 'Reports',
-                range,
-                filter,
-                recentBookings: recentBookings || [],
-                totalBookings,
-                totalRevenue: totalRevenue || 0,
-                revenueByRoomType: revenueByRoomType || [],
-                topRooms: topRooms || [],
-                cancellationRate,
-                occupancy,
-                totalRooms,
-                occupiedRooms,
-                session: req.session
-            });
+    title: 'Reports',
+    error: 'Failed to load reports: ' + error.message,
+    recentBookings: [],
+    totalBookings: 0,
+    totalRevenue: 0,
+    revenueByRoomType: [],
+    topRooms: [],
+    cancellationRate: { cancelled: 0, total: 0, rate: 0 },
+    occupancy: 0,
+    totalRooms: 0,
+    occupiedRooms: 0,
+    filter: 'all',   
+    range: '30',     
+    session: req.session
+});
         } catch (error) {
             console.error('Report error:', error);
             res.render('admin/reports', {
@@ -190,5 +191,6 @@ const reportController = {
         }
     }
 };
+
 
 module.exports = reportController;

@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const db = require('../models'); 
 const adminController = require('../controllers/adminController');
 const { isAdminAuthenticated, isAdminGuest, hasRole, isSuperAdmin, canDelete } = require('../middleware/auth');
 
@@ -82,7 +83,7 @@ router.get('/bookings/:id/receipt', isAdminAuthenticated, async (req, res) => {
     try {
         const { id } = req.params;
         const PDFService = require('../services/pdfservice');
-        const db = require('../models');
+       // const db = require('../models');
         
         const booking = await db.Booking.findByPk(id, {
             include: [
