@@ -224,7 +224,7 @@
             try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(); const g = c.createGain(); o.connect(g); g.connect(c.destination); o.type = 'sine'; o.frequency.setValueAtTime(800, c.currentTime); g.gain.setValueAtTime(0.3, c.currentTime); g.gain.exponentialRampToValueAtTime(0.01, c.currentTime + 0.3); o.start(c.currentTime); o.stop(c.currentTime + 0.3); } catch (e) {}
         }
 
-        if (!window.location.pathname.includes('checkin-checkout')) {
+        if (!window.location.pathname.includes('checkin-checkout') && !window.location.pathname.includes('counter-booking') && !window.location.pathname.includes('historical-booking')) {
             setInterval(() => {
                 fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.text()).then(html => {
                     const d = new DOMParser().parseFromString(html, 'text/html');

@@ -43,7 +43,7 @@
         const resultDiv = document.getElementById('bulkResult');
         resultDiv.innerHTML = '<div class="alert alert-info">Creating rooms...</div>';
         try {
-            const r = await fetch('/api/admin/rooms/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const r = await fetch('/api/rooms/bulk', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
             const result = await r.json();
             if (result.success) {
                 resultDiv.innerHTML = '<div class="alert alert-success">Created ' + result.count + ' rooms!</div>';

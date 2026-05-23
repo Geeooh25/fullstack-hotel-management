@@ -1,6 +1,6 @@
 const db = require('../models');
+const { sequelize } = require('../config/database');
 const { Op } = require('sequelize');
-
 const reportController = {
     // Get reports page
     getReports: async (req, res) => {

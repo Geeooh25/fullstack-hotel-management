@@ -64,15 +64,46 @@
 </div>
 
 <script>
+    function showToast(message, type) {
+        let container = document.getElementById('toastContainer');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'toastContainer';
+            container.style.cssText = 'position: fixed; bottom: 20px; right: 20px; z-index: 9999;';
+            document.body.appendChild(container);
+        }
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification toast-' + type;
+        toast.innerHTML = '<div class="toast-content"><i class="fas ' + (type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle') + '"></i><span>' + message + '</span><button style="background:none;border:none;margin-left:10px;cursor:pointer;" onclick="this.parentElement.remove()">&times;</button></div>';
+        container.appendChild(toast);
+        setTimeout(() => toast.remove(), 3000);
+    }
+
     async function updateStatus(id, status) {
         try {
-            await fetch('/admin/service-orders/' + id + '/status', {
+            const r = await fetch('/admin/service-orders/' + id + '/status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status: status })
             });
+            const data = await r.json();
+            if (data.success) {
+                showToast('Status updated to ' + status, 'success');
+            } else {
+                showToast(data.error || 'Update failed', 'error');
+                setTimeout(() => location.reload(), 1500);
+            }
         } catch (e) {
-            alert('Error updating status');
+            showToast('Network error', 'error');
         }
     }
 </script>
+
+<style>
+    .toast-notification { background: white; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); min-width: 280px; animation: slideIn 0.3s ease; }
+    .toast-success { border-left: 4px solid #28a745; background: #d4edda; color: #155724; }
+    .toast-error { border-left: 4px solid #dc3545; background: #f8d7da; color: #721c24; }
+    .toast-content { display: flex; align-items: center; gap: 10px; }
+    @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+</style>
+<div id="toastContainer" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;"></div>
