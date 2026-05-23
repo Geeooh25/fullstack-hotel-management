@@ -140,6 +140,13 @@ router.get('/service-orders', isAdminAuthenticated, hasRole(['super_admin', 'adm
     }
 });
 
+// ==================== FORGOT PASSWORD ====================
+router.get('/forgot-password', (req, res) => {
+    res.render('admin/forgot-password', { title: 'Forgot Password', error: null, success: null });
+});
+
+router.post('/forgot-password', adminController.forgotPassword);
+
 router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res) => {
     try {
         const ServiceOrder = require('../models/serviceOrder');

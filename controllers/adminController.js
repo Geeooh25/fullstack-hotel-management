@@ -837,14 +837,14 @@ createStaff: async (req, res) => {
             return res.status(400).json({ error: 'Email already exists' });
         }
         
-        const bcrypt = require('bcrypt');
-        const hashedPassword = await bcrypt.hash(password, 10);
+       // const bcrypt = require('bcrypt');
+        //const hashedPassword = await bcrypt.hash(password, 10);
         
         const staff = await db.User.create({
             first_name: first_name,
             last_name: last_name,
             email: email,
-            password: hashedPassword,
+            password: Password,
             role: role,
             is_active: true,
             status: 'active'
