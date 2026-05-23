@@ -173,17 +173,20 @@ router.get('/rooms/bulk', isAdminAuthenticated, hasRole(['super_admin', 'admin']
     const roomTypes = await db.RoomType.findAll();
     res.render('admin/rooms-bulk', { title: 'Bulk Add Rooms', roomTypes, session: req.session });
 });
-
-// TEMP: Update user role ENUM
+// TEMP: Update user role ENUM to VARCHAR (allows any role)
 router.get('/update-roles', isAdminAuthenticated, hasRole(['super_admin']), async (req, res) => {
     try {
         const { sequelize } = require('../config/database');
-        await sequelize.query(`
-            ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_role_check";
-            ALTER TABLE "users" ADD CONSTRAINT "users_role_check" 
-            CHECK (role IN ('super_admin', 'admin', 'receptionist', 'housekeeping', 'spa_staff', 'menu_manager', 'concierge', 'accountant', 'guest_relations', 'guest'));
-        `);
-        res.json({ success: true, message: 'Roles updated' });
+        
+        // Step 1: Drop the old constraint
+        await sequelize.query(`ALTER TABLE "users" DROP CONSTRAINT IF EXISTS users_role_check`);
+        await sequelize.query(`ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_role_check"`);
+        
+        // Step 2: Change column type from ENUM to VARCHAR (accepts any role)
+        await sequelize.query(`ALTER TABLE "users" ALTER COLUMN role TYPE VARCHAR(50)`);
+        await sequelize.query(`ALTER TABLE "users" ALTER COLUMN role SET DEFAULT 'guest'`);
+        
+        res.json({ success: true, message: 'Role column changed to VARCHAR - all roles now accepted!' });
     } catch (error) {
         res.json({ success: false, error: error.message });
     }
