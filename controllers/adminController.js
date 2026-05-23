@@ -1060,30 +1060,61 @@ deleteStaff: async (req, res) => {
     },
 
     // ==================== REPORTS ====================
-    getReports: async (req, res) => {
+       getReports: async (req, res) => {
         if (!req.session.admin) return res.redirect('/admin/login');
         try {
-            const totalBookings = await db.Booking.count();
-            const totalRevenue = await db.Payment.sum('amount', { where: { status: 'completed' } }) || 0;
+            const filter = req.query.filter || 'all';
+            const range = req.query.range || '30';
+            const endDate = new Date();
+            const startDate = new Date();
+            
+            if (filter === 'day') startDate.setHours(0, 0, 0, 0);
+            else if (filter === 'week') startDate.setDate(startDate.getDate() - 7);
+            else if (filter === 'month') startDate.setMonth(startDate.getMonth() - 1);
+            else startDate.setDate(startDate.getDate() - parseInt(range));
+
+            const totalBookings = await db.Booking.count({ where: { created_at: { [Op.gte]: startDate } } });
+            const totalRevenue = await db.Payment.sum('amount', { where: { status: 'completed', created_at: { [Op.gte]: startDate } } }) || 0;
             const recentBookings = await db.Booking.findAll({
-                include: [
-                    { model: db.Guest },
-                    { model: db.User, as: 'user' }
-                ],
-                limit: 10,
+                include: [{ model: db.Guest }, { model: db.Room, include: [{ model: db.RoomType }] }],
+                where: { created_at: { [Op.gte]: startDate } },
+                limit: 20,
                 order: [['created_at', 'DESC']]
             });
-            
-            res.render('admin/reports', { 
-                title: 'Reports', 
-                totalBookings, 
-                totalRevenue, 
+
+            res.render('admin/reports', {
+                title: 'Reports',
+                filter,
+                range,
+                totalBookings,
+                totalRevenue,
                 recentBookings,
-                session: req.session 
+                occupancy: 0,
+                totalRooms: 0,
+                occupiedRooms: 0,
+                revenueByRoomType: [],
+                topRooms: [],
+                cancellationRate: { cancelled: 0, total: 0, rate: 0 },
+                session: req.session
             });
         } catch (error) {
             console.error('Reports error:', error);
-            res.render('admin/reports', { title: 'Reports', error: 'Failed to load', session: req.session });
+            res.render('admin/reports', { 
+                title: 'Reports', 
+                error: 'Failed to load', 
+                filter: 'all',
+                range: '30',
+                totalBookings: 0,
+                totalRevenue: 0,
+                recentBookings: [],
+                occupancy: 0,
+                totalRooms: 0,
+                occupiedRooms: 0,
+                revenueByRoomType: [],
+                topRooms: [],
+                cancellationRate: { cancelled: 0, total: 0, rate: 0 },
+                session: req.session 
+            });
         }
     },
 
