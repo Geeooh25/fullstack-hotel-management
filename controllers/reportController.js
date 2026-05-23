@@ -45,7 +45,7 @@ const reportController = {
             });
 
             // Revenue by room type
-            const revenueByRoomType = await db.sequelize.query(
+            const revenueByRoomType = await sequelize.query(
                 `SELECT rt.name as room_type, COUNT(b.id) as bookings, 
                         COALESCE(SUM(b.total_amount), 0) as revenue,
                         COALESCE(AVG(b.total_amount), 0) as avg_booking_value
@@ -55,11 +55,11 @@ const reportController = {
                  WHERE b.created_at >= :startDate AND b.status != 'cancelled'
                  GROUP BY rt.name
                  ORDER BY revenue DESC`,
-                { replacements: { startDate }, type: db.sequelize.QueryTypes.SELECT }
+                { replacements: { startDate }, type: sequelize.QueryTypes.SELECT }
             );
 
             // Top rooms
-            const topRooms = await db.sequelize.query(
+            const topRooms = await sequelize.query(
                 `SELECT r.room_number, rt.name as room_type, 
                         COUNT(b.id) as total_bookings,
                         COALESCE(SUM(b.total_amount), 0) as total_revenue
@@ -70,7 +70,7 @@ const reportController = {
                  GROUP BY r.id, r.room_number, rt.name
                  ORDER BY total_revenue DESC
                  LIMIT 10`,
-                { replacements: { startDate }, type: db.sequelize.QueryTypes.SELECT }
+                { replacements: { startDate }, type: sequelize.QueryTypes.SELECT }
             );
 
             // Cancellation rate
