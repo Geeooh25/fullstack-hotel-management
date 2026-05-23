@@ -113,7 +113,7 @@ app.use('/api/amenities', require('./routes/api/amenities'));
 app.use('/api/cart', require('./routes/api/cart'));
 app.use('/api/menu', require('./routes/api/menu'));
 app.use('/api/requests', require('./routes/api/requests'));
-
+app.use('/api/admin/rooms', require('./routes/api/admin/rooms'));
 // ==================== ADMIN ROUTES ====================
 app.use('/admin', require('./routes/admin'));
 

@@ -142,7 +142,26 @@ router.get('/service-orders', isAdminAuthenticated, hasRole(['super_admin', 'adm
 router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res) => {
     try {
         const ServiceOrder = require('../models/serviceOrder');
-        await ServiceOrder.update({ status: req.body.status }, { where: { id: req.params.id } });
+        const order = await ServiceOrder.findByPk(req.params.id);
+        if (!order) return res.status(404).json({ error: 'Order not found' });
+        
+        const newStatus = req.body.status;
+        const currentStatus = order.status;
+        
+        // One-way status flow: pending -> contacted -> completed
+        const allowedTransitions = {
+            'pending': ['contacted', 'completed'],
+            'contacted': ['completed'],
+            'completed': []
+        };
+        
+        if (!allowedTransitions[currentStatus] || !allowedTransitions[currentStatus].includes(newStatus)) {
+            return res.status(400).json({ 
+                error: 'Cannot change from ' + currentStatus + ' to ' + newStatus 
+            });
+        }
+        
+        await order.update({ status: newStatus });
         res.json({ success: true });
     } catch (error) {
         res.status(500).json({ error: error.message });

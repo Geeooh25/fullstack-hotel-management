@@ -10,329 +10,136 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        :root {
-            --gold: #B8860B;
-            --gold-dark: #8B691B;
-            --gold-light: #F5E6D3;
-            --text-dark: #1A1A1A;
-            --text-light: #666666;
-            --white: #FFFFFF;
-            --gray-bg: #FAFAFA;
-            --shadow: 0 10px 30px rgba(0,0,0,0.05);
-            --shadow-hover: 0 20px 40px rgba(0,0,0,0.1);
-            --transition: all 0.3s ease;
-        }
-        
+        :root { --gold: #B8860B; --gold-dark: #8B691B; --gold-light: #F5E6D3; --text-dark: #1A1A1A; --text-light: #666666; --white: #FFFFFF; --gray-bg: #FAFAFA; --shadow: 0 10px 30px rgba(0,0,0,0.05); --shadow-hover: 0 20px 40px rgba(0,0,0,0.1); --transition: all 0.3s ease; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--gray-bg); overflow-x: hidden; }
-        
-        .sidebar {
-            position: fixed;
-            top: 0;
-            left: -280px;
-            width: 280px;
-            height: 100%;
-            background: var(--text-dark);
-            color: white;
-            z-index: 1000;
-            transition: left 0.3s ease;
-            overflow-y: auto;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-        }
-        
+        .sidebar { position: fixed; top: 0; left: -280px; width: 280px; height: 100%; background: var(--text-dark); color: white; z-index: 1000; transition: left 0.3s ease; overflow-y: auto; box-shadow: 2px 0 10px rgba(0,0,0,0.1); }
         .sidebar.open { left: 0; }
-        
-        .sidebar-header {
-            padding: 25px 20px;
-            text-align: center;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
+        .sidebar-header { padding: 25px 20px; text-align: center; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .sidebar-header h3 { color: var(--gold); margin: 0; font-size: 1.3rem; }
         .sidebar-header p { font-size: 0.7rem; opacity: 0.7; margin: 5px 0 0; }
-        
         .sidebar-nav { padding: 15px; }
-        
-        .nav-item {
-            display: block;
-            padding: 12px 15px;
-            color: rgba(255,255,255,0.8);
-            text-decoration: none;
-            border-radius: 10px;
-            transition: var(--transition);
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-        }
-        
+        .nav-item { display: block; padding: 12px 15px; color: rgba(255,255,255,0.8); text-decoration: none; border-radius: 10px; transition: var(--transition); margin-bottom: 5px; font-size: 0.9rem; }
         .nav-item:hover, .nav-item.active { background: rgba(184, 134, 11, 0.2); color: var(--gold); }
         .nav-item i { width: 25px; margin-right: 10px; font-size: 1rem; }
-        
-        .sidebar-user {
-            position: sticky;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            padding: 15px;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            background: var(--text-dark);
-            margin-top: 20px;
-        }
-        
+        .sidebar-user { position: sticky; bottom: 0; left: 0; right: 0; padding: 15px; border-top: 1px solid rgba(255,255,255,0.1); background: var(--text-dark); margin-top: 20px; }
         .user-name { margin-bottom: 10px; font-size: 0.85rem; word-break: break-word; }
-        
-        .logout-btn {
-            width: 100%;
-            background: rgba(220, 53, 69, 0.2);
-            border: none;
-            color: #dc3545;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            display: block;
-            text-decoration: none;
-            transition: var(--transition);
-            font-size: 0.85rem;
-        }
-        
+        .logout-btn { width: 100%; background: rgba(220, 53, 69, 0.2); border: none; color: #dc3545; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; display: block; text-decoration: none; transition: var(--transition); font-size: 0.85rem; }
         .logout-btn:hover { background: #dc3545; color: white; }
-        
-        .login-btn {
-            width: 100%;
-            background: rgba(40, 167, 69, 0.2);
-            border: none;
-            color: #28a745;
-            padding: 10px;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            display: block;
-            text-decoration: none;
-            transition: var(--transition);
-            font-size: 0.85rem;
-        }
-        
+        .login-btn { width: 100%; background: rgba(40, 167, 69, 0.2); border: none; color: #28a745; padding: 10px; border-radius: 8px; cursor: pointer; text-align: center; display: block; text-decoration: none; transition: var(--transition); font-size: 0.85rem; }
         .login-btn:hover { background: #28a745; color: white; }
-        
-        .main-content {
-            margin-left: 0;
-            padding: 15px;
-            transition: margin-left 0.3s ease;
-            min-height: 100vh;
-        }
-        
-        @media (min-width: 992px) {
-            .sidebar { left: 0; width: 260px; }
-            .sidebar.open { left: 0; }
-            .main-content { margin-left: 260px; padding: 20px; }
-            .mobile-toggle { display: none !important; }
-        }
-        
-        .mobile-toggle {
-            position: fixed;
-            top: 15px;
-            left: 15px;
-            z-index: 1001;
-            background: var(--gold);
-            border: none;
-            color: white;
-            font-size: 1.2rem;
-            padding: 10px 12px;
-            border-radius: 10px;
-            cursor: pointer;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-            transition: var(--transition);
-        }
-        
+        .main-content { margin-left: 0; padding: 15px; transition: margin-left 0.3s ease; min-height: 100vh; }
+        @media (min-width: 992px) { .sidebar { left: 0; width: 260px; } .main-content { margin-left: 260px; padding: 20px; } .mobile-toggle { display: none !important; } }
+        .mobile-toggle { position: fixed; top: 15px; left: 15px; z-index: 1001; background: var(--gold); border: none; color: white; font-size: 1.2rem; padding: 10px 12px; border-radius: 10px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: var(--transition); }
         .mobile-toggle:hover { background: var(--gold-dark); }
-        
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(0,0,0,0.5);
-            z-index: 999;
-            display: none;
-        }
-        
+        .sidebar-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 999; display: none; }
         .sidebar-overlay.active { display: block; }
-        
-        .welcome-section {
-            background: white;
-            border-radius: 12px;
-            padding: 15px 20px;
-            margin-bottom: 20px;
-            box-shadow: var(--shadow);
-        }
-        
+        .welcome-section { background: white; border-radius: 12px; padding: 15px 20px; margin-bottom: 20px; box-shadow: var(--shadow); }
         .welcome-text h2 { font-size: 1.2rem; color: var(--text-dark); margin: 0; }
         .welcome-text h2 span { color: var(--gold); }
         .welcome-text p { color: var(--text-light); margin: 5px 0 0; font-size: 0.8rem; }
-        
-        .stats-card {
-            background: white;
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: var(--shadow);
-            transition: var(--transition);
-        }
-        
+        .stats-card { background: white; border-radius: 12px; padding: 15px; margin-bottom: 15px; box-shadow: var(--shadow); transition: var(--transition); }
         .stats-number { font-size: 1.8rem; font-weight: bold; color: var(--gold); margin-top: 8px; }
         .stats-card h5 { color: var(--text-light); margin: 0; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; }
-        
         .table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         .table { min-width: 600px; }
-        
-        .table thead th { 
-            border-bottom: 2px solid var(--gold); 
-            color: var(--text-dark); 
-            font-weight: 600;
-            font-size: 0.8rem;
-            padding: 10px 8px;
-        }
-        
+        .table thead th { border-bottom: 2px solid var(--gold); color: var(--text-dark); font-weight: 600; font-size: 0.8rem; padding: 10px 8px; }
         .table td { padding: 10px 8px; font-size: 0.8rem; vertical-align: middle; }
-        
         .badge { padding: 4px 8px; border-radius: 20px; font-size: 0.7rem; }
         .badge-success { background: #28a745; color: white; }
         .badge-warning { background: #ffc107; color: #333; }
         .badge-danger { background: #dc3545; color: white; }
         .badge-info { background: #17a2b8; color: white; }
-        
-        .btn-gold {
-            background: var(--gold);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 8px;
-            transition: var(--transition);
-            font-size: 0.8rem;
-        }
-        
+        .btn-gold { background: var(--gold); color: white; border: none; padding: 8px 16px; border-radius: 8px; transition: var(--transition); font-size: 0.8rem; }
         .btn-gold:hover { background: var(--gold-dark); }
         .btn-sm { padding: 5px 10px; font-size: 0.7rem; }
-        
-        .form-control, .form-select {
-            border-radius: 8px;
-            padding: 8px 12px;
-            font-size: 0.85rem;
-            border: 1px solid #e0e0e0;
-        }
-        
-        @media (max-width: 768px) {
-            .row { margin-left: -8px; margin-right: -8px; }
-            .col-md-4, .col-md-6, .col-md-12 { padding-left: 8px; padding-right: 8px; }
-            .stats-card { margin-bottom: 12px; }
-        }
-        
+        .form-control, .form-select { border-radius: 8px; padding: 8px 12px; font-size: 0.85rem; border: 1px solid #e0e0e0; }
+        @media (max-width: 768px) { .row { margin-left: -8px; margin-right: -8px; } .col-md-4, .col-md-6, .col-md-12 { padding-left: 8px; padding-right: 8px; } .stats-card { margin-bottom: 12px; } }
         .modal-dialog { margin: 10px; }
         @media (min-width: 576px) { .modal-dialog { margin: 1.75rem auto; } }
     </style>
 </head>
 <body>
-
-    <button class="mobile-toggle" id="mobileToggle">
-        <i class="fas fa-bars"></i>
-    </button>
-    
+    <button class="mobile-toggle" id="mobileToggle"><i class="fas fa-bars"></i></button>
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
     <div class="sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h3>GEEOOH HOTEL</h3>
-            <p>Administrator Panel</p>
-        </div>
-        
+        <div class="sidebar-header"><h3>GEEOOH HOTEL</h3><p>Administrator Panel</p></div>
         <div class="sidebar-nav">
-            <a href="/admin/dashboard" class="nav-item">
-                <i class="fas fa-chart-line"></i> Dashboard
-            </a>
-            <a href="/admin/bookings" class="nav-item">
-                <i class="fas fa-calendar-check"></i> Bookings
-            </a>
-            <a href="/admin/checkin-checkout" class="nav-item">
-                <i class="fas fa-exchange-alt"></i> Check-in / Check-out
-            </a>
-            <a href="/admin/rooms" class="nav-item">
-                <i class="fas fa-bed"></i> Rooms
-            </a>
-            <a href="/admin/amenities" class="nav-item">
-                <i class="fas fa-concierge-bell"></i> Amenities
-            </a>
+            <%
+            // Helper: check if user has any of these roles
+            function hasAnyRole(roles) {
+                if (!session || !session.admin) return false;
+                return roles.includes(session.admin.role);
+            }
+            %>
             
-            <% if (session.admin && (session.admin.role === 'admin' || session.admin.role === 'super_admin')) { %>
-                <a href="/admin/users" class="nav-item">
-                    <i class="fas fa-users"></i> Users
-                </a>
+            <a href="/admin/dashboard" class="nav-item"><i class="fas fa-chart-line"></i> Dashboard</a>
+            
+            <% if (hasAnyRole(['super_admin', 'admin', 'receptionist', 'concierge'])) { %>
+                <a href="/admin/bookings" class="nav-item"><i class="fas fa-calendar-check"></i> Bookings</a>
             <% } %>
             
-            <% if (session.admin && (session.admin.role === 'admin' || session.admin.role === 'super_admin')) { %>
-                <a href="/admin/staff" class="nav-item">
-                    <i class="fas fa-user-tie"></i> Staff
-                </a>
+            <% if (hasAnyRole(['super_admin', 'admin', 'receptionist'])) { %>
+                <a href="/admin/checkin-checkout" class="nav-item"><i class="fas fa-exchange-alt"></i> Check-in / Check-out</a>
             <% } %>
             
-            <a href="/admin/requests" class="nav-item">
-                <i class="fas fa-headset"></i> Requests
-            </a>
-            
-            <% if (session.admin && (session.admin.role === 'admin' || session.admin.role === 'super_admin')) { %>
-                <a href="/admin/menu" class="nav-item">
-                    <i class="fas fa-utensils"></i> Menu
-                </a>
-            <% } %>
-            <a href="/admin/service-orders" class="nav-item">
-    <i class="fas fa-concierge-bell"></i> Service Orders
-</a>
-            <a href="/admin/counter-booking" class="nav-item">
-                <i class="fas fa-tachometer-alt"></i> Counter Booking
-            </a>
-            
-            <% if (session.admin && session.admin.role === 'super_admin') { %>
-                <a href="/admin/historical-booking" class="nav-item">
-                    <i class="fas fa-history"></i> Historical Booking
-                </a>
+            <% if (hasAnyRole(['super_admin', 'admin', 'housekeeping'])) { %>
+                <a href="/admin/rooms" class="nav-item"><i class="fas fa-bed"></i> Rooms</a>
             <% } %>
             
-            <% if (session.admin && (session.admin.role === 'admin' || session.admin.role === 'super_admin')) { %>
-                <a href="/admin/reports" class="nav-item">
-                    <i class="fas fa-chart-bar"></i> Reports
-                </a>
+            <% if (hasAnyRole(['super_admin', 'admin'])) { %>
+                <a href="/admin/amenities" class="nav-item"><i class="fas fa-concierge-bell"></i> Amenities</a>
             <% } %>
             
-            <% if (session.admin && session.admin.role === 'super_admin') { %>
-                <a href="/admin/settings" class="nav-item">
-                    <i class="fas fa-cog"></i> Settings
-                </a>
+            <% if (hasAnyRole(['super_admin', 'admin'])) { %>
+                <a href="/admin/users" class="nav-item"><i class="fas fa-users"></i> Users</a>
             <% } %>
             
-            <% if (session.admin && (session.admin.role === 'admin' || session.admin.role === 'super_admin')) { %>
-                <a href="/admin/activity" class="nav-item">
-                    <i class="fas fa-history"></i> Activity Logs
-                </a>
+            <% if (hasAnyRole(['super_admin', 'admin'])) { %>
+                <a href="/admin/staff" class="nav-item"><i class="fas fa-user-tie"></i> Staff</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin', 'admin', 'receptionist', 'concierge', 'guest_relations'])) { %>
+                <a href="/admin/requests" class="nav-item"><i class="fas fa-headset"></i> Requests</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin', 'admin', 'menu_manager'])) { %>
+                <a href="/admin/menu" class="nav-item"><i class="fas fa-utensils"></i> Menu</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin', 'admin', 'receptionist', 'spa_staff'])) { %>
+                <a href="/admin/service-orders" class="nav-item"><i class="fas fa-concierge-bell"></i> Service Orders</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin', 'admin', 'receptionist'])) { %>
+                <a href="/admin/counter-booking" class="nav-item"><i class="fas fa-tachometer-alt"></i> Counter Booking</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin'])) { %>
+                <a href="/admin/historical-booking" class="nav-item"><i class="fas fa-history"></i> Historical Booking</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin', 'admin', 'accountant'])) { %>
+                <a href="/admin/reports" class="nav-item"><i class="fas fa-chart-bar"></i> Reports</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin'])) { %>
+                <a href="/admin/settings" class="nav-item"><i class="fas fa-cog"></i> Settings</a>
+            <% } %>
+            
+            <% if (hasAnyRole(['super_admin', 'admin'])) { %>
+                <a href="/admin/activity" class="nav-item"><i class="fas fa-history"></i> Activity Logs</a>
             <% } %>
         </div>
         
         <div class="sidebar-user">
             <% if (session && session.admin) { %>
-                <div class="user-name">
-                    <i class="fas fa-user-circle"></i> 
-                    <%= session.admin.name %>
-                </div>
-                <a href="/admin/logout" class="logout-btn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
+                <div class="user-name"><i class="fas fa-user-circle"></i> <%= session.admin.name %> <br><small style="opacity:0.6;"><%= session.admin.role %></small></div>
+                <a href="/admin/logout" class="logout-btn"><i class="fas fa-sign-out-alt"></i> Logout</a>
             <% } else { %>
-                <div class="user-name">
-                    <i class="fas fa-user-circle"></i> 
-                    Not Logged In
-                </div>
-                <a href="/admin/login" class="login-btn">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </a>
+                <div class="user-name"><i class="fas fa-user-circle"></i> Not Logged In</div>
+                <a href="/admin/login" class="login-btn"><i class="fas fa-sign-in-alt"></i> Login</a>
             <% } %>
         </div>
     </div>
@@ -351,251 +158,85 @@
         const mobileToggle = document.getElementById('mobileToggle');
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
-        
-        function closeSidebar() {
-            sidebar.classList.remove('open');
-            overlay.classList.remove('active');
-        }
-        
-        function openSidebar() {
-            sidebar.classList.add('open');
-            overlay.classList.add('active');
-        }
-        
-        if (mobileToggle) {
-            mobileToggle.addEventListener('click', (e) => {
-                e.stopPropagation();
-                sidebar.classList.contains('open') ? closeSidebar() : openSidebar();
-            });
-        }
-        
+        function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); }
+        function openSidebar() { sidebar.classList.add('open'); overlay.classList.add('active'); }
+        if (mobileToggle) mobileToggle.addEventListener('click', (e) => { e.stopPropagation(); sidebar.classList.contains('open') ? closeSidebar() : openSidebar(); });
         if (overlay) overlay.addEventListener('click', closeSidebar);
-        
-        window.addEventListener('resize', () => {
-            if (window.innerWidth >= 992) closeSidebar();
-        });
-        
+        window.addEventListener('resize', () => { if (window.innerWidth >= 992) closeSidebar(); });
         const currentPath = window.location.pathname;
-        document.querySelectorAll('.nav-item').forEach(link => {
-            const href = link.getAttribute('href');
-            if (href && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) {
-                link.classList.add('active');
-            }
-        });
+        document.querySelectorAll('.nav-item').forEach(link => { const href = link.getAttribute('href'); if (href && (currentPath === href || (href !== '/' && currentPath.startsWith(href)))) link.classList.add('active'); });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     
-    <!-- Socket.io Client for Real-time Notifications -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
-        // Connect to WebSocket server (polling for Render compatibility)
-        const socket = io({
-            transports: ['polling'],
-            upgrade: false
-        });
+        const socket = io({ transports: ['polling'], upgrade: false });
+        socket.on('connect', () => console.log('🔌 Admin connected'));
+        socket.on('disconnect', () => console.log('🔌 Admin disconnected'));
+        socket.on('connect_error', (e) => console.log('⚠️ Socket error:', e.message));
 
-        socket.on('connect', () => {
-            console.log('🔌 Admin connected to notification system');
-        });
-
-        socket.on('disconnect', () => {
-            console.log('🔌 Admin disconnected');
-        });
-
-        socket.on('connect_error', (error) => {
-            console.log('⚠️ Socket error:', error.message);
-        });
-
-        // ============ NEW BOOKING (YELLOW - Pending) ============
-        socket.on('new_booking', (notification) => {
-    console.log('🔔 Booking:', notification);
-    const isPending = notification.color === 'warning' || notification.status === 'pending';
-    const isCancelled = notification.color === 'danger' || notification.data?.status === 'cancelled';
-    
-    showNotification({
-        title: isCancelled ? 'Booking Cancelled ❌' : 
-               isPending ? 'New Booking (Pending Payment) ⏳' : 
-               'Booking Confirmed! ✅',
-        message: `${notification.data?.guest_name || notification.guest_name || 'Guest'} - Room ${notification.data?.room_number || notification.room_number || 'N/A'} - $${parseFloat(notification.data?.total_amount || notification.total_amount || 0).toFixed(2)}`,
-        ref: notification.data?.booking_reference || notification.booking_reference || '',
-        borderColor: isCancelled ? '#dc3545' : isPending ? '#ffc107' : '#28a745',
-        bgColor: isCancelled ? '#f8d7da' : isPending ? '#fff3cd' : '#d4edda',
-        textColor: isCancelled ? '#dc3545' : isPending ? '#856404' : '#28a745',
-        icon: isCancelled ? 'fa-ban' : isPending ? 'fa-clock' : 'fa-calendar-check',
-        link: '/admin/bookings',
-        duration: 10000
-    });
-    playNotificationSound();
-});
-
-        // ============ PAYMENT RECEIVED (GREEN - Success) ============
-        socket.on('payment_received', (notification) => {
-            console.log('💰 Payment:', notification);
-            const payment = notification.data?.payment || {};
-            const booking = notification.data?.booking || {};
+        socket.on('new_booking', (n) => {
+            const isPending = n.color === 'warning' || n.status === 'pending';
+            const isCancelled = n.color === 'danger' || n.data?.status === 'cancelled';
             showNotification({
-                title: 'Payment Confirmed! 💰',
-                message: `Room ${notification.message || ''} - $${parseFloat(payment.amount || 0).toFixed(2)} paid`,
-                ref: booking.booking_reference || '',
-                borderColor: '#28a745',
-                bgColor: '#d4edda',
-                textColor: '#28a745',
-                icon: 'fa-credit-card',
-                link: '/admin/bookings',
-                duration: 10000
+                title: isCancelled ? 'Booking Cancelled ❌' : isPending ? 'New Booking (Pending) ⏳' : 'Booking Confirmed! ✅',
+                message: `${n.data?.guest_name || n.guest_name || 'Guest'} - Room ${n.data?.room_number || n.room_number || 'N/A'} - $${parseFloat(n.data?.total_amount || n.total_amount || 0).toFixed(2)}`,
+                ref: n.data?.booking_reference || n.booking_reference || '',
+                borderColor: isCancelled ? '#dc3545' : isPending ? '#ffc107' : '#28a745',
+                bgColor: isCancelled ? '#f8d7da' : isPending ? '#fff3cd' : '#d4edda',
+                textColor: isCancelled ? '#dc3545' : isPending ? '#856404' : '#28a745',
+                icon: isCancelled ? 'fa-ban' : isPending ? 'fa-clock' : 'fa-calendar-check',
+                link: '/admin/bookings', duration: 10000
             });
-            playNotificationSound();
+            playSound();
         });
 
-        // ============ NEW SERVICE REQUEST (BLUE) ============
-        socket.on('new_request', (notification) => {
-            showNotification({
-                title: notification.title || 'New Request',
-                message: notification.message || '',
-                ref: '',
-                borderColor: '#17a2b8',
-                bgColor: '#d1ecf1',
-                textColor: '#17a2b8',
-                icon: 'fa-headset',
-                link: '/admin/requests',
-                duration: 8000
-            });
-            playNotificationSound();
+        socket.on('payment_received', (n) => {
+            const p = n.data?.payment || {}; const b = n.data?.booking || {};
+            showNotification({ title: 'Payment Confirmed! 💰', message: `$${parseFloat(p.amount || 0).toFixed(2)} paid`, ref: b.booking_reference || '', borderColor: '#28a745', bgColor: '#d4edda', textColor: '#28a745', icon: 'fa-credit-card', link: '/admin/bookings', duration: 10000 });
+            playSound();
         });
 
-        // ============ SYSTEM NOTIFICATION ============
-        socket.on('system_notification', (notification) => {
-            const isError = notification.color === 'danger';
-            showNotification({
-                title: notification.title || 'System',
-                message: notification.message || '',
-                ref: '',
-                borderColor: isError ? '#dc3545' : '#17a2b8',
-                bgColor: isError ? '#f8d7da' : '#d1ecf1',
-                textColor: isError ? '#dc3545' : '#17a2b8',
-                icon: isError ? 'fa-exclamation-triangle' : 'fa-bell',
-                link: null,
-                duration: 8000
-            });
-            if (isError) playNotificationSound();
+        socket.on('new_request', (n) => {
+            showNotification({ title: n.title || 'New Request', message: n.message || '', ref: '', borderColor: '#17a2b8', bgColor: '#d1ecf1', textColor: '#17a2b8', icon: 'fa-headset', link: '/admin/requests', duration: 8000 });
+            playSound();
         });
 
-        // ============ UNIFIED NOTIFICATION DISPLAY ============
+        socket.on('system_notification', (n) => {
+            const isErr = n.color === 'danger';
+            showNotification({ title: n.title || 'System', message: n.message || '', ref: '', borderColor: isErr ? '#dc3545' : '#17a2b8', bgColor: isErr ? '#f8d7da' : '#d1ecf1', textColor: isErr ? '#dc3545' : '#17a2b8', icon: isErr ? 'fa-exclamation-triangle' : 'fa-bell', link: null, duration: 8000 });
+            if (isErr) playSound();
+        });
+
         function showNotification({ title, message, ref, borderColor, bgColor, textColor, icon, link, duration }) {
             const notif = document.createElement('div');
             notif.className = 'socket-notification';
-            notif.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: white;
-                border-left: 4px solid ${borderColor};
-                border-radius: 12px;
-                padding: 16px 20px;
-                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-                z-index: 9999;
-                max-width: 400px;
-                animation: slideInRight 0.3s ease;
-                cursor: ${link ? 'pointer' : 'default'};
-            `;
-            
-            if (link) {
-                notif.onclick = () => window.location.href = link;
-            }
-            
-            notif.innerHTML = `
-                <div style="display: flex; align-items: flex-start; gap: 12px;">
-                    <div style="background: ${bgColor}; color: ${textColor}; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 18px;">
-                        <i class="fas ${icon}"></i>
-                    </div>
-                    <div style="flex: 1; min-width: 0;">
-                        <strong style="color: #1a1a2e; font-size: 14px; display: block; margin-bottom: 4px;">${escapeHTML(title)}</strong>
-                        <p style="margin: 0; font-size: 13px; color: #555; line-height: 1.4;">
-                            ${escapeHTML(message)}
-                            ${ref ? `<br><small style="color: #888;">Ref: ${escapeHTML(ref)}</small>` : ''}
-                        </p>
-                        <small style="color: #999; font-size: 11px;">${new Date().toLocaleTimeString()}</small>
-                    </div>
-                    <button onclick="event.stopPropagation(); this.closest('.socket-notification').remove();" 
-                            style="background: none; border: none; color: #999; cursor: pointer; font-size: 18px; padding: 0; line-height: 1;">
-                        &times;
-                    </button>
-                </div>
-            `;
-            
+            notif.style.cssText = `position:fixed;top:20px;right:20px;background:white;border-left:4px solid ${borderColor};border-radius:12px;padding:16px 20px;box-shadow:0 10px 30px rgba(0,0,0,0.2);z-index:9999;max-width:400px;animation:slideInRight 0.3s ease;cursor:${link?'pointer':'default'};`;
+            if (link) notif.onclick = () => window.location.href = link;
+            notif.innerHTML = `<div style="display:flex;align-items:flex-start;gap:12px;"><div style="background:${bgColor};color:${textColor};border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;"><i class="fas ${icon}"></i></div><div style="flex:1;min-width:0;"><strong style="color:#1a1a2e;font-size:14px;display:block;margin-bottom:4px;">${esc(title)}</strong><p style="margin:0;font-size:13px;color:#555;line-height:1.4;">${esc(message)}${ref?`<br><small style="color:#888;">Ref: ${esc(ref)}</small>`:''}</p><small style="color:#999;font-size:11px;">${new Date().toLocaleTimeString()}</small></div><button onclick="event.stopPropagation();this.closest('.socket-notification').remove();" style="background:none;border:none;color:#999;cursor:pointer;font-size:18px;padding:0;line-height:1;">&times;</button></div>`;
             document.body.appendChild(notif);
-            
-            // Auto-remove
-            setTimeout(() => {
-                if (notif.parentElement) {
-                    notif.style.animation = 'slideOutRight 0.3s ease';
-                    setTimeout(() => { if (notif.parentElement) notif.remove(); }, 300);
-                }
-            }, duration);
+            setTimeout(() => { if (notif.parentElement) { notif.style.animation = 'slideOutRight 0.3s ease'; setTimeout(() => { if (notif.parentElement) notif.remove(); }, 300); } }, duration);
         }
 
-        // ============ HELPERS ============
-        function escapeHTML(str) {
-            if (!str) return '';
-            const div = document.createElement('div');
-            div.textContent = str;
-            return div.innerHTML;
+        function esc(s) { if (!s) return ''; const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+        
+        function playSound() {
+            try { const c = new (window.AudioContext || window.webkitAudioContext)(); const o = c.createOscillator(); const g = c.createGain(); o.connect(g); g.connect(c.destination); o.type = 'sine'; o.frequency.setValueAtTime(800, c.currentTime); g.gain.setValueAtTime(0.3, c.currentTime); g.gain.exponentialRampToValueAtTime(0.01, c.currentTime + 0.3); o.start(c.currentTime); o.stop(c.currentTime + 0.3); } catch (e) {}
         }
 
-        function playNotificationSound() {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(800, ctx.currentTime);
-                gain.gain.setValueAtTime(0.3, ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                osc.start(ctx.currentTime);
-                osc.stop(ctx.currentTime + 0.3);
-            } catch (e) {}
+        if (!window.location.pathname.includes('checkin-checkout')) {
+            setInterval(() => {
+                fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } }).then(r => r.text()).then(html => {
+                    const d = new DOMParser().parseFromString(html, 'text/html');
+                    d.querySelectorAll('.stats-card').forEach((c, i) => { const o = document.querySelectorAll('.stats-card')[i]; if (o) o.innerHTML = c.innerHTML; });
+                    const nt = d.querySelector('.table-responsive'); const ot = document.querySelector('.table-responsive'); if (nt && ot) ot.innerHTML = nt.innerHTML;
+                }).catch(() => {});
+            }, 30000);
         }
 
-        // Auto-refresh dashboard every 30 seconds
-        setInterval(() => {
-            fetch(window.location.href, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(r => r.text())
-                .then(html => {
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    const newStats = doc.querySelectorAll('.stats-card');
-                    const oldStats = document.querySelectorAll('.stats-card');
-                    newStats.forEach((card, i) => {
-                        if (oldStats[i]) oldStats[i].innerHTML = card.innerHTML;
-                    });
-                    const newTable = doc.querySelector('.table-responsive');
-                    const oldTable = document.querySelector('.table-responsive');
-                    if (newTable && oldTable) oldTable.innerHTML = newTable.innerHTML;
-                })
-                .catch(() => {});
-        }, 30000);
-
-        // Animation styles
-        const animStyle = document.createElement('style');
-        animStyle.textContent = `
-            @keyframes slideInRight {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOutRight {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-            .socket-notification {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
-            .socket-notification:hover {
-                box-shadow: 0 15px 40px rgba(0,0,0,0.25) !important;
-            }
-        `;
-        document.head.appendChild(animStyle);
+        const as = document.createElement('style');
+        as.textContent = '@keyframes slideInRight{from{transform:translateX(100%);opacity:0;}to{transform:translateX(0);opacity:1;}}@keyframes slideOutRight{from{transform:translateX(0);opacity:1;}to{transform:translateX(100%);opacity:0;}}.socket-notification{font-family:Segoe UI,Tahoma,Geneva,Verdana,sans-serif;}.socket-notification:hover{box-shadow:0 15px 40px rgba(0,0,0,0.25)!important;}';
+        document.head.appendChild(as);
     </script>
 </body>
 </html>

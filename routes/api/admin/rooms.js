@@ -1,3 +1,6 @@
+const express = require('express');
+const router = express.Router();
+const db = require('../../../models');
 // Bulk create rooms
 router.post('/bulk', async (req, res) => {
     try {
@@ -21,3 +24,5 @@ router.post('/bulk', async (req, res) => {
         res.status(500).json({ success: false, error: e.message });
     }
 });
+
+module.exports = router;

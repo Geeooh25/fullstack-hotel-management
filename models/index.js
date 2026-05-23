@@ -21,7 +21,7 @@ const ServiceOrder = require('./serviceOrder');
 const SystemSetting = require('./SystemSetting');
 const NotificationSetting = require('./NotificationSetting');
 const ActivityLog = require('./ActivityLog');
-
+const TimeSlot = require('./timeSlot');
 const models = {
     User,
     RoomType,
@@ -86,6 +86,9 @@ models.MenuItem.hasMany(models.BookingService, { foreignKey: 'menu_item_id', as:
 models.MenuItem.hasMany(models.CartItem, { foreignKey: 'menu_item_id', as: 'cart_items' });
 models.CartItem.belongsTo(models.MenuItem, { foreignKey: 'menu_item_id', as: 'menu_item' });
 
+
+MenuItem.hasMany(TimeSlot, { foreignKey: 'menu_item_id' });
+TimeSlot.belongsTo(MenuItem, { foreignKey: 'menu_item_id' });
 // ==================== REQUEST SUBMISSION ASSOCIATIONS ====================
 // Amenity to RequestSubmission (This works - table has amenity_id column)
 models.Amenity.hasMany(models.RequestSubmission, { foreignKey: 'amenity_id', as: 'requests' });

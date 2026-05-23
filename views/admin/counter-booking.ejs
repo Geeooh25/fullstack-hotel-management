@@ -169,19 +169,20 @@ document.getElementById('checkIn').addEventListener('change', function() {
     document.getElementById('checkIn').addEventListener('change', calculateTotal);
     document.getElementById('checkOut').addEventListener('change', calculateTotal);
     
-    document.getElementById('counterBookingForm').addEventListener('submit', async (e) => {
+       document.getElementById('counterBookingForm').addEventListener('submit', async (e) => {
         e.preventDefault();
         const submitBtn = e.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         submitBtn.disabled = true;
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-        
+
         const formData = new FormData(e.target);
         const data = {};
         formData.forEach((value, key) => { data[key] = value; });
         data.source = 'walk_in';
         data.total_amount = parseFloat(document.getElementById('totalAmount').innerText);
-        
+
+        // Try online first
         try {
             const response = await fetch('/api/bookings/counter', {
                 method: 'POST',
@@ -190,19 +191,86 @@ document.getElementById('checkIn').addEventListener('change', function() {
             });
             const result = await response.json();
             if (result.success) {
-                showToast('Booking confirmed successfully!', 'success');
-                setTimeout(() => {
-                    window.location.href = '/admin/bookings';
-                }, 1500);
+                // Print receipt
+                printReceipt(data, result.booking);
+                showToast('Booking confirmed!', 'success');
+                setTimeout(() => { window.location.href = '/admin/bookings'; }, 2000);
             } else {
-                showToast(result.error || 'Error creating booking', 'error');
+                showToast(result.error || 'Error', 'error');
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalText;
             }
         } catch (error) {
-            showToast('Error: ' + error.message, 'error');
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = originalText;
+            // OFFLINE: Save to localStorage for later sync
+            saveOfflineBooking(data);
+            printReceipt(data, { booking_reference: 'OFFLINE-' + Date.now() });
+            showToast('Saved offline. Will sync when online.', 'warning');
+            setTimeout(() => { window.location.href = '/admin/bookings'; }, 2000);
         }
     });
+
+    // Print receipt
+    function printReceipt(data, booking) {
+        const roomSelect = document.getElementById('roomSelect');
+        const roomText = roomSelect.options[roomSelect.selectedIndex].text;
+        const printWindow = window.open('', '_blank');
+        printWindow.document.write(`
+            <html><head><title>Receipt - GEEOOH HOTEL</title>
+            <style>body{font-family:Arial;padding:20px;max-width:400px;margin:auto;}h2{color:#B8860B;}hr{border-color:#B8860B;}table{width:100%;}td{padding:4px;}</style></head>
+            <body>
+                <h2>GEEOOH HOTEL</h2><p>123 Luxury Avenue, Beverly Hills</p><hr>
+                <h3>BOOKING RECEIPT</h3>
+                <p><strong>Ref:</strong> ${booking.booking_reference || 'OFFLINE'}</p>
+                <p><strong>Guest:</strong> ${data.guest_name}</p>
+                <p><strong>Email:</strong> ${data.guest_email}</p>
+                <p><strong>Room:</strong> ${roomText}</p>
+                <p><strong>Check-in:</strong> ${data.check_in}</p>
+                <p><strong>Check-out:</strong> ${data.check_out}</p>
+                <p><strong>Guests:</strong> ${data.adults || 2} Adults</p>
+                <hr>
+                <h3>Total: $${data.total_amount}</h3>
+                <p><strong>Payment:</strong> ${data.payment_method || 'Cash/Card'}</p>
+                <p><strong>Status:</strong> PAID</p>
+                <hr>
+                <small>Thank you for choosing GEEOOH HOTEL!</small>
+                <br><button onclick="window.print();window.close();" style="margin-top:20px;padding:10px 30px;background:#B8860B;color:white;border:none;border-radius:5px;cursor:pointer;">Print</button>
+            </body></html>
+        `);
+        printWindow.document.close();
+    }
+
+    // Save offline booking for later sync
+    function saveOfflineBooking(data) {
+        const offlineBookings = JSON.parse(localStorage.getItem('offlineBookings') || '[]');
+        offlineBookings.push({ ...data, timestamp: new Date().toISOString(), synced: false });
+        localStorage.setItem('offlineBookings', JSON.stringify(offlineBookings));
+    }
+
+    // Sync offline bookings when back online
+    async function syncOfflineBookings() {
+        const offlineBookings = JSON.parse(localStorage.getItem('offlineBookings') || '[]');
+        if (offlineBookings.length === 0) return;
+        
+        const unsynced = offlineBookings.filter(b => !b.synced);
+        for (const booking of unsynced) {
+            try {
+                const response = await fetch('/api/bookings/counter', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(booking)
+                });
+                const result = await response.json();
+                if (result.success) {
+                    booking.synced = true;
+                    booking.booking_reference = result.booking.booking_reference;
+                }
+            } catch (e) { break; }
+        }
+        localStorage.setItem('offlineBookings', JSON.stringify(offlineBookings));
+    }
+
+    // Try sync on page load
+    syncOfflineBookings();
+    // Try sync when coming back online
+    window.addEventListener('online', syncOfflineBookings);
 </script>

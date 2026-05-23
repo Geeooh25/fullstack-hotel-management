@@ -91,6 +91,8 @@
             .menu-item-card { text-align: center; }
             .col-md-4.text-end { text-align: center !important; margin-top: 1rem; }
         }
+        .time-slots { display: flex; flex-wrap: wrap; gap: 4px; }
+.slot-btn.available:hover { background: #28a745 !important; color: white !important; }
     </style>
 </head>
 <body>
@@ -221,7 +223,12 @@
                                     <button class="add-to-cart-btn" onclick="addToCart(${item.id}, '${escapeHtml(item.name).replace(/'/g, "\\'")}', ${item.price}, ${item.requires_appointment})">
                                         <i class="fas fa-cart-plus"></i> Add
                                     </button>
-                                    ${item.requires_appointment ? `<div class="appointment-picker" id="appt-${item.id}"><input type="datetime-local" class="form-control" id="datetime-${item.id}" placeholder="Select appointment time"></div>` : ''}
+                                    ${item.requires_appointment ? `
+    <div class="appointment-picker" id="appt-${item.id}">
+        <input type="date" class="form-control mb-2" id="date-${item.id}" onchange="loadSlots(${item.id})" min="${new Date().toISOString().split('T')[0]}">
+        <div id="slots-${item.id}" class="time-slots"></div>
+        <input type="hidden" id="datetime-${item.id}">
+    </div>` : ''}
                                 </div>
                             </div>
                         </div>
@@ -284,6 +291,41 @@
                 showToast('Error adding item to cart', 'error');
             }
         }
+        async function loadSlots(itemId) {
+    const date = document.getElementById('date-' + itemId).value;
+    const slotsDiv = document.getElementById('slots-' + itemId);
+    if (!date) { slotsDiv.innerHTML = ''; return; }
+    
+    slotsDiv.innerHTML = '<small class="text-muted">Loading available times...</small>';
+    
+    try {
+        const r = await fetch('/api/menu/time-slots/' + itemId + '?date=' + date);
+        const data = await r.json();
+        
+        if (data.slots && data.slots.length > 0) {
+            slotsDiv.innerHTML = data.slots.map(s => 
+                `<button type="button" class="slot-btn ${s.available ? 'available' : 'booked'}" 
+                    ${s.available ? `onclick="selectSlot(${itemId}, '${date}', '${s.time}')"` : 'disabled'}
+                    style="margin:3px;padding:5px 10px;border-radius:4px;border:1px solid ${s.available ? '#28a745' : '#dc3545'};background:${s.available ? '#d4edda' : '#f8d7da'};cursor:${s.available ? 'pointer' : 'not-allowed'};font-size:12px;">
+                    ${s.time} ${s.available ? '' : '❌'}
+                </button>`
+            ).join('');
+        } else {
+            slotsDiv.innerHTML = '<small class="text-muted">No slots available for this date</small>';
+        }
+    } catch (e) {
+        slotsDiv.innerHTML = '<small class="text-danger">Error loading times</small>';
+    }
+}
+
+function selectSlot(itemId, date, time) {
+    document.getElementById('datetime-' + itemId).value = date + 'T' + time;
+    // Highlight selected slot
+    document.querySelectorAll('#slots-' + itemId + ' .slot-btn').forEach(b => {
+        b.style.background = b.textContent.includes(time) ? '#28a745' : '#d4edda';
+        b.style.color = b.textContent.includes(time) ? 'white' : '#155724';
+    });
+}
         
         function updateCartPreview() {
             const cart = hotelCart.getCart();

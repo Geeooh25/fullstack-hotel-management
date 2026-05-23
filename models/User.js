@@ -69,7 +69,7 @@ password_reset_expires: {
 },
     // roles
 role: {
-    type: DataTypes.ENUM('super_admin', 'admin', 'receptionist', 'housekeeping', 'guest'),
+    type: DataTypes.ENUM('super_admin', 'admin', 'receptionist', 'housekeeping', 'spa_staff', 'menu_manager', 'concierge', 'accountant', 'guest_relations', 'guest'),
     defaultValue: 'guest'
 },
 permissions: {
@@ -82,7 +82,9 @@ permissions: {
         view_reports: false,
         manage_settings: false,
         manage_menu: false,
-        manage_services: false
+        manage_services: false,
+        manage_requests: false,
+        manage_spa: false
     }
 },
     is_active: {
