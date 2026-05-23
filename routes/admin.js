@@ -174,22 +174,73 @@ router.get('/rooms/bulk', isAdminAuthenticated, hasRole(['super_admin', 'admin']
     const roomTypes = await db.RoomType.findAll();
     res.render('admin/rooms-bulk', { title: 'Bulk Add Rooms', roomTypes, session: req.session });
 });
-// TEMP: Update user role ENUM to VARCHAR (allows any role)
-router.get('/update-roles', isAdminAuthenticated, hasRole(['super_admin']), async (req, res) => {
+// ==================== FORGOT PASSWORD ====================
+router.get('/forgot-password', (req, res) => {
+    res.render('admin/forgot-password', { title: 'Forgot Password', error: null, success: null });
+});
+
+router.post('/forgot-password', async (req, res) => {
     try {
-        const { sequelize } = require('../config/database');
+        const { email } = req.body;
+        const user = await db.User.findOne({ where: { email, role: { [require('sequelize').Op.ne]: 'guest' } } });
         
-        // Step 1: Drop the old constraint
-        await sequelize.query(`ALTER TABLE "users" DROP CONSTRAINT IF EXISTS users_role_check`);
-        await sequelize.query(`ALTER TABLE "users" DROP CONSTRAINT IF EXISTS "users_role_check"`);
+        if (!user) {
+            return res.render('admin/forgot-password', { title: 'Forgot Password', error: 'Email not found', success: null });
+        }
         
-        // Step 2: Change column type from ENUM to VARCHAR (accepts any role)
-        await sequelize.query(`ALTER TABLE "users" ALTER COLUMN role TYPE VARCHAR(50)`);
-        await sequelize.query(`ALTER TABLE "users" ALTER COLUMN role SET DEFAULT 'guest'`);
+        // Generate reset token
+        const crypto = require('crypto');
+        const token = crypto.randomBytes(32).toString('hex');
+        user.password_reset_token = token;
+        user.password_reset_expires = new Date(Date.now() + 3600000); // 1 hour
+        await user.save();
         
-        res.json({ success: true, message: 'Role column changed to VARCHAR - all roles now accepted!' });
+        console.log('Password reset link:', `/admin/reset-password/${token}`);
+        
+        res.render('admin/forgot-password', { title: 'Forgot Password', error: null, success: 'Reset link sent! Check console for link (email not configured).' });
     } catch (error) {
-        res.json({ success: false, error: error.message });
+        res.render('admin/forgot-password', { title: 'Forgot Password', error: error.message, success: null });
+    }
+});
+
+// ==================== RESET PASSWORD ====================
+router.get('/reset-password/:token', async (req, res) => {
+    try {
+        const user = await db.User.findOne({
+            where: {
+                password_reset_token: req.params.token,
+                password_reset_expires: { [require('sequelize').Op.gt]: new Date() }
+            }
+        });
+        if (!user) return res.render('admin/reset-password', { title: 'Reset Password', error: 'Invalid or expired token' });
+        res.render('admin/reset-password', { title: 'Reset Password', error: null, token: req.params.token });
+    } catch (error) {
+        res.render('admin/reset-password', { title: 'Reset Password', error: error.message });
+    }
+});
+
+router.post('/reset-password/:token', async (req, res) => {
+    try {
+        const { password, confirm_password } = req.body;
+        if (password !== confirm_password) return res.render('admin/reset-password', { title: 'Reset Password', error: 'Passwords do not match', token: req.params.token });
+        if (password.length < 8) return res.render('admin/reset-password', { title: 'Reset Password', error: 'Password must be 8+ characters', token: req.params.token });
+        
+        const user = await db.User.findOne({
+            where: {
+                password_reset_token: req.params.token,
+                password_reset_expires: { [require('sequelize').Op.gt]: new Date() }
+            }
+        });
+        if (!user) return res.render('admin/reset-password', { title: 'Reset Password', error: 'Invalid or expired token' });
+        
+        user.password = password;
+        user.password_reset_token = null;
+        user.password_reset_expires = null;
+        await user.save();
+        
+        res.redirect('/admin/login?reset=success');
+    } catch (error) {
+        res.render('admin/reset-password', { title: 'Reset Password', error: error.message, token: req.params.token });
     }
 });
 module.exports = router;
