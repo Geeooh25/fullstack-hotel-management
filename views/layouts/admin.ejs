@@ -34,28 +34,35 @@
     .main-content { margin-left: 0; padding: 15px; padding-top: 60px; transition: margin-left 0.3s ease; min-height: 100vh; }
     
     /* Mobile Toggle - Full Width Top Bar */
-    .mobile-toggle {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        z-index: 1001;
-        background: var(--text-dark);
-        border: none;
-        color: white;
-        font-size: 1rem;
-        padding: 12px 15px;
-        cursor: pointer;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-        transition: var(--transition);
-        width: 100%;
-        text-align: center;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        border-bottom: 2px solid var(--gold);
-        justify-content: center;
-    }
-    .mobile-toggle i { font-size: 1.2rem; }
-    .mobile-toggle:hover { background: #222; }
+    .mobile-topbar {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1001;
+    background: var(--text-dark);
+    display: flex;
+    align-items: center;
+    padding: 10px 15px;
+    border-bottom: 2px solid var(--gold);
+}
+.mobile-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 5px;
+    z-index: 2;
+}
+.mobile-brand {
+    color: var(--gold);
+    font-weight: bold;
+    font-size: 1rem;
+    flex: 1;
+    text-align: center;
+}
+@media (min-width: 992px) {
+    .mobile-topbar { display: none; }
+}
     
     /* Desktop */
     @media (min-width: 992px) {
@@ -110,9 +117,13 @@
     @media (min-width: 576px) { .modal-dialog { margin: 1.75rem auto; } }
 </style>
 </head>
-<body><button class="mobile-toggle" id="mobileToggle">
-    <i class="fas fa-bars"></i> <span style="color: var(--gold);">GEEOOH HOTEL</span>
-</button>
+<body>
+    <div class="mobile-topbar">
+    <button class="mobile-toggle" id="mobileToggle">
+        <i class="fas fa-bars"></i>
+    </button>
+    <span class="mobile-brand">GEEOOH HOTEL</span>
+</div>
 <div class="sidebar-overlay" id="sidebarOverlay"></div>
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header"><h3>GEEOOH HOTEL</h3><p>Administrator Panel</p></div>
