@@ -1138,7 +1138,56 @@ router.get('/search', async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-
+// Auto-update expired check-ins
+router.post('/auto-update-status', async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        
+        // Mark no-shows: bookings with check_in = yesterday or earlier, still 'confirmed'
+        const noShows = await db.Booking.update(
+            { status: 'no_show', remaining_balance: 0 },
+            { 
+                where: { 
+                    check_in: { [Op.lt]: today },
+                    status: 'confirmed'
+                }
+            }
+        );
+        
+        // Mark overdue checkouts: checked_in but checkout date passed
+        const overdue = await db.Booking.update(
+            { status: 'checked_out', checked_out_at: new Date() },
+            {
+                where: {
+                    check_out: { [Op.lt]: today },
+                    status: 'checked_in'
+                }
+            }
+        );
+        
+        res.json({ success: true, noShows: noShows[0], overdue: overdue[0] });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+// Auto-update expired bookings (no-shows & overdue checkouts)
+router.post('/auto-update-status', async (req, res) => {
+    try {
+        const today = new Date().toISOString().split('T')[0];
+        const noShows = await db.Booking.update(
+            { status: 'no_show' },
+            { where: { check_in: { [Op.lt]: today }, status: 'confirmed' } }
+        );
+        const overdue = await db.Booking.update(
+            { status: 'checked_out', checked_out_at: new Date() },
+            { where: { check_out: { [Op.lt]: today }, status: 'checked_in' } }
+        );
+        res.json({ success: true, noShows: noShows[0], overdue: overdue[0] });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 // TEMP: Fix ALL sequences
 router.all('/fix-all-sequences', async (req, res) => {

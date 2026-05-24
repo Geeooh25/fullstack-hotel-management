@@ -153,6 +153,13 @@ const startServer = async () => {
         process.exit(1);
     }
 };
+// Run daily status update
+setInterval(async () => {
+    try {
+        await fetch(`http://localhost:${PORT}/api/bookings/auto-update-status`, { method: 'POST' });
+        console.log('✅ Daily status update completed');
+    } catch (e) {}
+}, 60 * 60 * 1000); // Every hour
 
 startServer();
 
