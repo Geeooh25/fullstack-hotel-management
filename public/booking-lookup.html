@@ -225,6 +225,7 @@
             color: #856404;
             margin-top: 8px;
         }
+        .status-no_show { background: #6c757d; color: white; }
     </style>
 </head>
 <body>
@@ -666,12 +667,19 @@
                                 <small class="d-block text-muted mt-1">Check-in date has passed</small>
                             `;
                         }
-                    } else if (booking.status === 'pending') {
+                    }
+                    else if (booking.status === 'pending') {
                         actionsHtml = `
                             <button class="btn-outline-gold mt-2" disabled style="border: 1px solid #ccc; color: #999; background: transparent; padding: 8px 20px; cursor: not-allowed;">
                                 <i class="fas fa-clock"></i> Cancel Booking
                             </button>
                             <small class="d-block text-muted mt-1">Booking is pending confirmation</small>
+                        `;
+                    } else if (booking.status === 'no_show') {
+                        actionsHtml = `
+                            <div class="cancel-notice">
+                                <i class="fas fa-info-circle"></i> This booking was not checked in and has expired. Please contact reception for assistance.
+                            </div>
                         `;
                     } else if (booking.status === 'cancelled') {
                         actionsHtml = `
