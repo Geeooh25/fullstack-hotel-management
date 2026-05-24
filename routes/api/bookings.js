@@ -1064,7 +1064,7 @@ router.get('/today/arrivals', async (req, res) => {
 router.get('/today/departures', async (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     const bookings = await db.Booking.findAll({
-        where: { check_out: today, status: ['confirmed', 'checked_in'] },
+        where: { check_out: today, status: ['confirmed', 'checked_in', 'checked_out'] },
         include: [{ model: db.Guest }, { model: db.Room }]
     });
     res.json(bookings);
