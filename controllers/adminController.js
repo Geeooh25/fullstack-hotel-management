@@ -397,12 +397,13 @@ postResetPassword: async (req, res) => {
 
     // Define valid status transitions (one-way only)
     const allowedTransitions = {
-        'pending': ['confirmed', 'cancelled'],
-        'confirmed': ['checked_in', 'cancelled'],
-        'checked_in': ['checked_out'],
-        'checked_out': [],           // Cannot change
-        'cancelled': []              // Cannot change
-    };
+    'pending': ['confirmed', 'cancelled'],
+    'confirmed': ['checked_in', 'cancelled', 'no_show'],
+    'checked_in': ['checked_out'],
+    'checked_out': [],
+    'cancelled': [],
+    'no_show': []
+};
 
     try {
         // Get current booking status

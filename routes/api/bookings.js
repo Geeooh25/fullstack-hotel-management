@@ -1072,13 +1072,23 @@ router.get('/today/departures', async (req, res) => {
 
 // Check-in
 router.post('/:id/checkin', async (req, res) => {
+    const booking = await db.Booking.findByPk(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.status !== 'confirmed') return res.status(400).json({ error: 'Only confirmed bookings can check in' });
+    
     await db.Booking.update({ status: 'checked_in', checked_in_at: new Date() }, { where: { id: req.params.id } });
+    await db.Room.update({ status: 'occupied' }, { where: { id: booking.room_id } });
     res.json({ success: true });
 });
 
 // Check-out
 router.post('/:id/checkout', async (req, res) => {
+    const booking = await db.Booking.findByPk(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.status !== 'checked_in') return res.status(400).json({ error: 'Only checked-in bookings can check out' });
+    
     await db.Booking.update({ status: 'checked_out', checked_out_at: new Date() }, { where: { id: req.params.id } });
+    await db.Room.update({ status: 'available' }, { where: { id: booking.room_id } });
     res.json({ success: true });
 });
 
