@@ -94,6 +94,13 @@
         .time-slots { display: flex; flex-wrap: wrap; gap: 4px; }
 .slot-btn.available:hover { background: #28a745 !important; color: white !important; }
     </style>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#B8860B">
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+</script>
 </head>
 <body>
     <nav class="navbar navbar-expand-lg">

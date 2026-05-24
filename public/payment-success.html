@@ -88,6 +88,13 @@
             .page-hero h1 { font-size: 1.8rem; }
         }
     </style>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#B8860B">
+<script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+    }
+</script>
 </head>
 <body>
 
