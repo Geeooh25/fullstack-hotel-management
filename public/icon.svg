@@ -1,13 +1,39 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
   <defs>
-    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" style="stop-color:#1a1a2e"/>
-      <stop offset="100%" style="stop-color:#0f0f1a"/>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0d0d1a"/>
+      <stop offset="100%" style="stop-color:#1a1a2e"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#D4AF37"/>
+      <stop offset="50%" style="stop-color:#B8860B"/>
+      <stop offset="100%" style="stop-color:#8B691B"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" fill="url(#goldGrad)" rx="80"/>
-  <rect x="20" y="20" width="472" height="472" fill="none" stroke="#B8860B" stroke-width="4" rx="60"/>
-  <text x="256" y="200" font-family="Georgia, serif" font-size="60" fill="#B8860B" text-anchor="middle">LUXURY HOTEL</text>
-  <text x="256" y="340" font-family="Georgia, serif" font-size="140" fill="white" text-anchor="middle" font-weight="bold">GH</text>
-  <text x="256" y="430" font-family="Georgia, serif" font-size="40" fill="#B8860B" text-anchor="middle">EST. 2025</text>
+  
+  <!-- Background -->
+  <rect width="512" height="512" fill="url(#bg)"/>
+  
+  <!-- Subtle pattern -->
+  <line x1="0" y1="0" x2="512" y2="512" stroke="rgba(184,134,11,0.05)" stroke-width="1"/>
+  <line x1="512" y1="0" x2="0" y2="512" stroke="rgba(184,134,11,0.05)" stroke-width="1"/>
+  
+  <!-- Gold border -->
+  <rect x="15" y="15" width="482" height="482" fill="none" stroke="url(#gold)" stroke-width="2" rx="40"/>
+  <rect x="25" y="25" width="462" height="462" fill="none" stroke="url(#gold)" stroke-width="0.5" rx="35"/>
+  
+  <!-- Building icon -->
+  <path d="M170 380V220l86-80 86 80v160H170z" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <rect x="210" y="260" width="30" height="30" fill="url(#gold)" opacity="0.6"/>
+  <rect x="260" y="260" width="30" height="30" fill="url(#gold)" opacity="0.6"/>
+  <rect x="310" y="260" width="30" height="30" fill="url(#gold)" opacity="0.6"/>
+  <rect x="210" y="310" width="30" height="30" fill="url(#gold)" opacity="0.6"/>
+  <rect x="260" y="310" width="30" height="30" fill="url(#gold)" opacity="0.6"/>
+  <rect x="310" y="310" width="30" height="30" fill="url(#gold)" opacity="0.6"/>
+  
+  <!-- Star at top -->
+  <polygon points="256,140 268,172 302,172 274,192 284,224 256,204 228,224 238,192 210,172 244,172" fill="url(#gold)" opacity="0.8"/>
+  
+  <!-- Hotel name -->
+  <text x="256" y="460" font-family="Georgia, serif" font-size="38" fill="url(#gold)" text-anchor="middle" letter-spacing="8" font-weight="bold">GEEOOH</text>
 </svg>
