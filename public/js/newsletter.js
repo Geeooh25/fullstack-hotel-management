@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     subscribeBtn.addEventListener('click', async function(e) {
         e.preventDefault();
-        const email = emailInput.value;
+       const email = emailInput.value.trim();
         
         if (!email) {
             showToastMessage('Please enter your email address', 'warning');

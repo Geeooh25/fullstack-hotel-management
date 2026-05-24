@@ -459,7 +459,7 @@
                 now.setHours(0, 0, 0, 0);
                 checkIn.setHours(0, 0, 0, 0);
                 const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
-                const canCancel = daysUntilCheckIn >= 3 && booking.status === 'confirmed';
+                const canCancel = daysUntilCheckIn >= 3 && booking.status === 'confirmed' && daysUntilCheckIn >= 0;
                 
                 return `
                 <a href="javascript:void(0)" onclick="lookupByReferenceAndScroll('${booking.booking_reference}')" class="booking-list-item">
@@ -608,7 +608,7 @@
                     now.setHours(0, 0, 0, 0);
                     checkIn.setHours(0, 0, 0, 0);
                     const daysUntilCheckIn = Math.ceil((checkIn - now) / (1000 * 60 * 60 * 24));
-                    const canCancel = daysUntilCheckIn >= 3 && booking.status === 'confirmed';
+                   const canCancel = daysUntilCheckIn >= 3 && booking.status === 'confirmed' && daysUntilCheckIn >= 0;
                     
                     let servicesHtml = '';
                     let servicesTotal = 0;
@@ -654,7 +654,10 @@
                                       `Only ${daysUntilCheckIn} days until check-in.`}
                                 </div>
                             `;
-                        } else {
+                        }  else if (daysUntilCheckIn < 0) {
+    actionsHtml = `<button class="btn-outline-gold mt-2" disabled style="border: 1px solid #ccc; color: #999; background: transparent; padding: 8px 20px; cursor: not-allowed;"><i class="fas fa-lock"></i> Cancel Booking</button><small class="d-block text-muted mt-1">Check-in date has passed</small>`;
+}
+                        else {
                             // Past check-in date
                             actionsHtml = `
                                 <button class="btn-outline-gold mt-2" disabled style="border: 1px solid #ccc; color: #999; background: transparent; padding: 8px 20px; cursor: not-allowed;">
@@ -711,7 +714,7 @@
                                         <p class="mb-1">Check-in: <strong>${new Date(booking.check_in).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}</strong></p>
                                         <p class="mb-1">Check-out: <strong>${new Date(booking.check_out).toLocaleDateString('en-US', { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}</strong></p>
                                         <p class="mb-1">Nights: <strong>${booking.total_nights || 0}</strong></p>
-                                        <p class="mb-1">Days until check-in: <strong>${daysUntilCheckIn}</strong></p>
+                                       <p class="mb-1">Days until check-in: <strong>${daysUntilCheckIn >= 0 ? daysUntilCheckIn : 'Today'}</strong></p>
                                     </div>
                                     <div class="col-md-6">
                                         <h6>Guests</h6>

@@ -113,18 +113,19 @@ permissions: {
     createdAt: 'created_at',
     updatedAt: 'updated_at',
     hooks: {
-        beforeCreate: async (user) => {
-            if (user.password) {
-                user.password = await bcrypt.hash(user.password, 10);
-            }
-        },
-        beforeUpdate: async (user) => {
-            if (user.changed('password') && user.password) {
-                user.password = await bcrypt.hash(user.password, 10);
-            }
-        }
+       beforeCreate: async (user) => {
+    if (user.first_name) user.first_name = user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase();
+    if (user.last_name) user.last_name = user.last_name.charAt(0).toUpperCase() + user.last_name.slice(1).toLowerCase();
+    if (user.password) user.password = await bcrypt.hash(user.password, 10);
+},
+beforeUpdate: async (user) => {
+    if (user.changed('first_name') && user.first_name) user.first_name = user.first_name.charAt(0).toUpperCase() + user.first_name.slice(1).toLowerCase();
+    if (user.changed('last_name') && user.last_name) user.last_name = user.last_name.charAt(0).toUpperCase() + user.last_name.slice(1).toLowerCase();
+    if (user.changed('password') && user.password) user.password = await bcrypt.hash(user.password, 10);
+}
     }
 });
+
 
 // Instance method to check password
 User.prototype.validatePassword = async function(password) {

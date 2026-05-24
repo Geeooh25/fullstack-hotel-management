@@ -152,10 +152,11 @@ router.post('/service-orders/:id/status', isAdminAuthenticated, async (req, res)
         
         // One-way status flow: pending -> contacted -> completed
         const allowedTransitions = {
-            'pending': ['contacted', 'completed'],
-            'contacted': ['completed'],
-            'completed': []
-        };
+    'paid': ['contacted', 'completed'],
+    'pending': ['contacted', 'completed'],
+    'contacted': ['completed'],
+    'completed': []
+};
         
         if (!allowedTransitions[currentStatus] || !allowedTransitions[currentStatus].includes(newStatus)) {
             return res.status(400).json({ 
