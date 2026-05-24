@@ -30,20 +30,22 @@ function loadReviews() {
 
 async function loadFeaturedRooms() {
     const container = document.getElementById('rooms-container');
-    
     try {
         const response = await fetch('/api/rooms');
         const data = await response.json();
-        
         if (data.success && data.rooms && data.rooms.length > 0) {
-            const featuredRooms = data.rooms.slice(0, 3);
-            displayRooms(featuredRooms);
+            // Only show AVAILABLE rooms, take first 3
+            const availableRooms = data.rooms.filter(r => r.status === 'available').slice(0, 3);
+            if (availableRooms.length > 0) {
+                displayRooms(availableRooms);
+            } else {
+                container.innerHTML = '<div class="col-12 text-center"><p>All rooms are currently booked. Please check back later.</p></div>';
+            }
         } else {
             container.innerHTML = '<div class="col-12 text-center"><p>No rooms available at the moment.</p></div>';
         }
     } catch (error) {
-        console.error('Error loading rooms:', error);
-        container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Unable to load rooms. Please check back later.</p></div>';
+        container.innerHTML = '<div class="col-12 text-center"><p class="text-muted">Unable to load rooms.</p></div>';
     }
 }
 
